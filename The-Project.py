@@ -1,6 +1,7 @@
 import customtkinter
 from customtkinter import *
 from tkinter import messagebox
+import re
 
 # إنشاء النافذة الرئيسية
 app = CTk()
@@ -46,7 +47,27 @@ def setup_home():
         btn.grid(row=i, column=0, pady=10, padx=20, sticky="ew")
 
 setup_home()
+# ========== ما قبل إضافة عميل ==========
+def validate_and_save(name_entry, phone_entry):
+    name = name_entry.get().strip()
+    phone = phone_entry.get().strip()
 
+    # Define regex patterns
+    name_pattern = r"^[\w\s\u0600-\u06FF]{2,50}$"  # Allows Arabic and English names (2-50 characters)
+    phone_pattern = r"^\+?\d{10,15}$"  # Allows phone numbers (10-15 digits, optional + at start)
+
+    # Validate name
+    if not re.match(name_pattern, name):
+        messagebox.showerror("خطأ", "الاسم يجب أن يحتوي على 2-50 حرفًا فقط بدون رموز خاصة.")
+        return
+
+    # Validate phone number
+    if not re.match(phone_pattern, phone):
+        messagebox.showerror("خطأ", "رقم الهاتف يجب أن يحتوي على 10-15 رقمًا ويمكن أن يبدأ بـ '+'.")
+        return
+
+    # If both are valid, save the data
+    messagebox.showinfo("نجاح", "تم حفظ العميل بنجاح")
 # ========== صفحة إضافة عميل ==========
 def setup_add_page():
     frame = frames["add"]
@@ -109,3 +130,4 @@ setup_view_page()
 show_frame(frames["home"])
 
 app.mainloop()
+# ana 27b omar
