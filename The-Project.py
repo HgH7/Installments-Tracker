@@ -130,4 +130,6 @@ setup_view_page()
 show_frame(frames["home"])
 
 app.mainloop()
-# ana 27b omar
+#ihjkgluft3g1io;khgeq234;hilojkg13hiol;kbng1324
+print("el pulllllllllllllllllll")
+print("el pulllllllllllllllllll")
