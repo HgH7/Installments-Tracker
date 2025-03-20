@@ -47,27 +47,33 @@ def setup_home():
         btn.grid(row=i, column=0, pady=10, padx=20, sticky="ew")
 
 setup_home()
-# ========== ما قبل إضافة عميل ==========
+
+# ========== دالة التحقق والحفظ ==========
 def validate_and_save(name_entry, phone_entry):
     name = name_entry.get().strip()
     phone = phone_entry.get().strip()
 
-    # Define regex patterns
-    name_pattern = r"^[\w\s\u0600-\u06FF]{2,50}$"  # Allows Arabic and English names (2-50 characters)
-    phone_pattern = r"^\+?\d{10,15}$"  # Allows phone numbers (10-15 digits, optional + at start)
+    # Debugging: Print inputs
+    print(f"Name Input: '{name}'")  
+    print(f"Phone Input: '{phone}'")
 
-    # Validate name
-    if not re.match(name_pattern, name):
-        messagebox.showerror("خطأ", "الاسم يجب أن يحتوي على 2-50 حرفًا فقط بدون رموز خاصة.")
+    # Strict name regex: Only allows Arabic & English letters + spaces (NO numbers)
+    name_pattern = r"^[A-Za-z\u0600-\u06FF\s]+$"
+    phone_pattern = r"^\+?\d{10,15}$"  # Phone number must be digits and can start with '+'
+
+    # Validate name (ensuring only letters and spaces)
+    if not re.fullmatch(name_pattern, name):
+        messagebox.showerror("خطأ", "الاسم يجب أن يحتوي فقط على أحرف ومسافات، بدون أرقام أو رموز خاصة.")
         return
 
     # Validate phone number
-    if not re.match(phone_pattern, phone):
-        messagebox.showerror("خطأ", "رقم الهاتف يجب أن يحتوي على 10-15 رقمًا ويمكن أن يبدأ بـ '+'.")
+    if not re.fullmatch(phone_pattern, phone):
+        messagebox.showerror("خطأ", "رقم الهاتف يجب أن يحتوي فقط على أرقام (10-15 رقمًا) ويمكن أن يبدأ بـ '+'.")
         return
 
-    # If both are valid, save the data
-    messagebox.showinfo("نجاح", "تم حفظ العميل بنجاح")
+    # Success message
+    messagebox.showinfo("نجاح", "تم حفظ العميل بنجاح!")
+
 # ========== صفحة إضافة عميل ==========
 def setup_add_page():
     frame = frames["add"]
@@ -85,8 +91,10 @@ def setup_add_page():
     phone_label.grid(row=3, column=0, pady=5, padx=20, sticky="w")
     phone_entry = CTkEntry(frame, width=250)
     phone_entry.grid(row=4, column=0, pady=5, padx=20)
+
+    # **Fix: Now calling validate_and_save() instead of skipping validation**
     save_button = CTkButton(frame, text="حفظ العميل", width=250, height=50, font=("Arial", 16, "bold"),
-                            command=lambda: messagebox.showinfo("نجاح", "تم حفظ العميل بنجاح"))
+                            command=lambda: validate_and_save(name_entry, phone_entry))
     save_button.grid(row=5, column=0, pady=20, padx=20, sticky="ew")
 
     back_button = CTkButton(frame, text="العودة", width=250, height=50, font=("Arial", 16, "bold"),
@@ -130,6 +138,3 @@ setup_view_page()
 show_frame(frames["home"])
 
 app.mainloop()
-#ihjkgluft3g1io;khgeq234;hilojkg13hiol;kbng1324
-print("el pulllllllllllllllllll")
-print("el pulllllllllllllllllll")
