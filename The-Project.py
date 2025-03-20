@@ -11,6 +11,7 @@ from tkcalendar import Calendar
 # إنشاء النافذة الرئيسية
 app = CTk()
 app.geometry("900x600")  # تكبير النافذة
+
 def refresh_treeview(tree):
     """Clear and reload data in the Treeview."""
     for row in tree.get_children():
@@ -20,6 +21,7 @@ def refresh_treeview(tree):
     
     for _, row in df.iterrows():
         tree.insert("", "end", values=list(row))  # Add new rows
+
 def show_frame(frame):
     """Show the selected frame and refresh the view page if it's the view frame."""
     frame.tkraise()
@@ -174,6 +176,7 @@ def setup_add_page():
 
     CTkButton(frame, text="رجوع", width=250, height=50, font=("Arial", 16, "bold"),
           command=lambda: show_frame(frames["home"])).grid(row=12, column=0, pady=10)
+
 def setup_view_page():
     frame = frames["view"]
     frame.grid_columnconfigure(0, weight=1)
@@ -207,13 +210,21 @@ def setup_view_page():
     scrollbar.grid(row=1, column=1, sticky="ns")
     tree.configure(yscrollcommand=scrollbar.set)
 
+    # Store the Treeview widget as an attribute of the frame
+    frame.tree = tree
+
     # Refresh the Treeview with the latest data
     refresh_treeview(tree)
+
+    # Refresh button
+    refresh_button = CTkButton(frame, text="تحديث", width=250, height=50, font=("Arial", 16, "bold"),
+                               command=lambda: refresh_treeview(tree))
+    refresh_button.grid(row=2, column=0, pady=10, padx=20, sticky="ew")
 
     # Back button
     back_button = CTkButton(frame, text="العودة", width=250, height=50, font=("Arial", 16, "bold"),
                             command=lambda: show_frame(frames["home"]))
-    back_button.grid(row=2, column=0, pady=10, padx=20, sticky="ew")
+    back_button.grid(row=3, column=0, pady=10, padx=20, sticky="ew")
 
 def setup_home_page():
     frame = frames["home"]
