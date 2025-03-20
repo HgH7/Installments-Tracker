@@ -6,18 +6,25 @@ import csv
 import os
 import pandas as pd
 from datetime import datetime, timedelta
+from tkcalendar import Calendar
 
 # إنشاء النافذة الرئيسية
 app = CTk()
 app.geometry("900x600")  # تكبير النافذة
+def refresh_treeview(tree):
+    """Clear and reload data in the Treeview."""
+    for row in tree.get_children():
+        tree.delete(row)  # Clear existing rows
 
+    df = read_csv_safely()
+    
+    for _, row in df.iterrows():
+        tree.insert("", "end", values=list(row))  # Add new rows
 def show_frame(frame):
     """Show the selected frame and refresh the view page if it's the view frame."""
     frame.tkraise()
-    if frame == frames["view"]:
-        # Refresh the Treeview when the view page is shown
-        tree = frame.winfo_children()[1]  # Get the Treeview widget (index 1 in the frame's children)
-        refresh_treeview(tree)
+    if frame == frames["view"] and hasattr(frame, 'tree'):
+        refresh_treeview(frame.tree)
 
 container = CTkFrame(app)
 container.pack(fill="both", expand=True)
@@ -35,10 +42,15 @@ container.grid_rowconfigure(0, weight=1)
 csv_filename = "customers.csv"
 excel_filename = "customers.xlsx"
 
+# Ensure CSV file exists
 if not os.path.exists(csv_filename):
     with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerow(["Name", "Phone", "Amount", "Installments", "Installment Value", "Start Date", "Installment Dates"])
+
+# Ensure Excel file exists
+if not os.path.exists(excel_filename):
+    pd.DataFrame(columns=["Name", "Phone", "Amount", "Installments", "Installment Value", "Start Date", "Installment Dates"]).to_excel(excel_filename, index=False)
 
 def read_csv_safely():
     try:
@@ -50,6 +62,25 @@ def read_csv_safely():
     except FileNotFoundError:
         messagebox.showerror("خطأ", "ملف العملاء غير موجود.")
         return pd.DataFrame()
+
+class DatePicker(CTkToplevel):
+    """Popup calendar to select a date."""
+    def __init__(self, parent, entry_widget):
+        super().__init__(parent)
+        self.entry_widget = entry_widget
+        self.geometry("300x300")
+        self.title("اختر التاريخ")
+
+        self.cal = Calendar(self, selectmode="day", date_pattern="yyyy-mm-dd")
+        self.cal.pack(pady=20)
+
+        select_button = CTkButton(self, text="تحديد", command=self.select_date)
+        select_button.pack(pady=10)
+
+    def select_date(self):
+        self.entry_widget.delete(0, "end")
+        self.entry_widget.insert(0, self.cal.get_date())
+        self.destroy()
 
 def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry, start_date_entry):
     name = name_entry.get().strip()
@@ -64,7 +95,6 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
     amount_pattern = r"^\d+(\.\d{1,2})?$"
     installments_pattern = r"^\d+$"
 
-    # Validate inputs
     if not re.fullmatch(name_pattern, name):
         messagebox.showerror("خطأ", "الاسم يجب أن يحتوي فقط على أحرف ومسافات.")
         return
@@ -81,24 +111,17 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
         messagebox.showerror("خطأ", "عدد الأقساط يجب أن يكون رقمًا صحيحًا.")
         return
 
-    # Convert inputs to appropriate types
     amount = float(amount)
     installments = int(installments)
     installment_value = round(amount / installments, 2)
 
-    # Validate and parse start date
     try:
         start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
     except ValueError:
         messagebox.showerror("خطأ", "تاريخ بدء الأقساط غير صحيح. يجب أن يكون بالصيغة YYYY-MM-DD.")
         return
 
-    # Calculate installment dates
-    installment_dates = []
-    for i in range(installments):
-        installment_dates.append((start_date_obj + timedelta(days=30 * i)).strftime("%Y-%m-%d"))
-
-    # Append data to CSV
+    installment_dates = [(start_date_obj + timedelta(days=30 * i)).strftime("%Y-%m-%d") for i in range(installments)]
     file_is_empty = os.stat(csv_filename).st_size == 0
     with open(csv_filename, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
@@ -123,13 +146,14 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
     except Exception as e:
         messagebox.showerror("خطأ", f"حدث خطأ أثناء حفظ البيانات في ملف Excel: {e}")
 
+
 def setup_add_page():
     frame = frames["add"]
     frame.grid_columnconfigure(0, weight=1)
 
     CTkLabel(frame, text="إضافة عميل جديد", font=("Arial", 18, "bold")).grid(row=0, column=0, pady=20, sticky="n")
 
-    labels = ["اسم العميل:", "رقم الهاتف:", "المبلغ:", "عدد الأقساط:", "تاريخ بدء الأقساط (YYYY-MM-DD):"]
+    labels = ["اسم العميل:", "رقم الهاتف:", "المبلغ:", "عدد الأقساط:"]
     entries = []
 
     for i, label_text in enumerate(labels):
@@ -138,32 +162,18 @@ def setup_add_page():
         entry.grid(row=i*2+2, column=0, pady=5, padx=20)
         entries.append(entry)
 
-    save_button = CTkButton(frame, text="حفظ العميل", width=250, height=50, font=("Arial", 16, "bold"),
-                            command=lambda: validate_and_save(*entries))
-    save_button.grid(row=11, column=0, pady=20, padx=20, sticky="ew")
-    
-    back_button = CTkButton(frame, text="العودة", width=250, height=50, font=("Arial", 16, "bold"),
-                            command=lambda: show_frame(frames["home"]))
-    back_button.grid(row=12, column=0, pady=10, padx=20, sticky="ew")
+    # Date Picker Section
+    CTkLabel(frame, text="تاريخ بدء الأقساط:", font=("Arial", 14)).grid(row=9, column=0, pady=5, padx=20, sticky="w")
+    start_date_entry = CTkEntry(frame, width=200)
+    start_date_entry.grid(row=10, column=0, pady=5, padx=20)
+    CTkButton(frame, text="📅 اختر التاريخ", command=lambda: DatePicker(app, start_date_entry)).grid(row=10, column=1, pady=5, padx=10)
 
-def refresh_treeview(tree):
-    """Refresh the Treeview with data from the Excel file."""
-    try:
-        # Load data from Excel file
-        df = pd.read_excel(excel_filename)
-        print("Data loaded from Excel file:")
-        print(df)  # Debugging: Print the DataFrame to verify data
+    # Save Button
+    CTkButton(frame, text="حفظ العميل", width=250, height=50, font=("Arial", 16, "bold"),
+              command=lambda: validate_and_save(*entries, start_date_entry)).grid(row=11, column=0, pady=20)
 
-        # Clear existing rows in the Treeview
-        for row in tree.get_children():
-            tree.delete(row)
-
-        # Insert data into the Treeview
-        for _, row in df.iterrows():
-            tree.insert("", "end", values=tuple(row))
-    except Exception as e:
-        messagebox.showerror("خطأ", f"حدث خطأ أثناء تحميل البيانات من ملف Excel: {e}")
-
+    CTkButton(frame, text="رجوع", width=250, height=50, font=("Arial", 16, "bold"),
+          command=lambda: show_frame(frames["home"])).grid(row=12, column=0, pady=10)
 def setup_view_page():
     frame = frames["view"]
     frame.grid_columnconfigure(0, weight=1)
@@ -211,13 +221,11 @@ def setup_home_page():
 
     CTkLabel(frame, text="الصفحة الرئيسية", font=("Arial", 18, "bold")).grid(row=0, column=0, pady=20, sticky="n")
 
-    add_button = CTkButton(frame, text="إضافة عميل", width=250, height=50, font=("Arial", 16, "bold"),
-                           command=lambda: show_frame(frames["add"]))
-    add_button.grid(row=1, column=0, pady=10, padx=20, sticky="ew")
+    CTkButton(frame, text="إضافة عميل", width=250, height=50, font=("Arial", 16, "bold"),
+              command=lambda: show_frame(frames["add"])).grid(row=1, column=0, pady=10)
+    CTkButton(frame, text="عرض العملاء", width=250, height=50, font=("Arial", 16, "bold"),
+          command=lambda: show_frame(frames["view"])).grid(row=2, column=0, pady=10)
 
-    view_button = CTkButton(frame, text="عرض العملاء", width=250, height=50, font=("Arial", 16, "bold"),
-                           command=lambda: show_frame(frames["view"]))
-    view_button.grid(row=2, column=0, pady=10, padx=20, sticky="ew")
 
 setup_home_page()
 setup_add_page()
