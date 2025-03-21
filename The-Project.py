@@ -32,7 +32,7 @@ container = CTkFrame(app)
 container.pack(fill="both", expand=True)
 
 frames = {}
-page_names = ["home", "add", "delete", "edit", "view"]
+page_names = ["home", "add", "delete", "edit", "view", "manage_installments"]
 for name in page_names:
     frame = CTkFrame(container)
     frame.grid(row=0, column=0, sticky="nsew")
@@ -64,6 +64,14 @@ def read_csv_safely():
     except FileNotFoundError:
         messagebox.showerror("خطأ", "ملف العملاء غير موجود.")
         return pd.DataFrame()
+
+def save_to_csv_and_excel(df):
+    """Save the DataFrame to both CSV and Excel files."""
+    try:
+        df.to_csv(csv_filename, index=False, encoding='utf-8')
+        df.to_excel(excel_filename, index=False)
+    except Exception as e:
+        messagebox.showerror("خطأ", f"حدث خطأ أثناء حفظ البيانات: {e}")
 
 class DatePicker(CTkToplevel):
     """Popup calendar to select a date."""
@@ -135,19 +143,15 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
     df = read_csv_safely()
 
     # Save the updated DataFrame to Excel
-    try:
-        df.to_excel(excel_filename, index=False)
-        messagebox.showinfo("نجاح", "تم حفظ العميل بنجاح!")
+    save_to_csv_and_excel(df)
+    messagebox.showinfo("نجاح", "تم حفظ العميل بنجاح!")
 
-        # Clear the input fields
-        name_entry.delete(0, "end")
-        phone_entry.delete(0, "end")
-        amount_entry.delete(0, "end")
-        installments_entry.delete(0, "end")
-        start_date_entry.delete(0, "end")
-    except Exception as e:
-        messagebox.showerror("خطأ", f"حدث خطأ أثناء حفظ البيانات في ملف Excel: {e}")
-
+    # Clear the input fields
+    name_entry.delete(0, "end")
+    phone_entry.delete(0, "end")
+    amount_entry.delete(0, "end")
+    installments_entry.delete(0, "end")
+    start_date_entry.delete(0, "end")
 
 def setup_add_page():
     frame = frames["add"]
@@ -216,15 +220,154 @@ def setup_view_page():
     # Refresh the Treeview with the latest data
     refresh_treeview(tree)
 
+    # Delete Customer Button
+    def delete_customer():
+        selected_item = tree.selection()
+        if not selected_item:
+            messagebox.showerror("خطأ", "يرجى تحديد عميل لحذفه.")
+            return
+        customer_name = tree.item(selected_item)["values"][0]
+        confirm = messagebox.askyesno("تأكيد", f"هل أنت متأكد من حذف العميل {customer_name}؟")
+        if confirm:
+            df = read_csv_safely()
+            df = df[df["Name"] != customer_name]  # Remove the customer
+            save_to_csv_and_excel(df)
+            refresh_treeview(tree)
+            messagebox.showinfo("نجاح", "تم حذف العميل بنجاح.")
+
+    CTkButton(frame, text="حذف العميل", width=250, height=50, font=("Arial", 16, "bold"),
+              command=delete_customer).grid(row=2, column=0, pady=10, padx=20, sticky="ew")
+
     # Refresh button
     refresh_button = CTkButton(frame, text="تحديث", width=250, height=50, font=("Arial", 16, "bold"),
                                command=lambda: refresh_treeview(tree))
-    refresh_button.grid(row=2, column=0, pady=10, padx=20, sticky="ew")
+    refresh_button.grid(row=3, column=0, pady=10, padx=20, sticky="ew")
 
     # Back button
     back_button = CTkButton(frame, text="العودة", width=250, height=50, font=("Arial", 16, "bold"),
                             command=lambda: show_frame(frames["home"]))
-    back_button.grid(row=3, column=0, pady=10, padx=20, sticky="ew")
+    back_button.grid(row=4, column=0, pady=10, padx=20, sticky="ew")
+
+def setup_manage_installments_page():
+    frame = frames["manage_installments"]
+    frame.grid_columnconfigure(0, weight=1)
+
+    CTkLabel(frame, text="إدارة الأقساط", font=("Arial", 18, "bold")).grid(row=0, column=0, pady=20, sticky="n")
+
+    # Create a Treeview widget
+    tree = ttk.Treeview(frame, columns=("Name", "Phone", "Installment Date", "Installment Value", "Paid"), show="headings")
+    
+    # Set column widths and headings
+    tree.column("Name", width=150, anchor="center")
+    tree.column("Phone", width=120, anchor="center")
+    tree.column("Installment Date", width=120, anchor="center")
+    tree.column("Installment Value", width=120, anchor="center")
+    tree.column("Paid", width=100, anchor="center")
+
+    tree.heading("Name", text="اسم العميل")
+    tree.heading("Phone", text="رقم الهاتف")
+    tree.heading("Installment Date", text="تاريخ القسط")
+    tree.heading("Installment Value", text="قيمة القسط")
+    tree.heading("Paid", text="مدفوع")
+
+    tree.grid(row=1, column=0, pady=10, padx=10, sticky="nsew")
+
+    # Add a scrollbar
+    scrollbar = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+    scrollbar.grid(row=1, column=1, sticky="ns")
+    tree.configure(yscrollcommand=scrollbar.set)
+
+    # Store the Treeview widget as an attribute of the frame
+    frame.tree = tree
+
+    # Load data into the Treeview
+    def load_data():
+        for row in tree.get_children():
+            tree.delete(row)
+        df = read_csv_safely()
+        for _, row in df.iterrows():
+            installment_dates = row["Installment Dates"].split(";")
+            for date in installment_dates:
+                tree.insert("", "end", values=(row["Name"], row["Phone"], date, row["Installment Value"], "لا"))
+
+    load_data()
+
+    # Mark as paid button
+    def mark_as_paid():
+        selected_item = tree.selection()
+        if not selected_item:
+            messagebox.showerror("خطأ", "يرجى تحديد قسط لتمييزه كمُدفوع.")
+            return
+        for item in selected_item:
+            tree.set(item, "Paid", "نعم")
+        messagebox.showinfo("نجاح", "تم تمييز الأقساط المحددة كمُدفوعة.")
+
+    # Delete selected installments
+    def delete_installments():
+        selected_items = tree.selection()
+        if not selected_items:
+            messagebox.showerror("خطأ", "يرجى تحديد أقساط لحذفها.")
+            return
+        for item in selected_items:
+            tree.delete(item)
+        messagebox.showinfo("نجاح", "تم حذف الأقساط المحددة.")
+
+    # Edit installment details
+    def edit_installment():
+        selected_item = tree.selection()
+        if not selected_item:
+            messagebox.showerror("خطأ", "يرجى تحديد قسط لتعديله.")
+            return
+        item = tree.item(selected_item)
+        values = item["values"]
+
+        # Create a popup window for editing
+        edit_window = CTkToplevel(app)
+        edit_window.geometry("400x300")
+        edit_window.title("تعديل القسط")
+
+        CTkLabel(edit_window, text="تاريخ القسط:", font=("Arial", 14)).grid(row=0, column=0, pady=5, padx=10, sticky="w")
+        date_entry = CTkEntry(edit_window, width=200)
+        date_entry.grid(row=0, column=1, pady=5, padx=10)
+        date_entry.insert(0, values[2])
+
+        CTkLabel(edit_window, text="قيمة القسط:", font=("Arial", 14)).grid(row=1, column=0, pady=5, padx=10, sticky="w")
+        value_entry = CTkEntry(edit_window, width=200)
+        value_entry.grid(row=1, column=1, pady=5, padx=10)
+        value_entry.insert(0, values[3])
+
+        CTkLabel(edit_window, text="حالة الدفع:", font=("Arial", 14)).grid(row=2, column=0, pady=5, padx=10, sticky="w")
+        paid_var = StringVar(value=values[4])
+        paid_menu = CTkOptionMenu(edit_window, variable=paid_var, values=["نعم", "لا"])
+        paid_menu.grid(row=2, column=1, pady=5, padx=10)
+
+        def save_changes():
+            new_date = date_entry.get().strip()
+            new_value = value_entry.get().strip()
+            new_paid = paid_var.get()
+
+            if not new_date or not new_value:
+                messagebox.showerror("خطأ", "يرجى ملء جميع الحقول.")
+                return
+
+            tree.set(selected_item, column="Installment Date", value=new_date)
+            tree.set(selected_item, column="Installment Value", value=new_value)
+            tree.set(selected_item, column="Paid", value=new_paid)
+            edit_window.destroy()
+            messagebox.showinfo("نجاح", "تم تعديل القسط بنجاح.")
+
+        CTkButton(edit_window, text="حفظ التعديلات", width=200, height=40, font=("Arial", 14, "bold"),
+                  command=save_changes).grid(row=3, column=0, columnspan=2, pady=20)
+
+    # Buttons
+    CTkButton(frame, text="تمييز كمُدفوع", width=250, height=50, font=("Arial", 16, "bold"),
+              command=mark_as_paid).grid(row=2, column=0, pady=10, padx=20, sticky="ew")
+    CTkButton(frame, text="حذف الأقساط", width=250, height=50, font=("Arial", 16, "bold"),
+              command=delete_installments).grid(row=3, column=0, pady=10, padx=20, sticky="ew")
+    CTkButton(frame, text="تعديل القسط", width=250, height=50, font=("Arial", 16, "bold"),
+              command=edit_installment).grid(row=4, column=0, pady=10, padx=20, sticky="ew")
+    CTkButton(frame, text="العودة", width=250, height=50, font=("Arial", 16, "bold"),
+              command=lambda: show_frame(frames["home"])).grid(row=5, column=0, pady=10, padx=20, sticky="ew")
 
 def setup_home_page():
     frame = frames["home"]
@@ -236,10 +379,12 @@ def setup_home_page():
               command=lambda: show_frame(frames["add"])).grid(row=1, column=0, pady=10)
     CTkButton(frame, text="عرض العملاء", width=250, height=50, font=("Arial", 16, "bold"),
           command=lambda: show_frame(frames["view"])).grid(row=2, column=0, pady=10)
-
+    CTkButton(frame, text="إدارة الأقساط", width=250, height=50, font=("Arial", 16, "bold"),
+          command=lambda: show_frame(frames["manage_installments"])).grid(row=3, column=0, pady=10)
 
 setup_home_page()
 setup_add_page()
 setup_view_page()
+setup_manage_installments_page()
 show_frame(frames["home"])
 app.mainloop()
