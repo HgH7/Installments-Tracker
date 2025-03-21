@@ -38,7 +38,7 @@ container = CTkFrame(app)
 container.pack(fill="both", expand=True)
 
 frames = {}
-page_names = ["home", "add", "delete", "edit", "view", "manage_installments", "backup_restore"]
+page_names = ["home", "add", "delete", "edit", "view", "manage_installments", "backup_restore", "send_notification"]
 for name in page_names:
     frame = CTkFrame(container)
     frame.grid(row=0, column=0, sticky="nsew")
@@ -55,11 +55,11 @@ backup_folder = "backups"
 if not os.path.exists(csv_filename):
     with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        writer.writerow(["Name", "Phone", "Amount", "Installments", "Installment Value", "Start Date", "Installment Dates"])
+        writer.writerow(["Name", "Phone", "Amount", "Installments", "Installment Value", "Start Date", "Installment Dates", "Notification Sent"])
 
 # Ensure Excel file exists
 if not os.path.exists(excel_filename):
-    pd.DataFrame(columns=["Name", "Phone", "Amount", "Installments", "Installment Value", "Start Date", "Installment Dates"]).to_excel(excel_filename, index=False)
+    pd.DataFrame(columns=["Name", "Phone", "Amount", "Installments", "Installment Value", "Start Date", "Installment Dates", "Notification Sent"]).to_excel(excel_filename, index=False)
 
 # Ensure backup folder exists
 if not os.path.exists(backup_folder):
@@ -68,6 +68,11 @@ if not os.path.exists(backup_folder):
 def read_csv_safely():
     try:
         df = pd.read_csv(csv_filename, on_bad_lines='skip')
+        # تحويل أرقام الهواتف إلى نصوص وإضافة "+" إذا لزم الأمر
+        df["Phone"] = df["Phone"].astype(str).apply(lambda x: f"+{x}" if not x.startswith("+") else x)
+        # تأكد من وجود العمود الجديد
+        if "Notification Sent" not in df.columns:
+            df["Notification Sent"] = False
         return df
     except pd.errors.ParserError:
         messagebox.showerror("خطأ", "حدثت مشكلة في قراءة ملف العملاء.")
@@ -110,6 +115,9 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
     installments = installments_entry.get().strip()
     start_date = start_date_entry.get().strip()
 
+    # تحويل رقم الهاتف إلى نص
+    phone = str(phone)
+
     # Validation patterns
     name_pattern = r"^[A-Za-z؀-ۿ\s]+$"
     phone_pattern = r"^\+?\d{10,15}$"
@@ -121,7 +129,7 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
         return
 
     if not re.fullmatch(phone_pattern, phone):
-        messagebox.showerror("خطأ", "رقم الهاتف يجب أن يحتوي على أرقام فقط.")
+        messagebox.showerror("خطأ", "رقم الهاتف يجب أن يحتوي على أرقام فقط ويبدأ بـ +.")
         return
 
     if not re.fullmatch(amount_pattern, amount):
@@ -147,8 +155,8 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
     with open(csv_filename, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         if file_is_empty:
-            writer.writerow(["Name", "Phone", "Amount", "Installments", "Installment Value", "Start Date", "Installment Dates"])
-        writer.writerow([name, phone, amount, installments, installment_value, start_date, ";".join(installment_dates)])
+            writer.writerow(["Name", "Phone", "Amount", "Installments", "Installment Value", "Start Date", "Installment Dates", "Notification Sent"])
+        writer.writerow([name, phone, amount, installments, installment_value, start_date, ";".join(installment_dates), False])  # القيمة الافتراضية False
 
     # Re-read the CSV file into a DataFrame
     df = read_csv_safely()
@@ -209,7 +217,7 @@ def setup_view_page():
     search_button.grid(row=0, column=2, padx=5)
 
     # Create a Treeview widget
-    tree = ttk.Treeview(frame, columns=("Name", "Phone", "Amount", "Installments", "Installment Value", "Start Date", "Installment Dates"), show="headings")
+    tree = ttk.Treeview(frame, columns=("Name", "Phone", "Amount", "Installments", "Installment Value", "Start Date", "Installment Dates", "Notification Sent"), show="headings")
     
     # Set column widths and headings
     tree.column("Name", width=150, anchor="center")
@@ -219,6 +227,7 @@ def setup_view_page():
     tree.column("Installment Value", width=120, anchor="center")
     tree.column("Start Date", width=120, anchor="center")
     tree.column("Installment Dates", width=200, anchor="center")
+    tree.column("Notification Sent", width=120, anchor="center")
 
     tree.heading("Name", text="اسم العميل")
     tree.heading("Phone", text="رقم الهاتف")
@@ -227,6 +236,7 @@ def setup_view_page():
     tree.heading("Installment Value", text="قيمة القسط")
     tree.heading("Start Date", text="تاريخ البدء")
     tree.heading("Installment Dates", text="تواريخ الأقساط")
+    tree.heading("Notification Sent", text="تم الإرسال")
 
     tree.grid(row=2, column=0, pady=10, padx=10, sticky="nsew")
 
@@ -458,6 +468,94 @@ def setup_backup_restore_page():
     CTkButton(frame, text="العودة", width=250, height=50, font=("Arial", 16, "bold"),
               command=lambda: show_frame(frames["home"])).grid(row=3, column=0, pady=10, padx=20, sticky="ew")
 
+def setup_send_notification_page():
+    frame = frames["send_notification"]
+    frame.grid_columnconfigure(0, weight=1)
+
+    CTkLabel(frame, text="إرسال إشعار عبر الواتساب", font=("Arial", 18, "bold")).grid(row=0, column=0, pady=20, sticky="n")
+
+    # Create a Treeview widget to display clients
+    tree = ttk.Treeview(frame, columns=("Name", "Phone", "Installment Date", "Installment Value", "Notification Sent"), show="headings")
+    
+    # Set column widths and headings
+    tree.column("Name", width=150, anchor="center")
+    tree.column("Phone", width=120, anchor="center")
+    tree.column("Installment Date", width=120, anchor="center")
+    tree.column("Installment Value", width=120, anchor="center")
+    tree.column("Notification Sent", width=120, anchor="center")
+
+    tree.heading("Name", text="اسم العميل")
+    tree.heading("Phone", text="رقم الهاتف")
+    tree.heading("Installment Date", text="تاريخ القسط")
+    tree.heading("Installment Value", text="قيمة القسط")
+    tree.heading("Notification Sent", text="تم الإرسال")
+
+    tree.grid(row=1, column=0, pady=10, padx=10, sticky="nsew")
+
+    # Add a scrollbar
+    scrollbar = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+    scrollbar.grid(row=1, column=1, sticky="ns")
+    tree.configure(yscrollcommand=scrollbar.set)
+
+    # Store the Treeview widget as an attribute of the frame
+    frame.tree = tree
+
+    # Load data into the Treeview
+    def load_data():
+        for row in tree.get_children():
+            tree.delete(row)
+        df = read_csv_safely()
+        for _, row in df.iterrows():
+            installment_dates = row["Installment Dates"].split(";")
+            for date in installment_dates:
+                tree.insert("", "end", values=(row["Name"], row["Phone"], date, row["Installment Value"], row["Notification Sent"]))
+
+    load_data()
+
+    # Send WhatsApp Notification Button
+    def send_whatsapp_notification():
+        selected_item = tree.selection()
+        if not selected_item:
+            messagebox.showerror("خطأ", "يرجى تحديد عميل لإرسال الإشعار.")
+            return
+        item = tree.item(selected_item)
+        values = item["values"]
+        name = values[0]
+        phone = str(values[1])  # تحويل رقم الهاتف إلى نص
+        installment_date = values[2]
+        installment_value = values[3]
+        notification_sent = values[4] if len(values) > 4 else False  # افتراضيًا False إذا لم تكن القيمة موجودة
+
+        # تحقق من أن رقم الهاتف يبدأ بـ "+"
+        if not isinstance(phone, str) or not phone.startswith("+"):
+            messagebox.showerror("خطأ", f"رقم الهاتف غير صالح للعميل {name}: {phone}")
+            return
+
+        # تحقق مما إذا تم إرسال إشعار مسبقًا
+        if notification_sent:
+            messagebox.showinfo("معلومات", f"تم إرسال إشعار مسبقًا إلى {name}.")
+            return
+
+        message = f"مرحبًا {name},\nتذكير بدفع قسط بقيمة {installment_value} ريال في تاريخ {installment_date}.\nشكرًا لتعاملك معنا!"
+        try:
+            kit.sendwhatmsg_instantly(phone, message)
+            messagebox.showinfo("نجاح", f"تم إرسال الإشعار إلى {name} بنجاح.")
+
+            # تحديث القيمة في ملف CSV
+            df = read_csv_safely()
+            df.loc[df["Name"] == name, "Notification Sent"] = True
+            save_to_csv_and_excel(df)
+            refresh_treeview(tree)  # تحديث Treeview لعرض التغييرات
+        except Exception as e:
+            messagebox.showerror("خطأ", f"فشل إرسال الإشعار: {e}")
+
+    CTkButton(frame, text="إرسال إشعار", width=250, height=50, font=("Arial", 16, "bold"),
+              command=send_whatsapp_notification).grid(row=2, column=0, pady=10, padx=20, sticky="ew")
+
+    # Back button
+    CTkButton(frame, text="العودة", width=250, height=50, font=("Arial", 16, "bold"),
+              command=lambda: show_frame(frames["home"])).grid(row=3, column=0, pady=10, padx=20, sticky="ew")
+
 def check_due_installments():
     """Check for installments due in 3 days and send notifications."""
     df = read_csv_safely()
@@ -466,7 +564,7 @@ def check_due_installments():
         installment_dates = row["Installment Dates"].split(";")
         for date_str in installment_dates:
             date = datetime.strptime(date_str, "%Y-%m-%d")
-            if (date - today).days == 3:
+            if (date - today).days <= 3 and not row["Notification Sent"]:  # تحقق من عدم إرسال إشعار مسبقًا
                 send_whatsapp_notification(row["Name"], row["Phone"], date_str, row["Installment Value"])
 
 def send_whatsapp_notification(name, phone, date, amount):
@@ -474,6 +572,10 @@ def send_whatsapp_notification(name, phone, date, amount):
     message = f"مرحبًا {name},\nتذكير بدفع قسط بقيمة {amount} ريال في تاريخ {date}.\nشكرًا لتعاملك معنا!"
     try:
         kit.sendwhatmsg_instantly(phone, message)
+        # تحديث القيمة في ملف CSV
+        df = read_csv_safely()
+        df.loc[df["Name"] == name, "Notification Sent"] = True
+        save_to_csv_and_excel(df)
     except Exception as e:
         print(f"Failed to send WhatsApp message: {e}")
 
@@ -495,12 +597,15 @@ def setup_home_page():
           command=lambda: show_frame(frames["manage_installments"])).grid(row=3, column=0, pady=10)
     CTkButton(frame, text="النسخ الاحتياطي واستعادة البيانات", width=250, height=50, font=("Arial", 16, "bold"),
           command=lambda: show_frame(frames["backup_restore"])).grid(row=4, column=0, pady=10)
+    CTkButton(frame, text="إرسال إشعار عبر الواتساب", width=250, height=50, font=("Arial", 16, "bold"),
+          command=lambda: show_frame(frames["send_notification"])).grid(row=5, column=0, pady=10)
 
 setup_home_page()
 setup_add_page()
 setup_view_page()
 setup_manage_installments_page()
 setup_backup_restore_page()
+setup_send_notification_page()
 show_frame(frames["home"])
 
 # Start the notification thread
