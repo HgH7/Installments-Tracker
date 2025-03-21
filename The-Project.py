@@ -7,10 +7,16 @@ import os
 import pandas as pd
 from datetime import datetime, timedelta
 from tkcalendar import Calendar
+import shutil
+import threading
+import pywhatkit as kit
 
 # إنشاء النافذة الرئيسية
 app = CTk()
-app.geometry("900x600")  # تكبير النافذة
+app.geometry("900x650")  # تكبير النافذة
+
+# Enable dark mode
+customtkinter.set_appearance_mode("dark")  # Options: "dark", "light", "system"
 
 def refresh_treeview(tree):
     """Clear and reload data in the Treeview."""
@@ -32,7 +38,7 @@ container = CTkFrame(app)
 container.pack(fill="both", expand=True)
 
 frames = {}
-page_names = ["home", "add", "delete", "edit", "view", "manage_installments"]
+page_names = ["home", "add", "delete", "edit", "view", "manage_installments", "backup_restore"]
 for name in page_names:
     frame = CTkFrame(container)
     frame.grid(row=0, column=0, sticky="nsew")
@@ -43,6 +49,7 @@ container.grid_rowconfigure(0, weight=1)
 
 csv_filename = "customers.csv"
 excel_filename = "customers.xlsx"
+backup_folder = "backups"
 
 # Ensure CSV file exists
 if not os.path.exists(csv_filename):
@@ -53,6 +60,10 @@ if not os.path.exists(csv_filename):
 # Ensure Excel file exists
 if not os.path.exists(excel_filename):
     pd.DataFrame(columns=["Name", "Phone", "Amount", "Installments", "Installment Value", "Start Date", "Installment Dates"]).to_excel(excel_filename, index=False)
+
+# Ensure backup folder exists
+if not os.path.exists(backup_folder):
+    os.makedirs(backup_folder)
 
 def read_csv_safely():
     try:
@@ -187,6 +198,16 @@ def setup_view_page():
 
     CTkLabel(frame, text="عرض العملاء", font=("Arial", 18, "bold")).grid(row=0, column=0, pady=20, sticky="n")
 
+    # Search Bar
+    search_frame = CTkFrame(frame)
+    search_frame.grid(row=1, column=0, pady=10, padx=10, sticky="ew")
+
+    CTkLabel(search_frame, text="بحث:", font=("Arial", 14)).grid(row=0, column=0, padx=5)
+    search_entry = CTkEntry(search_frame, width=300)
+    search_entry.grid(row=0, column=1, padx=5)
+    search_button = CTkButton(search_frame, text="بحث", width=100, command=lambda: search_customers(search_entry.get(), tree))
+    search_button.grid(row=0, column=2, padx=5)
+
     # Create a Treeview widget
     tree = ttk.Treeview(frame, columns=("Name", "Phone", "Amount", "Installments", "Installment Value", "Start Date", "Installment Dates"), show="headings")
     
@@ -207,11 +228,11 @@ def setup_view_page():
     tree.heading("Start Date", text="تاريخ البدء")
     tree.heading("Installment Dates", text="تواريخ الأقساط")
 
-    tree.grid(row=1, column=0, pady=10, padx=10, sticky="nsew")
+    tree.grid(row=2, column=0, pady=10, padx=10, sticky="nsew")
 
     # Add a scrollbar
     scrollbar = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
-    scrollbar.grid(row=1, column=1, sticky="ns")
+    scrollbar.grid(row=2, column=1, sticky="ns")
     tree.configure(yscrollcommand=scrollbar.set)
 
     # Store the Treeview widget as an attribute of the frame
@@ -220,28 +241,40 @@ def setup_view_page():
     # Refresh the Treeview with the latest data
     refresh_treeview(tree)
 
-    # Delete Customer Button
-    def delete_customer():
+    # Search Functionality
+    def search_customers(query, tree):
+        for row in tree.get_children():
+            tree.delete(row)
+        df = read_csv_safely()
+        results = df[df.apply(lambda row: query.lower() in str(row).lower(), axis=1)]
+        for _, row in results.iterrows():
+            tree.insert("", "end", values=list(row))
+
+    # Payment History Button
+    def show_payment_history():
         selected_item = tree.selection()
         if not selected_item:
-            messagebox.showerror("خطأ", "يرجى تحديد عميل لحذفه.")
+            messagebox.showerror("خطأ", "يرجى تحديد عميل لعرض سجل الدفع.")
             return
         customer_name = tree.item(selected_item)["values"][0]
-        confirm = messagebox.askyesno("تأكيد", f"هل أنت متأكد من حذف العميل {customer_name}؟")
-        if confirm:
-            df = read_csv_safely()
-            df = df[df["Name"] != customer_name]  # Remove the customer
-            save_to_csv_and_excel(df)
-            refresh_treeview(tree)
-            messagebox.showinfo("نجاح", "تم حذف العميل بنجاح.")
+        df = read_csv_safely()
+        customer_data = df[df["Name"] == customer_name]
+        if customer_data.empty:
+            messagebox.showerror("خطأ", "العميل غير موجود.")
+            return
+        installment_dates = customer_data.iloc[0]["Installment Dates"].split(";")
+        history_window = CTkToplevel(app)
+        history_window.geometry("400x300")
+        history_window.title(f"سجل الدفع لـ {customer_name}")
 
-    CTkButton(frame, text="حذف العميل", width=250, height=50, font=("Arial", 16, "bold"),
-              command=delete_customer).grid(row=2, column=0, pady=10, padx=20, sticky="ew")
+        history_text = CTkTextbox(history_window, width=350, height=250)
+        history_text.pack(pady=10)
+        history_text.insert("end", "تواريخ الأقساط:\n")
+        for date in installment_dates:
+            history_text.insert("end", f"{date}\n")
 
-    # Refresh button
-    refresh_button = CTkButton(frame, text="تحديث", width=250, height=50, font=("Arial", 16, "bold"),
-                               command=lambda: refresh_treeview(tree))
-    refresh_button.grid(row=3, column=0, pady=10, padx=20, sticky="ew")
+    CTkButton(frame, text="عرض سجل الدفع", width=250, height=50, font=("Arial", 16, "bold"),
+              command=show_payment_history).grid(row=3, column=0, pady=10, padx=20, sticky="ew")
 
     # Back button
     back_button = CTkButton(frame, text="العودة", width=250, height=50, font=("Arial", 16, "bold"),
@@ -291,6 +324,14 @@ def setup_manage_installments_page():
                 tree.insert("", "end", values=(row["Name"], row["Phone"], date, row["Installment Value"], "لا"))
 
     load_data()
+
+    # Refresh button
+    def refresh_installments():
+        load_data()
+        messagebox.showinfo("نجاح", "تم تحديث البيانات بنجاح.")
+
+    CTkButton(frame, text="تحديث", width=250, height=50, font=("Arial", 16, "bold"),
+              command=refresh_installments).grid(row=2, column=0, pady=10, padx=20, sticky="ew")
 
     # Mark as paid button
     def mark_as_paid():
@@ -361,13 +402,84 @@ def setup_manage_installments_page():
 
     # Buttons
     CTkButton(frame, text="تمييز كمُدفوع", width=250, height=50, font=("Arial", 16, "bold"),
-              command=mark_as_paid).grid(row=2, column=0, pady=10, padx=20, sticky="ew")
+              command=mark_as_paid).grid(row=3, column=0, pady=10, padx=20, sticky="ew")
     CTkButton(frame, text="حذف الأقساط", width=250, height=50, font=("Arial", 16, "bold"),
-              command=delete_installments).grid(row=3, column=0, pady=10, padx=20, sticky="ew")
+              command=delete_installments).grid(row=4, column=0, pady=10, padx=20, sticky="ew")
     CTkButton(frame, text="تعديل القسط", width=250, height=50, font=("Arial", 16, "bold"),
-              command=edit_installment).grid(row=4, column=0, pady=10, padx=20, sticky="ew")
+              command=edit_installment).grid(row=5, column=0, pady=10, padx=20, sticky="ew")
     CTkButton(frame, text="العودة", width=250, height=50, font=("Arial", 16, "bold"),
-              command=lambda: show_frame(frames["home"])).grid(row=5, column=0, pady=10, padx=20, sticky="ew")
+              command=lambda: show_frame(frames["home"])).grid(row=6, column=0, pady=10, padx=20, sticky="ew")
+
+def setup_backup_restore_page():
+    frame = frames["backup_restore"]
+    frame.grid_columnconfigure(0, weight=1)
+
+    CTkLabel(frame, text="النسخ الاحتياطي واستعادة البيانات", font=("Arial", 18, "bold")).grid(row=0, column=0, pady=20, sticky="n")
+
+    # Backup Button
+    def create_backup():
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_filename = os.path.join(backup_folder, f"backup_{timestamp}.csv")
+        shutil.copy(csv_filename, backup_filename)
+        messagebox.showinfo("نجاح", f"تم إنشاء نسخة احتياطية في: {backup_filename}")
+
+    CTkButton(frame, text="إنشاء نسخة احتياطية", width=250, height=50, font=("Arial", 16, "bold"),
+              command=create_backup).grid(row=1, column=0, pady=10, padx=20, sticky="ew")
+
+    # Restore Button
+    def restore_backup():
+        backup_files = [f for f in os.listdir(backup_folder) if f.endswith(".csv")]
+        if not backup_files:
+            messagebox.showerror("خطأ", "لا توجد نسخ احتياطية.")
+            return
+
+        restore_window = CTkToplevel(app)
+        restore_window.geometry("400x300")
+        restore_window.title("استعادة نسخة احتياطية")
+
+        CTkLabel(restore_window, text="اختر النسخة الاحتياطية:", font=("Arial", 14)).grid(row=0, column=0, pady=10, padx=10, sticky="w")
+        backup_var = StringVar(value=backup_files[0])
+        backup_menu = CTkOptionMenu(restore_window, variable=backup_var, values=backup_files)
+        backup_menu.grid(row=0, column=1, pady=10, padx=10)
+
+        def confirm_restore():
+            selected_backup = backup_var.get()
+            shutil.copy(os.path.join(backup_folder, selected_backup), csv_filename)
+            messagebox.showinfo("نجاح", "تم استعادة النسخة الاحتياطية بنجاح.")
+            restore_window.destroy()
+
+        CTkButton(restore_window, text="تأكيد الاستعادة", width=200, height=40, font=("Arial", 14, "bold"),
+                  command=confirm_restore).grid(row=1, column=0, columnspan=2, pady=20)
+
+    CTkButton(frame, text="استعادة نسخة احتياطية", width=250, height=50, font=("Arial", 16, "bold"),
+              command=restore_backup).grid(row=2, column=0, pady=10, padx=20, sticky="ew")
+
+    # Back button
+    CTkButton(frame, text="العودة", width=250, height=50, font=("Arial", 16, "bold"),
+              command=lambda: show_frame(frames["home"])).grid(row=3, column=0, pady=10, padx=20, sticky="ew")
+
+def check_due_installments():
+    """Check for installments due in 3 days and send notifications."""
+    df = read_csv_safely()
+    today = datetime.now()
+    for _, row in df.iterrows():
+        installment_dates = row["Installment Dates"].split(";")
+        for date_str in installment_dates:
+            date = datetime.strptime(date_str, "%Y-%m-%d")
+            if (date - today).days == 3:
+                send_whatsapp_notification(row["Name"], row["Phone"], date_str, row["Installment Value"])
+
+def send_whatsapp_notification(name, phone, date, amount):
+    """Send a WhatsApp notification to the customer."""
+    message = f"مرحبًا {name},\nتذكير بدفع قسط بقيمة {amount} ريال في تاريخ {date}.\nشكرًا لتعاملك معنا!"
+    try:
+        kit.sendwhatmsg_instantly(phone, message)
+    except Exception as e:
+        print(f"Failed to send WhatsApp message: {e}")
+
+def start_notification_thread():
+    """Start a background thread to check for due installments."""
+    threading.Thread(target=check_due_installments, daemon=True).start()
 
 def setup_home_page():
     frame = frames["home"]
@@ -381,10 +493,17 @@ def setup_home_page():
           command=lambda: show_frame(frames["view"])).grid(row=2, column=0, pady=10)
     CTkButton(frame, text="إدارة الأقساط", width=250, height=50, font=("Arial", 16, "bold"),
           command=lambda: show_frame(frames["manage_installments"])).grid(row=3, column=0, pady=10)
+    CTkButton(frame, text="النسخ الاحتياطي واستعادة البيانات", width=250, height=50, font=("Arial", 16, "bold"),
+          command=lambda: show_frame(frames["backup_restore"])).grid(row=4, column=0, pady=10)
 
 setup_home_page()
 setup_add_page()
 setup_view_page()
 setup_manage_installments_page()
+setup_backup_restore_page()
 show_frame(frames["home"])
+
+# Start the notification thread
+start_notification_thread()
+
 app.mainloop()
