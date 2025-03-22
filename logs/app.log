@@ -1,0 +1,56 @@
+2025-03-22 20:06:22,560 - INFO - Notification thread started
+2025-03-22 20:08:53,646 - INFO - Notification thread started
+2025-03-22 20:08:56,586 - ERROR - Error exporting to Excel: No module named 'xlsxwriter'
+2025-03-22 20:09:32,840 - ERROR - Error exporting to Excel: No module named 'xlsxwriter'
+2025-03-22 20:09:39,608 - INFO - Notification thread started
+2025-03-22 20:09:42,072 - ERROR - Error exporting to Excel: No module named 'xlsxwriter'
+2025-03-22 20:12:02,161 - INFO - Notification thread started
+2025-03-22 20:14:16,932 - ERROR - xlsxwriter package not installed
+2025-03-22 20:15:46,378 - ERROR - xlsxwriter package not installed
+2025-03-22 20:25:32,830 - INFO - Notification thread started
+2025-03-22 20:25:50,804 - INFO - Backup created: backups\backup_20250322_202550.csv
+2025-03-22 20:26:17,445 - ERROR - Error exporting to Excel: 'Worksheet' object has no attribute 'set_gridlines'
+2025-03-22 20:27:03,548 - INFO - Notification thread started
+2025-03-22 20:27:06,349 - ERROR - Error exporting to Excel: 'Worksheet' object has no attribute 'set_gridlines'
+2025-03-22 20:30:35,831 - INFO - Notification thread started
+2025-03-22 20:34:39,825 - INFO - Notification thread started
+2025-03-22 21:02:48,391 - INFO - Notification thread started
+2025-03-22 21:04:05,571 - INFO - Notification thread started
+2025-03-22 21:05:53,950 - INFO - Backup created: backups\backup_20250322_210553.csv
+2025-03-22 21:05:55,617 - INFO - Manual notification sent to \u0645\u062d\u0645\u062f \u0639\u0644\u064a \u0627\u062d\u0645\u062f at +201154262608
+2025-03-22 21:08:48,897 - INFO - Notification thread started
+2025-03-22 21:09:38,211 - INFO - Backup created: backups\backup_20250322_210938.csv
+2025-03-22 21:10:15,187 - INFO - Backup created: backups\backup_20250322_211015.csv
+2025-03-22 21:10:17,908 - INFO - Manual notification sent to \u0645\u062d\u0645\u062f \u0639\u0644\u064a \u0627\u062d\u0645\u062f at +201128829002
+2025-03-22 21:10:40,698 - INFO - Backup created: backups\backup_20250322_211040.csv
+2025-03-22 21:20:30,379 - INFO - Notification thread started
+2025-03-22 21:21:45,147 - INFO - Backup created: backups\backup_20250322_212145.csv
+2025-03-22 21:23:05,268 - INFO - Backup created: backups\backup_20250322_212305.csv
+2025-03-22 21:23:09,417 - INFO - Manual notification sent to \u0639\u0645\u0631 \u0648\u0644\u064a\u062f \u0627\u0644\u0642\u0645\u0627\u0634 at +201040694731
+2025-03-22 21:23:45,106 - INFO - Backup created: backups\backup_20250322_212345.csv
+2025-03-22 21:23:59,205 - ERROR - Customer not found: \u0639\u0645\u0631 \u0648\u0644\u064a\u062f \u0627\u0644\u0642\u0645\u0627\u0634
+2025-03-22 21:24:04,997 - ERROR - Customer not found: \u0639\u0645\u0631 \u0648\u0644\u064a\u062f \u0627\u0644\u0642\u0645\u0627\u0634
+2025-03-22 21:24:13,540 - ERROR - Customer not found: \u0639\u0645\u0631 \u0648\u0644\u064a\u062f \u0627\u0644\u0642\u0645\u0627\u0634
+2025-03-22 21:24:16,828 - ERROR - Customer not found: \u0639\u0645\u0631 \u0648\u0644\u064a\u062f \u0627\u0644\u0642\u0645\u0627\u0634
+2025-03-22 21:24:18,906 - ERROR - Customer not found: \u0639\u0645\u0631 \u0648\u0644\u064a\u062f \u0627\u0644\u0642\u0645\u0627\u0634
+2025-03-22 21:24:22,111 - ERROR - Customer not found: \u0639\u0645\u0631 \u0648\u0644\u064a\u062f \u0627\u0644\u0642\u0645\u0627\u0634
+2025-03-22 21:24:34,509 - ERROR - Customer not found: \u0639\u0645\u0631 \u0648\u0644\u064a\u062f \u0627\u0644\u0642\u0645\u0627\u0634
+2025-03-22 21:24:56,650 - INFO - Backup created: backups\backup_20250322_212456.csv
+2025-03-22 21:33:32,886 - INFO - Created file storage directory: customer_files
+2025-03-22 21:33:33,547 - INFO - Notification thread started
+2025-03-22 21:34:39,107 - INFO - Notification thread started
+2025-03-22 21:36:43,426 - INFO - File copied from C:/Users/ahsn1/OneDrive/\u0627\u0644\u0635\u0648\u0631/Screenshots/Screenshot 2025-01-02 193824.png to customer_files\omar_waleed_elqamash_20250322_213643_6dbd35aa.png
+2025-03-22 21:36:43,428 - INFO - Backup created: backups\backup_20250322_213643.csv
+2025-03-22 21:37:19,733 - INFO - Backup created: backups\backup_20250322_213719.csv
+2025-03-22 21:37:19,734 - ERROR - Error saving data: dict contains fields not in fieldnames: None
+2025-03-22 21:37:28,640 - ERROR - Customer not found: omar waleed elqamash
+2025-03-22 21:38:49,534 - INFO - Notification thread started
+2025-03-22 21:39:06,943 - INFO - Notification thread started
+2025-03-22 21:43:47,430 - INFO - Notification thread started
+2025-03-22 21:44:15,133 - INFO - Notification thread started
+2025-03-22 21:52:01,889 - INFO - Starting automatic installment check
+2025-03-22 21:52:01,889 - INFO - Notification thread started
+2025-03-22 21:52:01,890 - INFO - No customer data found for notifications
+2025-03-22 22:00:45,700 - INFO - Starting automatic installment check
+2025-03-22 22:00:45,701 - INFO - Notification thread started
+2025-03-22 22:00:45,701 - INFO - No customer data found for notifications
