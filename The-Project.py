@@ -1268,86 +1268,105 @@ def setup_view_page():
     frame.grid_rowconfigure(2, weight=1)  # Table
     frame.grid_rowconfigure(3, weight=0)  # Buttons
     
-    # Create header with responsive sizing
+    # Simplified header with clean design
     header_frame = StyleManager.create_frame(frame)
-    header_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 30))
+    header_frame.grid(row=0, column=0, sticky="ew", padx=30, pady=(25, 15))
     header_frame.grid_columnconfigure(0, weight=1)
     
     StyleManager.create_label(
         header_frame,
         text="عرض العملاء",
         font_style="heading"
-    ).grid(row=0, column=0, pady=(20, 10))
+    ).grid(row=0, column=0, pady=(5, 5), sticky="w")
     
-    StyleManager.create_label(
-        header_frame,
-        text="عرض وإدارة بيانات العملاء",
-        font_style="body",
-        text_color=StyleManager.COLORS["text_secondary"]
-    ).grid(row=1, column=0, pady=(0, 20))
-    
-    # Search bar container
+    # Simplified search area with better spacing
     search_frame = StyleManager.create_frame(frame)
-    search_frame.grid(row=1, column=0, sticky="ew", padx=20)
+    search_frame.grid(row=1, column=0, sticky="ew", padx=30, pady=(0, 15))
     search_frame.grid_columnconfigure(1, weight=1)
     
-    # Search components
+    # Simple search label
     StyleManager.create_label(
         search_frame,
         text="بحث:",
         font_style="body_bold"
-    ).grid(row=0, column=0, padx=20)
+    ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
     
+    # Clean search entry
     search_entry = StyleManager.create_entry(
         search_frame,
         width=400,
-        font=("Arial", 16),
-        height=40
+        font=("Arial", 14),
+        height=35,
+        placeholder_text="أدخل اسم العميل أو رقم الهاتف..."
     )
-    search_entry.grid(row=0, column=1, padx=10, pady=15, sticky="ew")
+    search_entry.grid(row=0, column=1, padx=(0, 10), pady=5, sticky="ew")
     
     def perform_search():
         query = search_entry.get().strip()
         results = csv_manager.search_customers(query)
         refresh_treeview(frame.tree, results)
+        
+        # Update status message with search results
+        result_count = len(results)
+        status_label.configure(text=f"العملاء: {result_count}")
+    
+    # Add keyboard binding for Enter key
+    search_entry.bind("<Return>", lambda event: perform_search())
     
     search_button = StyleManager.create_button(
         search_frame,
         text="بحث",
-        width=150,
-        height=40,
+        width=100,
+        height=35,
         command=perform_search
     )
-    search_button.grid(row=0, column=2, padx=(10, 20), pady=15)
+    search_button.grid(row=0, column=2, padx=(0, 0), pady=5)
     
-    # Table container with responsive sizing
+    # Simple status label
+    status_label = StyleManager.create_label(
+        search_frame,
+        text="",
+        font_style="small",
+        text_color=StyleManager.COLORS["text_secondary"]
+    )
+    status_label.grid(row=0, column=3, padx=(10, 0), pady=5, sticky="e")
+    
+    # Clean table container with more breathing room
     table_frame = StyleManager.create_frame(frame)
-    table_frame.grid(row=2, column=0, sticky="nsew", padx=20, pady=20)
+    table_frame.grid(row=2, column=0, sticky="nsew", padx=30, pady=(0, 20))
     table_frame.grid_columnconfigure(0, weight=1)
     table_frame.grid_rowconfigure(0, weight=1)
     
-    # Configure Treeview style for better visibility
+    # Configure Treeview style for better visibility and modern look
     style = ttk.Style()
     style.configure(
         "Custom.Treeview",
         rowheight=40,
-        font=("Arial", 12)
+        font=("Arial", 12),
+        background=StyleManager.COLORS["surface"],
+        foreground=StyleManager.COLORS["text"],
+        fieldbackground=StyleManager.COLORS["surface"]
     )
     style.configure(
         "Custom.Treeview.Heading",
-        font=("Arial", 14, "bold")
+        font=("Arial", 12, "bold"),
+        background=StyleManager.COLORS["primary"],
+        foreground=StyleManager.COLORS["text"]
+    )
+    style.map(
+        "Custom.Treeview",
+        background=[("selected", StyleManager.COLORS["primary"])],
+        foreground=[("selected", StyleManager.COLORS["text"])]
     )
     
-    # Define column headers mapping
+    # Define column headers mapping - simplified
     column_headers = {
         "Name": "اسم العميل",
         "Phone": "رقم الهاتف",
         "Amount": "المبلغ",
         "Installments": "عدد الأقساط",
         "Installment Value": "قيمة القسط",
-        "Start Date": "تاريخ البدء",
-        "Installment Dates": "تواريخ الأقساط",
-        "Notification Sent": "تم الإرسال"
+        "Start Date": "تاريخ البدء"
     }
     
     # Create Treeview with responsive columns
@@ -1359,16 +1378,13 @@ def setup_view_page():
     )
     
     # Configure column proportions
-    total_width = 100
     column_weights = {
-        "Name": 20,
-        "Phone": 15,
-        "Amount": 10,
-        "Installments": 10,
+        "Name": 25,
+        "Phone": 20,
+        "Amount": 15,
+        "Installments": 15,
         "Installment Value": 15,
-        "Start Date": 10,
-        "Installment Dates": 15,
-        "Notification Sent": 5
+        "Start Date": 10
     }
     
     # Set dynamic column widths and headers
@@ -1377,7 +1393,7 @@ def setup_view_page():
         tree.column(col, width=width, minwidth=100)
         tree.heading(col, text=column_headers[col])
     
-    tree.grid(row=0, column=0, sticky="nsew")
+    tree.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
     
     # Add scrollbars
     y_scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
@@ -1394,7 +1410,11 @@ def setup_view_page():
     # Initial data load
     refresh_treeview(tree)
     
-    # Edit customer function
+    # Update status label with initial count
+    data = csv_manager.read_data()
+    status_label.configure(text=f"العملاء: {len(data)}")
+    
+    # Edit customer function - keeping functionality intact
     def edit_customer():
         selected_items = tree.selection()
         if not selected_items:
@@ -1480,7 +1500,7 @@ def setup_view_page():
         
         date_picker_btn = StyleManager.create_button(
             date_frame,
-            text="📅 اختر التاريخ",
+            text="اختر التاريخ",
             style="secondary",
             command=lambda: DatePicker(edit_window, start_date_entry)
         )
@@ -1615,60 +1635,73 @@ def setup_view_page():
             else:
                 messagebox.showerror("خطأ", "فشل في حذف العميل.")
     
-    # Buttons container with responsive sizing
+    # Action buttons with simplified design
     buttons_frame = StyleManager.create_frame(frame)
-    buttons_frame.grid(row=3, column=0, sticky="ew", padx=20, pady=20)
-    buttons_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
+    buttons_frame.grid(row=3, column=0, sticky="ew", padx=30, pady=(0, 30))
     
-    # Refresh button
-    StyleManager.create_button(
-        buttons_frame,
+    # Create two columns for better spacing
+    buttons_frame.grid_columnconfigure(0, weight=1)
+    buttons_frame.grid_columnconfigure(1, weight=1)
+    
+    # Left buttons container
+    left_buttons = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+    left_buttons.grid(row=0, column=0, sticky="w")
+    
+    # Right buttons container
+    right_buttons = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+    right_buttons.grid(row=0, column=1, sticky="e")
+    
+    # Left side buttons - operations
+    refresh_btn = StyleManager.create_button(
+        left_buttons,
         text="تحديث",
-        width=150,
+        width=120,
         command=lambda: refresh_treeview(tree)
-    ).grid(row=0, column=0, padx=10, pady=10)
+    )
+    refresh_btn.pack(side="left", padx=(0, 10), pady=10)
     
-    # View payment history button
-    StyleManager.create_button(
-        buttons_frame,
-        text="عرض سجل الدفع",
-        width=150,
+    history_btn = StyleManager.create_button(
+        left_buttons,
+        text="سجل الدفع",
+        width=120,
         command=show_payment_history
-    ).grid(row=0, column=1, padx=10, pady=10)
+    )
+    history_btn.pack(side="left", padx=(0, 10), pady=10)
 
-    # Export to Excel button
-    StyleManager.create_button(
-        buttons_frame,
-        text="تصدير إلى Excel",
-        width=150,
+    export_btn = StyleManager.create_button(
+        left_buttons,
+        text="تصدير Excel",
+        width=120,
         command=export_to_excel
-    ).grid(row=0, column=2, padx=10, pady=10)
+    )
+    export_btn.pack(side="left", padx=(0, 10), pady=10)
     
-    # Edit customer button
-    StyleManager.create_button(
-        buttons_frame,
-        text="تعديل العميل",
-        width=150,
-        command=edit_customer
-    ).grid(row=0, column=3, padx=10, pady=10)
-    
-    # Delete customer button
-    StyleManager.create_button(
-        buttons_frame,
-        text="حذف العميل",
-        style="danger",
-        width=150,
-        command=delete_customer
-    ).grid(row=0, column=4, padx=10, pady=10)
-
-    # Back button
-    StyleManager.create_button(
-        buttons_frame,
+    # Right side buttons - customer management
+    back_btn = StyleManager.create_button(
+        right_buttons,
         text="العودة",
         style="secondary",
-        width=150,
+        width=120,
         command=lambda: show_frame(frames["home"])
-    ).grid(row=1, column=2, padx=10, pady=10, columnspan=1)
+    )
+    back_btn.pack(side="right", padx=(0, 0), pady=10)
+    
+    delete_btn = StyleManager.create_button(
+        right_buttons,
+        text="حذف العميل",
+        style="danger",
+        width=120,
+        command=delete_customer
+    )
+    delete_btn.pack(side="right", padx=(0, 10), pady=10)
+    
+    edit_btn = StyleManager.create_button(
+        right_buttons,
+        text="تعديل العميل",
+        width=120,
+        command=edit_customer
+    )
+    edit_btn.pack(side="right", padx=(0, 10), pady=10)
 
 def setup_manage_installments_page():
     frame = frames["manage_installments"]
