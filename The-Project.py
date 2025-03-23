@@ -1,6 +1,6 @@
 import customtkinter
 from customtkinter import *
-from tkinter import messagebox, ttk, StringVar
+from tkinter import messagebox, ttk, StringVar, BooleanVar, filedialog
 import re
 import csv
 import os
@@ -13,61 +13,26 @@ import pywhatkit as kit
 import logging
 from typing import List, Dict, Optional, Union
 import time
+import sys
+import traceback
 
-# Set up logging
+# Set up logging with more detailed format
 logging.basicConfig(
     filename='app.log',
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG,  # Changed to DEBUG for more detailed logs
+    format='%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s'
 )
 
-def show_frame(frame):
-    """Show the selected frame and hide others."""
-    for f in frames.values():
-        f.grid_remove()
-    frame.grid()
+# Add console logging
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+logging.getLogger().addHandler(console_handler)
 
-def refresh_treeview(tree, data=None):
-    """Refresh the treeview with data."""
-    # Clear existing items
-    for item in tree.get_children():
-        tree.delete(item)
-        
-    # If no data provided, read from CSV
-    if data is None:
-        data = csv_manager.read_data()
-    
-    # Insert data into treeview with proper status handling
-    for customer in data:
-        # Handle payment status if viewing payment-related data
-        if "Paid" in tree["columns"]:
-            values = []
-            for col in tree["columns"]:
-                if col == "Paid":
-                    # Get the installment date from the row
-                    date_idx = tree["columns"].index("Installment Date")
-                    installment_date = customer.get("Installment Dates", "").split(";")[0]  # Get first date if not found
-                    paid_installments = eval(customer.get("Paid_Installments", "[]"))
-                    is_paid = installment_date in paid_installments
-                    values.append("نعم" if is_paid else "لا")
-                else:
-                    values.append(customer.get(col, ""))
-        else:
-            values = [customer.get(col, "") for col in tree["columns"]]
-        
-        item = tree.insert("", "end", values=values)
-        
-        # Add color coding for paid status if applicable
-        if "Paid" in tree["columns"]:
-            if values[tree["columns"].index("Paid")] == "نعم":
-                tree.item(item, tags=("paid",))
-            else:
-                tree.item(item, tags=("unpaid",))
-    
-    # Configure payment status styles if needed
-    if "Paid" in tree["columns"]:
-        tree.tag_configure("paid", foreground=StyleManager.COLORS["success"])
-        tree.tag_configure("unpaid", foreground=StyleManager.COLORS["danger"])
+# Global variables
+app = None
+frames = {}
 
 class StyleManager:
     """Manages application-wide styling"""
@@ -82,7 +47,8 @@ class StyleManager:
         "background": "#1a1a1a",   # Dark background
         "surface": "#2d2d2d",      # Slightly lighter background
         "text": "#ffffff",         # White text
-        "text_secondary": "#b3b3b3" # Gray text
+        "text_secondary": "#b3b3b3", # Gray text
+        "border": "#404040"        # Border color
     }
     
     # Font configurations
@@ -130,102 +96,346 @@ class StyleManager:
     @classmethod
     def setup_theme(cls):
         """Configure the global theme settings"""
-        customtkinter.set_appearance_mode("dark")
-        customtkinter.set_default_color_theme("blue")
-        
-        # Configure ttk styles for Treeview
-        style = ttk.Style()
-        style.theme_use('default')
-        
-        # Configure Treeview colors
-        style.configure("Treeview",
-            background=cls.COLORS["surface"],
-            foreground=cls.COLORS["text"],
-            fieldbackground=cls.COLORS["surface"],
-            font=cls.FONTS["body"]
-        )
-        
-        # Configure Treeview selected items
-        style.map('Treeview',
-            background=[('selected', cls.COLORS["primary"])],
-            foreground=[('selected', cls.COLORS["text"])]
-        )
-        
-        # Configure Treeview headers
-        style.configure("Treeview.Heading",
-            background=cls.COLORS["primary"],
-            foreground=cls.COLORS["text"],
-            font=cls.FONTS["body_bold"]
-        )
+        try:
+            customtkinter.set_appearance_mode("dark")
+            customtkinter.set_default_color_theme("blue")
+            
+            # Configure ttk styles for Treeview
+            style = ttk.Style()
+            style.theme_use('default')
+            
+            # Configure Treeview colors
+            style.configure("Treeview",
+                background=cls.COLORS["surface"],
+                foreground=cls.COLORS["text"],
+                fieldbackground=cls.COLORS["surface"],
+                font=cls.FONTS["body"]
+            )
+            
+            # Configure Treeview selected items
+            style.map('Treeview',
+                background=[('selected', cls.COLORS["primary"])],
+                foreground=[('selected', cls.COLORS["text"])]
+            )
+            
+            # Configure Treeview headers
+            style.configure("Treeview.Heading",
+                background=cls.COLORS["primary"],
+                foreground=cls.COLORS["text"],
+                font=cls.FONTS["body_bold"]
+            )
+            
+            logging.info("Theme setup completed successfully")
+        except Exception as e:
+            logging.error(f"Error setting up theme: {str(e)}")
+            raise
     
     @classmethod
     def create_frame(cls, master, **kwargs) -> CTkFrame:
         """Create a styled frame"""
-        return CTkFrame(
-            master,
-            fg_color=cls.COLORS["surface"],
-            corner_radius=15,
-            border_width=0,
-            **kwargs
-        )
+        try:
+            # Create base frame configuration
+            frame_config = {
+                "corner_radius": 15,
+                "border_width": 0
+            }
+            
+            # Only set fg_color if not provided in kwargs
+            if "fg_color" not in kwargs:
+                frame_config["fg_color"] = cls.COLORS["surface"]
+            
+            # Update with any additional kwargs
+            frame_config.update(kwargs)
+            
+            return CTkFrame(
+                master,
+                **frame_config
+            )
+        except Exception as e:
+            logging.error(f"Error creating frame: {str(e)}")
+            raise
     
     @classmethod
     def create_button(cls, master, text: str, style: str = "primary", **kwargs) -> CTkButton:
         """Create a styled button"""
-        button_style = cls.BUTTON_STYLES[style].copy()
-        button_style.update(kwargs)
-        return CTkButton(master, text=text, **button_style)
+        try:
+            button_style = cls.BUTTON_STYLES[style].copy()
+            button_style.update(kwargs)
+            return CTkButton(master, text=text, **button_style)
+        except Exception as e:
+            logging.error(f"Error creating button: {str(e)}")
+            raise
     
     @classmethod
     def create_label(cls, master, text: str, font_style: str = "body", **kwargs) -> CTkLabel:
         """Create a styled label"""
-        # Only set text_color and font if not provided in kwargs
-        if 'text_color' not in kwargs:
-            kwargs['text_color'] = cls.COLORS["text"]
-        if 'font' not in kwargs:
-            kwargs['font'] = cls.FONTS[font_style]
-            
-        return CTkLabel(
-            master,
-            text=text,
-            **kwargs
-        )
+        try:
+            # Only set text_color and font if not provided in kwargs
+            if 'text_color' not in kwargs:
+                kwargs['text_color'] = cls.COLORS["text"]
+            if 'font' not in kwargs:
+                kwargs['font'] = cls.FONTS[font_style]
+                
+            return CTkLabel(
+                master,
+                text=text,
+                **kwargs
+            )
+        except Exception as e:
+            logging.error(f"Error creating label: {str(e)}")
+            raise
     
     @classmethod
     def create_entry(cls, master, **kwargs) -> CTkEntry:
         """Create a styled entry"""
-        entry_config = {
-            "fg_color": cls.COLORS["background"],
-            "text_color": cls.COLORS["text"],
-            "border_color": cls.COLORS["primary"],
-            "corner_radius": 8
-        }
-        
-        # Only set font if not provided in kwargs
-        if 'font' not in kwargs:
-            entry_config['font'] = cls.FONTS["body"]
+        try:
+            entry_config = {
+                "fg_color": cls.COLORS["background"],
+                "text_color": cls.COLORS["text"],
+                "border_color": cls.COLORS["primary"],
+                "corner_radius": 8
+            }
             
-        # Update with any additional kwargs
-        entry_config.update(kwargs)
-        
-        return CTkEntry(
-            master,
-            **entry_config
-        )
+            # Only set font if not provided in kwargs
+            if 'font' not in kwargs:
+                entry_config['font'] = cls.FONTS["body"]
+                
+            # Update with any additional kwargs
+            entry_config.update(kwargs)
+            
+            return CTkEntry(
+                master,
+                **entry_config
+            )
+        except Exception as e:
+            logging.error(f"Error creating entry: {str(e)}")
+            raise
 
-# Initialize style manager
-style_manager = StyleManager()
+def initialize_app():
+    """Initialize the main application window with error handling"""
+    global app
+    try:
+        logging.info("Starting application initialization...")
+        
+        # Initialize the main window
+        app = CTk()
+        if not app:
+            raise Exception("Failed to create main window")
+            
+        app.geometry("1280x800")
+        app.title("نظام إدارة الأقساط")
+        
+        # Try setting appearance mode
+        try:
+            app._set_appearance_mode("dark")
+            logging.info("Appearance mode set successfully")
+        except Exception as e:
+            logging.error(f"Failed to set appearance mode: {str(e)}")
+            # Continue anyway as this is not critical
+        
+        # Center the window on screen
+        try:
+            screen_width = app.winfo_screenwidth()
+            screen_height = app.winfo_screenheight()
+            x = (screen_width - 1280) // 2
+            y = (screen_height - 800) // 2
+            app.geometry(f"1280x800+{x}+{y}")
+            logging.info("Window centered successfully")
+        except Exception as e:
+            logging.error(f"Failed to center window: {str(e)}")
+            # Continue anyway as this is not critical
+        
+        return app
+    except Exception as e:
+        logging.critical(f"Failed to initialize application: {str(e)}\n{traceback.format_exc()}")
+        messagebox.showerror("خطأ حرج", "فشل في بدء التطبيق. يرجى مراجعة ملف السجل للتفاصيل.")
+        sys.exit(1)
+
+def main():
+    """Main application entry point with error handling"""
+    global app
+    try:
+        logging.info("Application starting...")
+        if not app:
+            app = initialize_app()
+        app.mainloop()
+    except Exception as e:
+        logging.critical(f"Critical error in main: {str(e)}\n{traceback.format_exc()}")
+        messagebox.showerror("خطأ حرج", f"حدث خطأ غير متوقع: {str(e)}\nيرجى مراجعة ملف السجل للتفاصيل.")
+        sys.exit(1)
+
+def show_frame(frame):
+    """Show the specified frame and hide others"""
+    for f in frames.values():
+        f.grid_remove()
+    frame.grid()
+
+def refresh_treeview(tree, data=None):
+    """Refresh the treeview with data."""
+    # Clear existing items
+    for item in tree.get_children():
+        tree.delete(item)
+        
+    # If no data provided, read from CSV
+    if data is None:
+        data = csv_manager.read_data()
+    
+    # Insert data into treeview with proper status handling
+    for customer in data:
+        # Handle payment status if viewing payment-related data
+        if "Paid" in tree["columns"]:
+            values = []
+            for col in tree["columns"]:
+                if col == "Paid":
+                    # Get the installment date from the row
+                    date_idx = tree["columns"].index("Installment Date")
+                    installment_date = customer.get("Installment Dates", "").split(";")[0]  # Get first date if not found
+                    paid_installments = eval(customer.get("Paid_Installments", "[]"))
+                    is_paid = installment_date in paid_installments
+                    values.append("نعم" if is_paid else "لا")
+                else:
+                    values.append(customer.get(col, ""))
+        else:
+            values = [customer.get(col, "") for col in tree["columns"]]
+        
+        item = tree.insert("", "end", values=values)
+        
+        # Add color coding for paid status if applicable
+        if "Paid" in tree["columns"]:
+            if values[tree["columns"].index("Paid")] == "نعم":
+                tree.item(item, tags=("paid",))
+            else:
+                tree.item(item, tags=("unpaid",))
+    
+    # Configure payment status styles if needed
+    if "Paid" in tree["columns"]:
+        tree.tag_configure("paid", foreground=StyleManager.COLORS["success"])
+        tree.tag_configure("unpaid", foreground=StyleManager.COLORS["danger"])
 
 class CSVManager:
-    """Handles all CSV file operations"""
+    """Handles all CSV file operations with caching and optimized data handling"""
     def __init__(self, csv_file: str, backup_folder: str):
         self.csv_file = csv_file
         self.backup_folder = backup_folder
         self.columns = ["Name", "Phone", "Amount", "Installments", 
                        "Installment Value", "Start Date", "Installment Dates", 
-                       "Notification Sent", "Paid_Installments"]  # Added Paid_Installments
+                       "Notification Sent", "Paid_Installments"]
+        self._cache = {}
+        self._cache_timestamp = None
+        self._cache_duration = 60  # Cache duration in seconds
         self._ensure_files_exist()
         
+    def _is_cache_valid(self) -> bool:
+        """Check if cache is valid"""
+        if not self._cache or not self._cache_timestamp:
+            return False
+        return (datetime.now() - self._cache_timestamp).seconds < self._cache_duration
+        
+    def _update_cache(self, data: List[Dict]):
+        """Update cache with new data"""
+        self._cache = data
+        self._cache_timestamp = datetime.now()
+        
+    def read_data(self) -> List[Dict]:
+        """Read data from CSV file with caching"""
+        try:
+            # Return cached data if valid
+            if self._is_cache_valid():
+                return self._cache.copy()  # Return a copy to prevent cache modification
+                
+            data = []
+            with open(self.csv_file, mode='r', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    # Format and validate data
+                    cleaned_row = self._clean_row_data(row)
+                    data.append(cleaned_row)
+                    
+            # Update cache with new data
+            self._update_cache(data)
+            return data
+        except FileNotFoundError:
+            logging.error(f"CSV file not found: {self.csv_file}")
+            self._create_empty_csv()
+            return []
+        except Exception as e:
+            logging.error(f"Error reading CSV file: {str(e)}")
+            return []
+            
+    def _clean_row_data(self, row: Dict) -> Dict:
+        """Clean and validate row data"""
+        cleaned_row = row.copy()
+        
+        # Format phone number
+        if "Phone" in cleaned_row:
+            cleaned_row["Phone"] = f"+{cleaned_row['Phone']}" if not cleaned_row['Phone'].startswith("+") else cleaned_row['Phone']
+            
+        # Convert numeric values
+        try:
+            cleaned_row["Amount"] = float(cleaned_row.get("Amount", 0))
+            cleaned_row["Installment Value"] = float(cleaned_row.get("Installment Value", 0))
+            cleaned_row["Installments"] = int(cleaned_row.get("Installments", 0))
+        except (ValueError, TypeError):
+            logging.warning(f"Invalid numeric values in row: {row}")
+            
+        # Ensure boolean fields
+        cleaned_row["Notification Sent"] = str(cleaned_row.get("Notification Sent", "")).lower() == "true"
+        
+        # Initialize Paid_Installments if not present
+        if "Paid_Installments" not in cleaned_row:
+            cleaned_row["Paid_Installments"] = "[]"
+            
+        return cleaned_row
+        
+    def save_data(self, data: List[Dict]) -> bool:
+        """Save data to CSV file with backup"""
+        try:
+            # Validate data before saving
+            validated_data = []
+            for row in data:
+                if self._validate_row(row):
+                    validated_data.append(row)
+                else:
+                    logging.warning(f"Invalid row data skipped: {row}")
+            
+            # Create backup before saving
+            self.create_backup()
+            
+            with open(self.csv_file, mode='w', newline='', encoding='utf-8') as file:
+                writer = csv.DictWriter(file, fieldnames=self.columns)
+                writer.writeheader()
+                writer.writerows(validated_data)
+                
+            # Update cache with new data
+            self._update_cache(validated_data)
+            return True
+        except Exception as e:
+            logging.error(f"Error saving data: {str(e)}")
+            return False
+            
+    def _validate_row(self, row: Dict) -> bool:
+        """Validate row data"""
+        required_fields = ["Name", "Phone", "Amount", "Installments"]
+        
+        # Check required fields
+        if not all(field in row for field in required_fields):
+            return False
+            
+        # Validate numeric fields
+        try:
+            float(row["Amount"])
+            float(row["Installment Value"])
+            int(row["Installments"])
+        except (ValueError, TypeError):
+            return False
+            
+        # Validate phone number format
+        phone_pattern = r"^\+?\d{10,15}$"
+        if not re.match(phone_pattern, str(row["Phone"])):
+            return False
+            
+        return True
+    
     def _ensure_files_exist(self):
         """Ensure necessary files and folders exist."""
         try:
@@ -248,47 +458,6 @@ class CSVManager:
         except Exception as e:
             logging.error(f"Error creating empty CSV: {str(e)}")
             raise
-            
-    def read_data(self) -> List[Dict]:
-        """Read data from CSV file."""
-        try:
-            data = []
-            with open(self.csv_file, mode='r', encoding='utf-8') as file:
-                reader = csv.DictReader(file)
-                for row in reader:
-                    # Format phone number
-                    if "Phone" in row:
-                        row["Phone"] = f"+{row['Phone']}" if not row["Phone"].startswith("+") else row["Phone"]
-                    # Ensure notification sent is boolean
-                    if "Notification Sent" in row:
-                        row["Notification Sent"] = row["Notification Sent"].lower() == "true"
-                    # Handle Paid_Installments
-                    if "Paid_Installments" not in row:
-                        row["Paid_Installments"] = "[]"
-                    data.append(row)
-            return data
-        except FileNotFoundError:
-            logging.error(f"CSV file not found: {self.csv_file}")
-            self._create_empty_csv()
-            return []
-        except Exception as e:
-            logging.error(f"Error reading CSV file: {str(e)}")
-            return []
-            
-    def save_data(self, data: List[Dict]) -> bool:
-        """Save data to CSV file."""
-        try:
-            # Create backup before saving
-            self.create_backup()
-            
-            with open(self.csv_file, mode='w', newline='', encoding='utf-8') as file:
-                writer = csv.DictWriter(file, fieldnames=self.columns)
-                writer.writeheader()
-                writer.writerows(data)
-            return True
-        except Exception as e:
-            logging.error(f"Error saving data: {str(e)}")
-            return False
             
     def append_customer(self, customer_data: Dict) -> bool:
         """Append a new customer to the CSV file."""
@@ -470,50 +639,6 @@ class CSVManager:
 csv_filename = "customers.csv"
 backup_folder = "backups"
 csv_manager = CSVManager(csv_filename, backup_folder)
-
-# إنشاء النافذة الرئيسية
-app = CTk()
-app.geometry("1280x800")  # Set fixed window size
-app.title("نظام إدارة الأقساط")
-app._set_appearance_mode("dark")
-app.iconbitmap("")
-
-# Center the window on screen
-screen_width = app.winfo_screenwidth()
-screen_height = app.winfo_screenheight()
-x = (screen_width - 1280) // 2
-y = (screen_height - 800) // 2
-app.geometry(f"1280x800+{x}+{y}")
-
-# Setup theme
-StyleManager.setup_theme()
-
-# Create main container with padding
-container = StyleManager.create_frame(app)
-container.pack(fill="both", expand=True, padx=20, pady=20)
-
-# Configure container grid
-container.grid_columnconfigure(0, weight=1)
-container.grid_rowconfigure(0, weight=1)
-
-frames = {}
-page_names = ["home", "add", "delete", "edit", "view", "manage_installments", "backup_restore", "send_notification"]
-for name in page_names:
-    frame = StyleManager.create_frame(container)
-    frame.grid(row=0, column=0, sticky="nsew")
-    frames[name] = frame
-    # Make each frame responsive
-    frame.grid_columnconfigure(0, weight=1)
-    frame.grid_rowconfigure(0, weight=1)
-
-container.grid_columnconfigure(0, weight=1)
-container.grid_rowconfigure(0, weight=1)
-
-excel_filename = "customers.xlsx"
-
-# Ensure Excel file exists
-if not os.path.exists(excel_filename):
-    pd.DataFrame(columns=["Name", "Phone", "Amount", "Installments", "Installment Value", "Start Date", "Installment Dates", "Notification Sent"]).to_excel(excel_filename, index=False)
 
 def read_csv_safely():
     """Read data from CSV file using CSVManager."""
@@ -1095,6 +1220,45 @@ def setup_add_page():
         command=lambda: show_frame(frames["home"])
     )
     back_btn.grid(row=0, column=1, padx=10, pady=10)
+
+    # File upload section with modern design
+    file_frame = StyleManager.create_frame(form_frame, fg_color="transparent")
+    file_frame.grid(row=len(fields)*2+1, column=0, sticky="ew", pady=(20, 0))
+    file_frame.grid_columnconfigure(1, weight=1)
+    
+    StyleManager.create_label(
+        file_frame,
+        text="📁 ملفات العميل",
+        font_style="body_bold"
+    ).grid(row=0, column=0, sticky="w", padx=(0, 10))
+    
+    file_list = CTkTextbox(
+        file_frame,
+        width=400,
+        height=100,
+        font=StyleManager.FONTS["body"],
+        fg_color=StyleManager.COLORS["background"],
+        border_color=StyleManager.COLORS["border"],
+        state="disabled"  # Make the text box read-only
+    )
+    file_list.grid(row=0, column=1, sticky="ew", pady=(0, 10))
+    
+    def add_files():
+        files = filedialog.askopenfilenames(
+            title="اختر ملفات العميل",
+            filetypes=[
+                ("All files", "*.*"),
+                ("PDF files", "*.pdf"),
+                ("Image files", "*.png *.jpg *.jpeg"),
+                ("Document files", "*.doc *.docx")
+            ]
+        )
+        if files:
+            file_list.configure(state="normal")  # Temporarily enable for updating
+            file_list.delete("1.0", "end")  # Clear existing content
+            for file in files:
+                file_list.insert("end", f"{os.path.basename(file)}\n")
+            file_list.configure(state="disabled")  # Make read-only again
 
 def setup_view_page():
     frame = frames["view"]
@@ -2113,7 +2277,7 @@ def setup_send_notification_page():
         options_frame.pack(fill="x", padx=20, pady=10)
         
         # Add a checkbox for retrying if failed
-        retry_var = tkinter.BooleanVar(value=True)
+        retry_var = BooleanVar(value=True)
         retry_check = CTkCheckBox(
             options_frame, 
             text="محاولة الإرسال مرة أخرى في حالة الفشل",
@@ -2131,7 +2295,7 @@ def setup_send_notification_page():
             font_style="body"
         ).pack(side="left", padx=(0, 10))
         
-        retry_count_var = tkinter.StringVar(value="3")
+        retry_count_var = StringVar(value="3")
         retry_count_entry = StyleManager.create_entry(
             retry_count_frame,
             width=50,
@@ -2155,82 +2319,93 @@ def setup_send_notification_page():
         status_label.pack(pady=(0, 10))
         
         def send_message():
-            # Get customized message
-            custom_message = message_text.get("1.0", "end-1c")
-            
-            # Apply template variables
-            message = custom_message.replace("{name}", name).replace("{date}", installment_date).replace("{value}", str(installment_value))
-            
-            # Get retry settings
-            should_retry = retry_var.get()
-            max_retries = 1
             try:
-                max_retries = int(retry_count_var.get())
-                if max_retries < 1:
-                    max_retries = 1
-            except ValueError:
-                max_retries = 3
-            
-            # Disable buttons during sending
-            for widget in buttons_frame.winfo_children():
-                widget.configure(state="disabled")
-            
-            success = False
-            attempts = 0
-            errors = []
-            
-            while attempts < max_retries and not success:
-                attempts += 1
-                try:
-                    # Update status
-                    status_label.configure(text=f"جاري إرسال الرسالة... المحاولة {attempts}/{max_retries}")
-                    preview_window.update()
-                    
-                    # Send WhatsApp message
-                    kit.sendwhatmsg_instantly(
-                        phone_no=phone,
-                        message=message,
-                        wait_time=20,  # Increased wait time
-                        tab_close=True,
-                        close_time=3  # Added close time
-                    )
-                    
-                    # Update notification status
-                    data = csv_manager.read_data()
-                    updated = False
-                    for customer in data:
-                        if customer["Name"] == name:
-                            customer["Notification Sent"] = True
-                            updated = True
-                            break
-                    
-                    if updated and csv_manager.save_data(data):
-                        success = True
-                        status_label.configure(text="تم الإرسال بنجاح!")
-                        messagebox.showinfo("نجاح", f"تم إرسال الإشعار إلى {name} بنجاح.")
-                        preview_window.destroy()
-                        load_data()  # Refresh the view
-                        logging.info(f"Manual notification sent to {name} at {phone}")
-                    else:
-                        errors.append("فشل في تحديث حالة الإشعار")
+                # Get customized message
+                custom_message = message_text.get("1.0", "end-1c")
                 
-                except Exception as e:
-                    error_msg = str(e)
-                    errors.append(error_msg)
-                    logging.error(f"Error sending WhatsApp message to {name} at {phone} (Attempt {attempts}): {error_msg}")
-                    
-                    if should_retry and attempts < max_retries:
-                        status_label.configure(text=f"فشل المحاولة {attempts}. جاري المحاولة مرة أخرى...")
+                # Apply template variables
+                message = custom_message.replace("{name}", name).replace("{date}", installment_date).replace("{value}", str(installment_value))
+                
+                # Get retry settings
+                should_retry = retry_var.get()
+                max_retries = 1
+                try:
+                    max_retries = int(retry_count_var.get())
+                    if max_retries < 1:
+                        max_retries = 1
+                except ValueError:
+                    max_retries = 3
+                
+                # Disable buttons during sending
+                for widget in buttons_frame.winfo_children():
+                    widget.configure(state="disabled")
+                
+                success = False
+                attempts = 0
+                errors = []
+                
+                while attempts < max_retries and not success:
+                    attempts += 1
+                    try:
+                        # Update status
+                        status_label.configure(text=f"جاري إرسال الرسالة... المحاولة {attempts}/{max_retries}")
                         preview_window.update()
-                        time.sleep(2)  # Wait before retrying
-                    else:
-                        status_label.configure(text="فشل الإرسال.")
-                        messagebox.showerror("خطأ", f"فشل إرسال الإشعار بعد {attempts} محاولات.\nآخر خطأ: {error_msg}")
-                        break
-            
-            # Re-enable buttons
-            for widget in buttons_frame.winfo_children():
-                widget.configure(state="normal")
+                        
+                        # Send WhatsApp message with error handling
+                        try:
+                            kit.sendwhatmsg_instantly(
+                                phone_no=phone,
+                                message=message,
+                                wait_time=20,
+                                tab_close=True,
+                                close_time=3
+                            )
+                        except Exception as e:
+                            raise Exception(f"فشل في إرسال الرسالة: {str(e)}")
+                        
+                        # Update notification status
+                        data = csv_manager.read_data()
+                        updated = False
+                        for customer in data:
+                            if customer["Name"] == name:
+                                customer["Notification Sent"] = True
+                                updated = True
+                                break
+                        
+                        if updated and csv_manager.save_data(data):
+                            success = True
+                            status_label.configure(text="تم الإرسال بنجاح!")
+                            messagebox.showinfo("نجاح", f"تم إرسال الإشعار إلى {name} بنجاح.")
+                            preview_window.destroy()
+                            load_data()  # Refresh the view
+                            logging.info(f"Manual notification sent to {name} at {phone}")
+                        else:
+                            errors.append("فشل في تحديث حالة الإشعار")
+                    
+                    except Exception as e:
+                        error_msg = str(e)
+                        errors.append(error_msg)
+                        logging.error(f"Error sending WhatsApp message to {name} at {phone} (Attempt {attempts}): {error_msg}")
+                        
+                        if should_retry and attempts < max_retries:
+                            status_label.configure(text=f"فشل المحاولة {attempts}. جاري المحاولة مرة أخرى...")
+                            preview_window.update()
+                            time.sleep(2)  # Wait before retrying
+                        else:
+                            status_label.configure(text="فشل الإرسال.")
+                            messagebox.showerror("خطأ", f"فشل إرسال الإشعار بعد {attempts} محاولات.\nآخر خطأ: {error_msg}")
+                            break
+                
+                # Re-enable buttons
+                for widget in buttons_frame.winfo_children():
+                    widget.configure(state="normal")
+                    
+            except Exception as e:
+                messagebox.showerror("خطأ", f"حدث خطأ غير متوقع: {str(e)}")
+                logging.error(f"Unexpected error in send_message: {str(e)}")
+                # Re-enable buttons
+                for widget in buttons_frame.winfo_children():
+                    widget.configure(state="normal")
         
         # Send button
         StyleManager.create_button(
@@ -2411,6 +2586,7 @@ def start_notification_thread():
     logging.info("Notification thread started")
 
 def setup_home_page():
+    """Setup the home page with a modern dashboard layout"""
     frame = frames["home"]
     frame.grid_columnconfigure(0, weight=1)
     frame.grid_columnconfigure(1, weight=1)
@@ -2470,31 +2646,108 @@ def setup_home_page():
     for i, item in enumerate(menu_items):
         row, col = divmod(i, 2)
         
+        # Create a container frame for the button to handle hover effects
+        button_container = CTkFrame(
+            frame,
+            fg_color="transparent"
+        )
+        button_container.grid(row=row+1, column=col, padx=30, pady=25, sticky="nsew")
+        
         # Create button with icon and text
         button = CTkButton(
-            frame,
+            button_container,
             text=f"{item['icon']}  {item['text']}",
             command=item["command"],
             width=500,
             height=80,
             corner_radius=15,
             fg_color=item["color"],
-            hover_color=StyleManager.COLORS["secondary"],
+            hover_color=item["color"],  # Keep same color on hover
             text_color="#ffffff",
             font=("Arial", 24, "bold"),
             anchor="center"
         )
-        button.grid(row=row+1, column=col, padx=30, pady=25, sticky="nsew")
+        button.pack(expand=True, fill="both")
+        
+        # Create hover effect
+        def on_enter(e, button=button):
+            # Add white border effect only
+            button.configure(border_width=2, border_color="#ffffff")
+            
+        def on_leave(e, button=button):
+            # Remove border effect
+            button.configure(border_width=0)
+        
+        # Bind hover events
+        button.bind("<Enter>", on_enter)
+        button.bind("<Leave>", on_leave)
 
-setup_home_page()
-setup_add_page()
-setup_view_page()
-setup_manage_installments_page()
-setup_backup_restore_page()
-setup_send_notification_page()
-show_frame(frames["home"])
-
-# Start the notification thread
-start_notification_thread()
-
-app.mainloop()
+# Initialize the application and create frames
+if __name__ == "__main__":
+    try:
+        # Initialize the application and create frames
+        app = initialize_app()
+        if not app:
+            raise Exception("Failed to initialize application")
+            
+        # Setup theme
+        try:
+            StyleManager.setup_theme()
+            logging.info("Theme setup completed")
+        except Exception as e:
+            logging.error(f"Theme setup failed: {str(e)}")
+            messagebox.showwarning("تحذير", "فشل في تحميل النمط. سيتم استخدام النمط الافتراضي.")
+        
+        # Create main container with padding
+        container = StyleManager.create_frame(app)
+        container.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Configure container grid
+        container.grid_columnconfigure(0, weight=1)
+        container.grid_rowconfigure(0, weight=1)
+        
+        # Create frames
+        page_names = ["home", "add", "delete", "edit", "view", "manage_installments", "backup_restore", "send_notification"]
+        
+        for name in page_names:
+            try:
+                frame = StyleManager.create_frame(container)
+                frame.grid(row=0, column=0, sticky="nsew")
+                frames[name] = frame
+                frame.grid_columnconfigure(0, weight=1)
+                frame.grid_rowconfigure(0, weight=1)
+                logging.info(f"Created frame: {name}")
+            except Exception as e:
+                logging.error(f"Error creating frame {name}: {str(e)}")
+                raise
+        
+        # Setup all pages with error handling
+        setup_functions = [
+            ("setup_home_page", setup_home_page),
+            ("setup_add_page", setup_add_page),
+            ("setup_view_page", setup_view_page),
+            ("setup_manage_installments_page", setup_manage_installments_page),
+            ("setup_backup_restore_page", setup_backup_restore_page),
+            ("setup_send_notification_page", setup_send_notification_page)
+        ]
+        
+        for func_name, func in setup_functions:
+            try:
+                if not callable(func):
+                    raise Exception(f"{func_name} is not defined")
+                func()
+                logging.info(f"{func_name} completed successfully")
+            except Exception as e:
+                logging.error(f"Error in {func_name}: {str(e)}")
+                raise
+        
+        # Show home frame and start notification thread
+        show_frame(frames["home"])
+        start_notification_thread()
+        
+        # Start the main loop
+        main()
+    except Exception as e:
+        logging.critical(f"Application failed to start: {str(e)}\n{traceback.format_exc()}")
+        messagebox.showerror("خطأ حرج", "فشل في بدء التطبيق. يرجى التأكد من تثبيت جميع المكتبات المطلوبة.")
+        sys.exit(1)

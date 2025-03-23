@@ -1,0 +1,4 @@
+customtkinter>=5.2.0
+tkcalendar>=1.6.1
+pywhatkit>=5.4.0
+pandas>=2.0.0 
