@@ -16,9 +16,14 @@ import time
 import sys
 import traceback
 
+# Ensure logs directory exists
+logs_dir = "logs"
+if not os.path.exists(logs_dir):
+    os.makedirs(logs_dir)
+
 # Set up logging with more detailed format
 logging.basicConfig(
-    filename='app.log',
+    filename=os.path.join(logs_dir, 'app.log'),
     level=logging.DEBUG,  # Changed to DEBUG for more detailed logs
     format='%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s'
 )
@@ -479,6 +484,10 @@ class CSVManager:
                 if not file_exists:
                     writer.writeheader()
                 writer.writerow(customer_data)
+            
+            # Clear cache to force reload
+            self._cache = {}
+            self._cache_timestamp = None
             return True
         except Exception as e:
             logging.error(f"Error appending customer: {str(e)}")
@@ -543,20 +552,26 @@ class CSVManager:
             return None
             
     def restore_backup(self, backup_file: str) -> bool:
-        """Restore data from a backup file."""
+        """Restore from a backup file."""
         try:
+            # Check if backup file exists
             backup_path = os.path.join(self.backup_folder, backup_file)
             if not os.path.exists(backup_path):
-                logging.error(f"Backup file not found: {backup_file}")
+                logging.error(f"Backup file not found: {backup_path}")
                 return False
                 
-            # Create backup of current data before restoring
+            # Backup current file before restoring
             self.create_backup()
             
-            # Copy backup file to main data file
+            # Copy backup to main file
             shutil.copy2(backup_path, self.csv_file)
-            logging.info(f"Backup restored: {backup_file}")
+            
+            # Clear cache to force reload
+            self._cache = {}
+            self._cache_timestamp = None
+            
             return True
+            
         except Exception as e:
             logging.error(f"Error restoring backup: {str(e)}")
             return False
@@ -591,30 +606,33 @@ class CSVManager:
             return []
 
     def mark_installment_as_paid(self, customer_name: str, installment_date: str) -> bool:
-        """Mark a specific installment as paid for a customer."""
+        """Mark a specific installment as paid."""
         try:
             data = self.read_data()
-            customer_found = False
             
-            for customer in data:
-                if customer["Name"] == customer_name:
-                    # Convert string representation of list to actual list
+            for i, row in enumerate(data):
+                if row["Name"] == customer_name:
+                    # Get current paid installments
                     try:
-                        paid_installments = eval(customer.get("Paid_Installments", "[]"))
+                        paid_installments = eval(row.get("Paid_Installments", "[]"))
+                        if not isinstance(paid_installments, list):
+                            paid_installments = []
                     except:
                         paid_installments = []
-                    
+                        
+                    # Add the installment date if not already paid
                     if installment_date not in paid_installments:
                         paid_installments.append(installment_date)
-                        customer["Paid_Installments"] = str(paid_installments)
-                        customer_found = True
-                        break
+                        data[i]["Paid_Installments"] = str(paid_installments)
+                        # Save updated data
+                        return self.save_data(data)
+                    else:
+                        logging.info(f"Installment already paid: {installment_date}")
+                        return True  # Already paid is not an error
             
-            if not customer_found:
-                logging.error(f"Customer not found: {customer_name}")
-                return False
-                
-            return self.save_data(data)
+            logging.warning(f"Customer not found: {customer_name}")
+            return False
+            
         except Exception as e:
             logging.error(f"Error marking installment as paid: {str(e)}")
             return False
