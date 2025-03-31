@@ -216,6 +216,131 @@ class StyleManager:
             logging.error(f"Error creating entry: {str(e)}")
             raise
 
+class FileManager:
+    """Handles all file operations for customer documents"""
+    def __init__(self, base_dir: str = "customer_files"):
+        self.base_dir = base_dir
+        self._ensure_base_directory()
+        
+    def _ensure_base_directory(self):
+        """Ensure the base directory exists"""
+        try:
+            if not os.path.exists(self.base_dir):
+                os.makedirs(self.base_dir)
+                logging.info(f"Created base directory: {self.base_dir}")
+        except Exception as e:
+            logging.error(f"Error creating base directory: {str(e)}")
+            raise
+            
+    def _get_customer_dir(self, customer_name: str) -> str:
+        """Get the directory path for a customer's files"""
+        # Sanitize customer name for use in file path
+        safe_name = "".join(c for c in customer_name if c.isalnum() or c in (' ', '-', '_')).strip()
+        customer_dir = os.path.join(self.base_dir, safe_name)
+        
+        # Create customer directory if it doesn't exist
+        if not os.path.exists(customer_dir):
+            os.makedirs(customer_dir)
+            logging.info(f"Created customer directory: {customer_dir}")
+            
+        return customer_dir
+        
+    def add_files(self, customer_name: str, files: List[str]) -> bool:
+        """Add files for a customer"""
+        try:
+            customer_dir = self._get_customer_dir(customer_name)
+            success = True
+            
+            for file_path in files:
+                try:
+                    # Get file name and create safe version
+                    file_name = os.path.basename(file_path)
+                    safe_name = "".join(c for c in file_name if c.isalnum() or c in ('.', '-', '_')).strip()
+                    
+                    # Create unique filename if file already exists
+                    base, ext = os.path.splitext(safe_name)
+                    counter = 1
+                    while os.path.exists(os.path.join(customer_dir, safe_name)):
+                        safe_name = f"{base}_{counter}{ext}"
+                        counter += 1
+                    
+                    # Copy file to customer directory
+                    dest_path = os.path.join(customer_dir, safe_name)
+                    shutil.copy2(file_path, dest_path)
+                    logging.info(f"Added file {safe_name} for customer {customer_name}")
+                    
+                except Exception as e:
+                    logging.error(f"Error adding file {file_path} for customer {customer_name}: {str(e)}")
+                    success = False
+                    
+            return success
+            
+        except Exception as e:
+            logging.error(f"Error in add_files for customer {customer_name}: {str(e)}")
+            return False
+            
+    def get_files(self, customer_name: str) -> List[str]:
+        """Get list of files for a customer"""
+        try:
+            customer_dir = self._get_customer_dir(customer_name)
+            if not os.path.exists(customer_dir):
+                return []
+                
+            return [f for f in os.listdir(customer_dir) if os.path.isfile(os.path.join(customer_dir, f))]
+            
+        except Exception as e:
+            logging.error(f"Error getting files for customer {customer_name}: {str(e)}")
+            return []
+            
+    def delete_file(self, customer_name: str, file_name: str) -> bool:
+        """Delete a specific file for a customer"""
+        try:
+            customer_dir = self._get_customer_dir(customer_name)
+            file_path = os.path.join(customer_dir, file_name)
+            
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                logging.info(f"Deleted file {file_name} for customer {customer_name}")
+                return True
+            return False
+            
+        except Exception as e:
+            logging.error(f"Error deleting file {file_name} for customer {customer_name}: {str(e)}")
+            return False
+            
+    def delete_customer_files(self, customer_name: str) -> bool:
+        """Delete all files for a customer"""
+        try:
+            customer_dir = self._get_customer_dir(customer_name)
+            if os.path.exists(customer_dir):
+                shutil.rmtree(customer_dir)
+                logging.info(f"Deleted all files for customer {customer_name}")
+                return True
+            return False
+            
+        except Exception as e:
+            logging.error(f"Error deleting files for customer {customer_name}: {str(e)}")
+            return False
+            
+    def open_file(self, customer_name: str, file_name: str) -> bool:
+        """Open a file using the system's default application"""
+        try:
+            customer_dir = self._get_customer_dir(customer_name)
+            file_path = os.path.join(customer_dir, file_name)
+            
+            if os.path.exists(file_path):
+                os.startfile(file_path)
+                logging.info(f"Opened file {file_name} for customer {customer_name}")
+                return True
+            return False
+            
+        except Exception as e:
+            logging.error(f"Error opening file {file_name} for customer {customer_name}: {str(e)}")
+            return False
+
+# Initialize file manager
+file_manager = FileManager()
+
 def initialize_app():
     """Initialize the main application window with error handling"""
     global app
@@ -666,7 +791,7 @@ def save_to_csv_and_excel(data):
     """Save data using CSVManager."""
     return csv_manager.save_data(data)
 
-def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry, start_date_entry):
+def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry, start_date_entry, file_list=None):
     name = name_entry.get().strip()
     phone = phone_entry.get().strip()
     amount = amount_entry.get().strip()
@@ -719,6 +844,13 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
         }
         
         if csv_manager.append_customer(customer_data):
+            # Handle file uploads if any
+            if file_list and hasattr(file_list, 'files'):
+                if file_manager.add_files(name, file_list.files):
+                    logging.info(f"Files added for customer {name}")
+                else:
+                    messagebox.showwarning("تحذير", "تم حفظ بيانات العميل ولكن فشل في رفع بعض الملفات.")
+            
             messagebox.showinfo("نجاح", "تم حفظ العميل بنجاح!")
             # Clear the input fields
             name_entry.delete(0, "end")
@@ -726,6 +858,11 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
             amount_entry.delete(0, "end")
             installments_entry.delete(0, "end")
             start_date_entry.delete(0, "end")
+            if file_list:
+                file_list.configure(state="normal")
+                file_list.delete("1.0", "end")
+                file_list.configure(state="disabled")
+                file_list.files = []
         else:
             messagebox.showerror("خطأ", "فشل في حفظ بيانات العميل.")
             
@@ -1250,8 +1387,14 @@ def setup_add_page():
         font_style="body_bold"
     ).grid(row=0, column=0, sticky="w", padx=(0, 10))
     
+    # Create a frame for the file list and buttons
+    file_list_frame = StyleManager.create_frame(file_frame, fg_color="transparent")
+    file_list_frame.grid(row=0, column=1, sticky="ew", pady=(0, 10))
+    file_list_frame.grid_columnconfigure(0, weight=1)
+    
+    # File list with scrollbar
     file_list = CTkTextbox(
-        file_frame,
+        file_list_frame,
         width=400,
         height=100,
         font=StyleManager.FONTS["body"],
@@ -1259,7 +1402,19 @@ def setup_add_page():
         border_color=StyleManager.COLORS["border"],
         state="disabled"  # Make the text box read-only
     )
-    file_list.grid(row=0, column=1, sticky="ew", pady=(0, 10))
+    file_list.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+    
+    # Add scrollbar
+    scrollbar = ttk.Scrollbar(file_list_frame, orient="vertical", command=file_list.yview)
+    scrollbar.grid(row=0, column=1, sticky="ns")
+    file_list.configure(yscrollcommand=scrollbar.set)
+    
+    # Store selected files
+    file_list.files = []
+    
+    # Buttons frame
+    file_buttons_frame = StyleManager.create_frame(file_frame, fg_color="transparent")
+    file_buttons_frame.grid(row=0, column=2, sticky="e")
     
     def add_files():
         files = filedialog.askopenfilenames(
@@ -1272,11 +1427,40 @@ def setup_add_page():
             ]
         )
         if files:
+            file_list.files.extend(files)
             file_list.configure(state="normal")  # Temporarily enable for updating
             file_list.delete("1.0", "end")  # Clear existing content
             for file in files:
                 file_list.insert("end", f"{os.path.basename(file)}\n")
             file_list.configure(state="disabled")  # Make read-only again
+    
+    def clear_files():
+        if file_list.files:
+            if messagebox.askyesno("تأكيد", "هل أنت متأكد من حذف جميع الملفات المحددة؟"):
+                file_list.files = []
+                file_list.configure(state="normal")
+                file_list.delete("1.0", "end")
+                file_list.configure(state="disabled")
+    
+    # Add file button
+    StyleManager.create_button(
+        file_buttons_frame,
+        text="إضافة ملفات",
+        width=120,
+        command=add_files
+    ).pack(side="left", padx=(0, 5))
+    
+    # Clear files button
+    StyleManager.create_button(
+        file_buttons_frame,
+        text="مسح الملفات",
+        style="secondary",
+        width=120,
+        command=clear_files
+    ).pack(side="left")
+    
+    # Update save button to include file_list
+    save_btn.configure(command=lambda: validate_and_save(*entries, start_date_entry, file_list))
 
 def setup_view_page():
     frame = frames["view"]
