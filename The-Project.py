@@ -2874,6 +2874,12 @@ def setup_home_page():
             "command": lambda: show_frame(frames["send_notification"]),
             "icon": "📨",
             "color": "#E91E63"
+        },
+        {
+            "text": "ملفات العملاء",
+            "command": lambda: os.startfile("customer_files"),
+            "icon": "📁",
+            "color": "#607D8B"
         }
     ]
     
