@@ -1464,3 +1464,85 @@ NameError: name 'setup_view_page' is not defined. Did you mean: 'setup_home_page
 2025-04-06 11:07:39,211 - INFO - The-Project.py:389 - Application starting...
 2025-04-06 11:07:39,211 - INFO - The-Project.py:3082 - Notification check completed. Success: 0, Failed: 0, Skipped: 1
 2025-04-06 11:08:18,239 - INFO - The-Project.py:674 - Backup created: backups\backup_20250406_110818.csv
+2025-04-06 11:21:24,244 - INFO - The-Project.py:349 - Starting application initialization...
+2025-04-06 11:21:24,378 - INFO - The-Project.py:362 - Appearance mode set successfully
+2025-04-06 11:21:24,379 - INFO - The-Project.py:374 - Window centered successfully
+2025-04-06 11:21:24,380 - INFO - The-Project.py:134 - Theme setup completed successfully
+2025-04-06 11:21:24,380 - INFO - The-Project.py:3409 - Theme setup completed
+2025-04-06 11:21:24,405 - INFO - The-Project.py:3432 - Created frame: home
+2025-04-06 11:21:24,408 - INFO - The-Project.py:3432 - Created frame: add
+2025-04-06 11:21:24,411 - INFO - The-Project.py:3432 - Created frame: delete
+2025-04-06 11:21:24,415 - INFO - The-Project.py:3432 - Created frame: edit
+2025-04-06 11:21:24,418 - INFO - The-Project.py:3432 - Created frame: view
+2025-04-06 11:21:24,421 - INFO - The-Project.py:3432 - Created frame: manage_installments
+2025-04-06 11:21:24,424 - INFO - The-Project.py:3432 - Created frame: backup_restore
+2025-04-06 11:21:24,428 - INFO - The-Project.py:3432 - Created frame: send_notification
+2025-04-06 11:21:24,898 - INFO - The-Project.py:3452 - setup_home_page completed successfully
+2025-04-06 11:21:25,012 - INFO - The-Project.py:3452 - setup_add_page completed successfully
+2025-04-06 11:21:25,058 - INFO - The-Project.py:3452 - setup_view_page completed successfully
+2025-04-06 11:21:25,079 - INFO - The-Project.py:3452 - setup_manage_installments_page completed successfully
+2025-04-06 11:21:25,126 - INFO - The-Project.py:3452 - setup_backup_restore_page completed successfully
+2025-04-06 11:21:25,146 - INFO - The-Project.py:3452 - setup_send_notification_page completed successfully
+2025-04-06 11:21:25,147 - INFO - The-Project.py:3163 - Starting automatic installment check
+2025-04-06 11:21:25,147 - INFO - The-Project.py:3293 - Notification thread started
+2025-04-06 11:21:25,147 - INFO - The-Project.py:3181 - Checking notifications for 1 customers
+2025-04-06 11:21:25,148 - INFO - The-Project.py:389 - Application starting...
+2025-04-06 11:21:25,148 - INFO - The-Project.py:3281 - Notification check completed. Success: 0, Failed: 0, Skipped: 1
+2025-04-06 11:21:51,755 - INFO - The-Project.py:349 - Starting application initialization...
+2025-04-06 11:21:51,924 - INFO - The-Project.py:362 - Appearance mode set successfully
+2025-04-06 11:21:51,925 - INFO - The-Project.py:374 - Window centered successfully
+2025-04-06 11:21:51,926 - INFO - The-Project.py:134 - Theme setup completed successfully
+2025-04-06 11:21:51,927 - INFO - The-Project.py:3210 - Theme setup completed
+2025-04-06 11:21:51,959 - INFO - The-Project.py:3233 - Created frame: home
+2025-04-06 11:21:51,964 - INFO - The-Project.py:3233 - Created frame: add
+2025-04-06 11:21:51,970 - INFO - The-Project.py:3233 - Created frame: delete
+2025-04-06 11:21:51,975 - INFO - The-Project.py:3233 - Created frame: edit
+2025-04-06 11:21:51,981 - INFO - The-Project.py:3233 - Created frame: view
+2025-04-06 11:21:51,988 - INFO - The-Project.py:3233 - Created frame: manage_installments
+2025-04-06 11:21:51,991 - INFO - The-Project.py:3233 - Created frame: backup_restore
+2025-04-06 11:21:51,996 - INFO - The-Project.py:3233 - Created frame: send_notification
+2025-04-06 11:21:52,345 - INFO - The-Project.py:3253 - setup_home_page completed successfully
+2025-04-06 11:21:52,502 - INFO - The-Project.py:3253 - setup_add_page completed successfully
+2025-04-06 11:21:52,561 - INFO - The-Project.py:3253 - setup_view_page completed successfully
+2025-04-06 11:21:52,592 - INFO - The-Project.py:3253 - setup_manage_installments_page completed successfully
+2025-04-06 11:21:52,642 - INFO - The-Project.py:3253 - setup_backup_restore_page completed successfully
+2025-04-06 11:21:52,665 - INFO - The-Project.py:3253 - setup_send_notification_page completed successfully
+2025-04-06 11:21:52,666 - INFO - The-Project.py:2964 - Starting automatic installment check
+2025-04-06 11:21:52,666 - INFO - The-Project.py:3094 - Notification thread started
+2025-04-06 11:21:52,666 - INFO - The-Project.py:2982 - Checking notifications for 1 customers
+2025-04-06 11:21:52,666 - INFO - The-Project.py:389 - Application starting...
+2025-04-06 11:21:52,667 - INFO - The-Project.py:3082 - Notification check completed. Success: 0, Failed: 0, Skipped: 1
+2025-04-06 11:27:30,069 - INFO - The-Project.py:349 - Starting application initialization...
+2025-04-06 11:27:30,191 - INFO - The-Project.py:362 - Appearance mode set successfully
+2025-04-06 11:27:30,191 - INFO - The-Project.py:374 - Window centered successfully
+2025-04-06 11:27:30,193 - INFO - The-Project.py:134 - Theme setup completed successfully
+2025-04-06 11:27:30,193 - INFO - The-Project.py:3210 - Theme setup completed
+2025-04-06 11:27:30,217 - INFO - The-Project.py:3233 - Created frame: home
+2025-04-06 11:27:30,221 - INFO - The-Project.py:3233 - Created frame: add
+2025-04-06 11:27:30,224 - INFO - The-Project.py:3233 - Created frame: delete
+2025-04-06 11:27:30,228 - INFO - The-Project.py:3233 - Created frame: edit
+2025-04-06 11:27:30,230 - INFO - The-Project.py:3233 - Created frame: view
+2025-04-06 11:27:30,233 - INFO - The-Project.py:3233 - Created frame: manage_installments
+2025-04-06 11:27:30,236 - INFO - The-Project.py:3233 - Created frame: backup_restore
+2025-04-06 11:27:30,239 - INFO - The-Project.py:3233 - Created frame: send_notification
+2025-04-06 11:27:30,672 - INFO - The-Project.py:3253 - setup_home_page completed successfully
+2025-04-06 11:27:30,867 - INFO - The-Project.py:3253 - setup_add_page completed successfully
+2025-04-06 11:27:30,940 - INFO - The-Project.py:3253 - setup_view_page completed successfully
+2025-04-06 11:27:30,989 - INFO - The-Project.py:3253 - setup_manage_installments_page completed successfully
+2025-04-06 11:27:31,058 - INFO - The-Project.py:3253 - setup_backup_restore_page completed successfully
+2025-04-06 11:27:31,082 - INFO - The-Project.py:3253 - setup_send_notification_page completed successfully
+2025-04-06 11:27:31,083 - INFO - The-Project.py:2964 - Starting automatic installment check
+2025-04-06 11:27:31,083 - INFO - The-Project.py:3094 - Notification thread started
+2025-04-06 11:27:31,083 - INFO - The-Project.py:2982 - Checking notifications for 1 customers
+2025-04-06 11:27:31,084 - INFO - The-Project.py:389 - Application starting...
+2025-04-06 11:27:31,084 - INFO - The-Project.py:3082 - Notification check completed. Success: 0, Failed: 0, Skipped: 1
+2025-04-06 11:28:24,472 - INFO - The-Project.py:674 - Backup created: backups\backup_20250406_112824.csv
+2025-04-06 11:28:24,473 - INFO - The-Project.py:245 - Created customer directory: customer_files\hassan elsayed
+2025-04-06 11:28:24,475 - INFO - The-Project.py:271 - Added file Picture1-Copy.jpg for customer hassan elsayed
+2025-04-06 11:28:24,488 - INFO - The-Project.py:271 - Added file Picture1.jpg for customer hassan elsayed
+2025-04-06 11:28:24,491 - INFO - The-Project.py:271 - Added file Screenshot2024-01-31050433-Copy.png for customer hassan elsayed
+2025-04-06 11:28:24,494 - INFO - The-Project.py:271 - Added file Screenshot2024-01-31050433.png for customer hassan elsayed
+2025-04-06 11:28:24,494 - INFO - The-Project.py:928 - Files added for customer hassan elsayed
+2025-04-06 11:29:08,462 - INFO - The-Project.py:674 - Backup created: backups\backup_20250406_112908.csv
+2025-04-06 11:29:10,192 - INFO - The-Project.py:2889 - Manual notification sent to hassan elsayed at +201120530157
+2025-04-06 11:29:10,835 - ERROR - The-Project.py:2913 - Unexpected error in send_message: bad window path name ".!ctktoplevel4.!ctkframe4"

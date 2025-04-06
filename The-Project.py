@@ -2727,7 +2727,7 @@ def setup_send_notification_page():
         
         # Show preview window
         preview_window = CTkToplevel(app)
-        preview_window.geometry("500x500")
+        preview_window.geometry("500x550")
         preview_window.title("معاينة الرسالة")
         
         # Add header
