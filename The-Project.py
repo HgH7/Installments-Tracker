@@ -1,6 +1,7 @@
 import customtkinter
 from customtkinter import *
 from tkinter import messagebox, ttk, StringVar, BooleanVar, filedialog
+import tkinter as tk
 import re
 import csv
 import os
@@ -776,6 +777,83 @@ class CSVManager:
             return False
         except Exception as e:
             logging.error(f"Error checking payment status: {str(e)}")
+            return False
+            
+    def update_installment(self, customer_name: str, old_date: str, new_date: str, new_value: float) -> bool:
+        """Update a specific installment's date and value."""
+        try:
+            data = self.read_data()
+            
+            for i, customer in enumerate(data):
+                if customer["Name"] == customer_name:
+                    # Get current installment dates and values
+                    installment_dates = customer["Installment Dates"].split(";")
+                    
+                    # Find the old date index
+                    if old_date not in installment_dates:
+                        logging.warning(f"Installment date not found: {old_date}")
+                        return False
+                    
+                    # Update the date
+                    date_index = installment_dates.index(old_date)
+                    installment_dates[date_index] = new_date
+                    
+                    # Update the installment value
+                    data[i]["Installment Value"] = new_value
+                    
+                    # Join back the dates
+                    data[i]["Installment Dates"] = ";".join(installment_dates)
+                    
+                    # Update payment status if needed
+                    try:
+                        paid_installments = eval(customer.get("Paid_Installments", "[]"))
+                        if old_date in paid_installments:
+                            paid_installments.remove(old_date)
+                            paid_installments.append(new_date)
+                            data[i]["Paid_Installments"] = str(paid_installments)
+                    except Exception as e:
+                        logging.error(f"Error updating paid status: {str(e)}")
+                    
+                    # Save the updated data
+                    return self.save_data(data)
+            
+            logging.warning(f"Customer not found: {customer_name}")
+            return False
+            
+        except Exception as e:
+            logging.error(f"Error updating installment: {str(e)}")
+            return False
+            
+    def unmark_installment_as_paid(self, customer_name: str, installment_date: str) -> bool:
+        """Remove a specific installment from the paid list."""
+        try:
+            data = self.read_data()
+            
+            for i, row in enumerate(data):
+                if row["Name"] == customer_name:
+                    # Get current paid installments
+                    try:
+                        paid_installments = eval(row.get("Paid_Installments", "[]"))
+                        if not isinstance(paid_installments, list):
+                            paid_installments = []
+                    except:
+                        paid_installments = []
+                        
+                    # Remove the installment date if it's paid
+                    if installment_date in paid_installments:
+                        paid_installments.remove(installment_date)
+                        data[i]["Paid_Installments"] = str(paid_installments)
+                        # Save updated data
+                        return self.save_data(data)
+                    else:
+                        logging.info(f"Installment wasn't marked as paid: {installment_date}")
+                        return True  # Not being in the list is not an error
+            
+            logging.warning(f"Customer not found: {customer_name}")
+            return False
+            
+        except Exception as e:
+            logging.error(f"Error unmarking installment as paid: {str(e)}")
             return False
 
 # Initialize CSV manager
@@ -2092,6 +2170,201 @@ def setup_manage_installments_page():
         command=mark_as_paid
     ).grid(row=0, column=1, padx=10, pady=10)
     
+    # Edit installment button
+    def edit_installment():
+        selected_items = tree.selection()
+        if not selected_items:
+            messagebox.showerror("خطأ", "يرجى تحديد قسط للتعديل.")
+            return
+        
+        if len(selected_items) > 1:
+            messagebox.showerror("خطأ", "يرجى تحديد قسط واحد فقط للتعديل.")
+            return
+            
+        try:
+            item = selected_items[0]
+            values = tree.item(item)["values"]
+            customer_name = values[0]
+            customer_phone = values[1]
+            installment_date = values[2]
+            installment_value = values[3]
+            is_paid = values[4] == "نعم"
+            
+            # Create edit installment window
+            edit_window = CTkToplevel(app)
+            edit_window.geometry("500x450")
+            edit_window.title("تعديل القسط")
+            
+            # Make window modal
+            edit_window.transient(app)
+            edit_window.grab_set()
+            
+            # Create main frame
+            main_frame = StyleManager.create_frame(edit_window)
+            main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+            
+            # Add title
+            StyleManager.create_label(
+                main_frame,
+                text="تعديل بيانات القسط",
+                font_style="subheading"
+            ).pack(pady=(0, 20))
+            
+            # Customer info (non-editable)
+            info_frame = StyleManager.create_frame(main_frame)
+            info_frame.pack(fill="x", pady=10)
+            
+            StyleManager.create_label(
+                info_frame,
+                text=f"العميل: {customer_name}",
+                font_style="body_bold"
+            ).pack(anchor="w")
+            
+            StyleManager.create_label(
+                info_frame,
+                text=f"رقم الهاتف: {customer_phone}",
+                font_style="body"
+            ).pack(anchor="w")
+            
+            # Editable fields
+            fields_frame = StyleManager.create_frame(main_frame)
+            fields_frame.pack(fill="x", pady=20)
+            
+            # Date field
+            date_frame = StyleManager.create_frame(fields_frame)
+            date_frame.pack(fill="x", pady=10)
+            
+            StyleManager.create_label(
+                date_frame,
+                text="تاريخ القسط:",
+                font_style="body"
+            ).pack(side="left", padx=(0, 10))
+            
+            date_entry = StyleManager.create_entry(date_frame)
+            date_entry.pack(side="left", fill="x", expand=True)
+            date_entry.insert(0, installment_date)
+            
+            # Date picker button
+            def open_date_picker():
+                DatePicker(edit_window, date_entry)
+                
+            date_picker_btn = StyleManager.create_button(
+                date_frame,
+                text="📅",
+                width=40,
+                command=open_date_picker
+            )
+            date_picker_btn.pack(side="left", padx=(10, 0))
+            
+            # Amount field
+            amount_frame = StyleManager.create_frame(fields_frame)
+            amount_frame.pack(fill="x", pady=10)
+            
+            StyleManager.create_label(
+                amount_frame,
+                text="قيمة القسط:",
+                font_style="body"
+            ).pack(side="left", padx=(0, 10))
+            
+            amount_entry = StyleManager.create_entry(amount_frame)
+            amount_entry.pack(side="left", fill="x", expand=True)
+            amount_entry.insert(0, str(installment_value))
+            
+            # Paid status
+            paid_frame = StyleManager.create_frame(fields_frame)
+            paid_frame.pack(fill="x", pady=10)
+            
+            paid_status = tk.BooleanVar(value=is_paid)
+            
+            paid_checkbox = CTkCheckBox(
+                paid_frame,
+                text="مدفوع",
+                variable=paid_status,
+                onvalue=True,
+                offvalue=False,
+                checkbox_width=24,
+                checkbox_height=24,
+                corner_radius=5,
+                border_width=2,
+                fg_color=StyleManager.COLORS["primary"],
+                hover_color=StyleManager.COLORS["secondary"],
+                checkmark_color=StyleManager.COLORS["text"]
+            )
+            paid_checkbox.pack(anchor="w")
+            
+            # Action buttons
+            buttons_frame = StyleManager.create_frame(main_frame)
+            buttons_frame.pack(fill="x", pady=(20, 10))
+            buttons_frame.grid_columnconfigure(0, weight=1)
+            buttons_frame.grid_columnconfigure(1, weight=1)
+            
+            # Save changes
+            def save_changes():
+                try:
+                    new_date = date_entry.get().strip()
+                    new_value_str = amount_entry.get().strip()
+                    new_paid_status = paid_status.get()
+                    
+                    # Validate date format
+                    try:
+                        datetime.strptime(new_date, "%Y-%m-%d")
+                    except ValueError:
+                        messagebox.showerror("خطأ", "تنسيق التاريخ غير صحيح. يجب أن يكون بهذا الشكل: YYYY-MM-DD")
+                        return
+                    
+                    # Validate amount
+                    if not re.match(r"^\d+(\.\d{1,2})?$", new_value_str):
+                        messagebox.showerror("خطأ", "قيمة القسط يجب أن تكون رقمًا صالحًا.")
+                        return
+                        
+                    new_value = float(new_value_str)
+                    
+                    # Update installment in database
+                    if csv_manager.update_installment(customer_name, installment_date, new_date, new_value):
+                        # Update paid status if needed
+                        if is_paid != new_paid_status:
+                            if new_paid_status:
+                                csv_manager.mark_installment_as_paid(customer_name, new_date)
+                            else:
+                                csv_manager.unmark_installment_as_paid(customer_name, new_date)
+                            
+                        messagebox.showinfo("نجاح", "تم تحديث بيانات القسط بنجاح.")
+                        edit_window.destroy()
+                        load_data()  # Refresh the view
+                    else:
+                        messagebox.showerror("خطأ", "فشل في تحديث بيانات القسط.")
+                        
+                except Exception as e:
+                    logging.error(f"Error saving installment changes: {str(e)}")
+                    messagebox.showerror("خطأ", f"حدث خطأ أثناء حفظ التغييرات: {str(e)}")
+            
+            StyleManager.create_button(
+                buttons_frame,
+                text="حفظ التغييرات",
+                width=200,
+                command=save_changes
+            ).grid(row=0, column=0, padx=5, pady=5)
+            
+            # Cancel button
+            StyleManager.create_button(
+                buttons_frame,
+                text="إلغاء",
+                width=200,
+                style="secondary",
+                command=edit_window.destroy
+            ).grid(row=0, column=1, padx=5, pady=5)
+            
+        except Exception as e:
+            logging.error(f"Error opening edit installment window: {str(e)}")
+            messagebox.showerror("خطأ", f"حدث خطأ أثناء فتح نافذة التعديل: {str(e)}")
+    
+    StyleManager.create_button(
+        buttons_frame,
+        text="تعديل القسط",
+        width=200,
+        command=edit_installment
+    ).grid(row=0, column=2, padx=10, pady=10)
+    
     # Back button
     StyleManager.create_button(
         buttons_frame,
@@ -2099,7 +2372,7 @@ def setup_manage_installments_page():
         style="secondary",
         width=200,
         command=lambda: show_frame(frames["home"])
-    ).grid(row=0, column=2, padx=10, pady=10)
+    ).grid(row=0, column=3, padx=10, pady=10)
 
 def setup_backup_restore_page():
     frame = frames["backup_restore"]
