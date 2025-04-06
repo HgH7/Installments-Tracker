@@ -2,6 +2,7 @@ import customtkinter
 from customtkinter import *
 from tkinter import messagebox, ttk, StringVar, BooleanVar, filedialog
 import tkinter as tk
+from tkinter import TclError
 import re
 import csv
 import os
@@ -2852,19 +2853,29 @@ def setup_send_notification_page():
                 attempts = 0
                 errors = []
                 
-                while attempts < max_retries and not success:
+                # Store a reference to check if the window is destroyed
+                window_exists = True
+                
+                while attempts < max_retries and not success and window_exists:
                     attempts += 1
                     try:
-                        # Update status
-                        status_label.configure(text=f"جاري إرسال الرسالة... المحاولة {attempts}/{max_retries}")
-                        preview_window.update()
+                        # Check if window still exists
+                        try:
+                            # Update status only if window exists
+                            if window_exists:
+                                status_label.configure(text=f"جاري إرسال الرسالة... المحاولة {attempts}/{max_retries}")
+                                preview_window.update()
+                        except (TclError, RuntimeError):
+                            window_exists = False
+                            logging.warning("Preview window was closed during operation")
+                            break
                         
                         # Send WhatsApp message with error handling
                         try:
                             kit.sendwhatmsg_instantly(
                                 phone_no=phone,
                                 message=message,
-                                wait_time=20,
+                                wait_time=5,
                                 tab_close=True,
                                 close_time=3
                             )
@@ -2882,9 +2893,17 @@ def setup_send_notification_page():
                         
                         if updated and csv_manager.save_data(data):
                             success = True
-                            status_label.configure(text="تم الإرسال بنجاح!")
-                            messagebox.showinfo("نجاح", f"تم إرسال الإشعار إلى {name} بنجاح.")
-                            preview_window.destroy()
+                            
+                            # Check if window still exists before updating it
+                            try:
+                                if window_exists:
+                                    status_label.configure(text="تم الإرسال بنجاح!")
+                                    messagebox.showinfo("نجاح", f"تم إرسال الإشعار إلى {name} بنجاح.")
+                                    preview_window.destroy()
+                                    window_exists = False
+                            except (TclError, RuntimeError):
+                                window_exists = False
+                                
                             load_data()  # Refresh the view
                             logging.info(f"Manual notification sent to {name} at {phone}")
                         else:
@@ -2895,25 +2914,40 @@ def setup_send_notification_page():
                         errors.append(error_msg)
                         logging.error(f"Error sending WhatsApp message to {name} at {phone} (Attempt {attempts}): {error_msg}")
                         
-                        if should_retry and attempts < max_retries:
-                            status_label.configure(text=f"فشل المحاولة {attempts}. جاري المحاولة مرة أخرى...")
-                            preview_window.update()
-                            time.sleep(2)  # Wait before retrying
+                        if should_retry and attempts < max_retries and window_exists:
+                            try:
+                                status_label.configure(text=f"فشل المحاولة {attempts}. جاري المحاولة مرة أخرى...")
+                                preview_window.update()
+                                time.sleep(2)  # Wait before retrying
+                            except (TclError, RuntimeError):
+                                window_exists = False
+                                break
                         else:
-                            status_label.configure(text="فشل الإرسال.")
-                            messagebox.showerror("خطأ", f"فشل إرسال الإشعار بعد {attempts} محاولات.\nآخر خطأ: {error_msg}")
+                            if window_exists:
+                                try:
+                                    status_label.configure(text="فشل الإرسال.")
+                                    messagebox.showerror("خطأ", f"فشل إرسال الإشعار بعد {attempts} محاولات.\nآخر خطأ: {error_msg}")
+                                except (TclError, RuntimeError):
+                                    window_exists = False
                             break
                 
-                # Re-enable buttons
-                for widget in buttons_frame.winfo_children():
-                    widget.configure(state="normal")
+                # Re-enable buttons if window still exists
+                if window_exists:
+                    try:
+                        for widget in buttons_frame.winfo_children():
+                            widget.configure(state="normal")
+                    except (TclError, RuntimeError):
+                        pass
                     
             except Exception as e:
                 messagebox.showerror("خطأ", f"حدث خطأ غير متوقع: {str(e)}")
                 logging.error(f"Unexpected error in send_message: {str(e)}")
-                # Re-enable buttons
-                for widget in buttons_frame.winfo_children():
-                    widget.configure(state="normal")
+                # Re-enable buttons if window still exists
+                try:
+                    for widget in buttons_frame.winfo_children():
+                        widget.configure(state="normal")
+                except (TclError, RuntimeError):
+                    pass
         
         # Send button
         StyleManager.create_button(
@@ -3047,7 +3081,7 @@ def check_due_installments():
                                         kit.sendwhatmsg_instantly(
                                             phone_no=phone,
                                             message=message,
-                                            wait_time=20,
+                                            wait_time=5,
                                             tab_close=True,
                                             close_time=3
                                         )
