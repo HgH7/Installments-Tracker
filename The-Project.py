@@ -451,7 +451,7 @@ class CSVManager:
         self.backup_folder = backup_folder
         self.columns = ["Name", "Phone", "Amount", "Installments", 
                        "Installment Value", "Start Date", "Installment Dates", 
-                       "Notification Sent", "Paid_Installments"]
+                       "Notification Sent", "Paid_Installments", "Notified_Installments"]
         self._cache = {}
         self._cache_timestamp = None
         self._cache_duration = 60  # Cache duration in seconds
@@ -481,6 +481,9 @@ class CSVManager:
                 for row in reader:
                     # Format and validate data
                     cleaned_row = self._clean_row_data(row)
+                    # Ensure Notified_Installments exists
+                    if "Notified_Installments" not in cleaned_row:
+                        cleaned_row["Notified_Installments"] = "[]"
                     data.append(cleaned_row)
                     
             # Update cache with new data
@@ -516,6 +519,10 @@ class CSVManager:
         # Initialize Paid_Installments if not present
         if "Paid_Installments" not in cleaned_row:
             cleaned_row["Paid_Installments"] = "[]"
+            
+        # Initialize Notified_Installments if not present
+        if "Notified_Installments" not in cleaned_row:
+            cleaned_row["Notified_Installments"] = "[]"
             
         return cleaned_row
         
@@ -565,6 +572,14 @@ class CSVManager:
         phone_pattern = r"^\+?\d{10,15}$"
         if not re.match(phone_pattern, str(row["Phone"])):
             return False
+            
+        # Ensure optional fields have default values if missing
+        if "Notification Sent" not in row:
+            row["Notification Sent"] = False
+        if "Paid_Installments" not in row:
+            row["Paid_Installments"] = "[]"
+        if "Notified_Installments" not in row:
+            row["Notified_Installments"] = "[]"
             
         return True
     
@@ -919,7 +934,8 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
             "Start Date": start_date,
             "Installment Dates": ";".join(installment_dates),
             "Notification Sent": False,
-            "Paid_Installments": "[]"  # Initialize empty paid installments list
+            "Paid_Installments": "[]",  # Initialize empty paid installments list
+            "Notified_Installments": "[]"  # Initialize empty notified installments list
         }
         
         if csv_manager.append_customer(customer_data):
@@ -2849,12 +2865,11 @@ def setup_send_notification_page():
                 for widget in buttons_frame.winfo_children():
                     widget.configure(state="disabled")
                 
-                success = False
+                # Initialize retry variables
                 attempts = 0
-                errors = []
-                
-                # Store a reference to check if the window is destroyed
+                success = False
                 window_exists = True
+                errors = []
                 
                 while attempts < max_retries and not success and window_exists:
                     attempts += 1
@@ -2875,9 +2890,9 @@ def setup_send_notification_page():
                             kit.sendwhatmsg_instantly(
                                 phone_no=phone,
                                 message=message,
-                                wait_time=5,
+                                wait_time=15,  # Increased wait time to 15 seconds
                                 tab_close=True,
-                                close_time=3
+                                close_time=10  # Increased close time to 10 seconds
                             )
                         except Exception as e:
                             raise Exception(f"فشل في إرسال الرسالة: {str(e)}")
@@ -2910,35 +2925,18 @@ def setup_send_notification_page():
                             errors.append("فشل في تحديث حالة الإشعار")
                     
                     except Exception as e:
-                        error_msg = str(e)
-                        errors.append(error_msg)
-                        logging.error(f"Error sending WhatsApp message to {name} at {phone} (Attempt {attempts}): {error_msg}")
+                        errors.append(str(e))
+                        logging.error(f"Error in send_message attempt {attempts}: {str(e)}")
                         
-                        if should_retry and attempts < max_retries and window_exists:
-                            try:
-                                status_label.configure(text=f"فشل المحاولة {attempts}. جاري المحاولة مرة أخرى...")
-                                preview_window.update()
-                                time.sleep(2)  # Wait before retrying
-                            except (TclError, RuntimeError):
-                                window_exists = False
-                                break
-                        else:
-                            if window_exists:
-                                try:
-                                    status_label.configure(text="فشل الإرسال.")
-                                    messagebox.showerror("خطأ", f"فشل إرسال الإشعار بعد {attempts} محاولات.\nآخر خطأ: {error_msg}")
-                                except (TclError, RuntimeError):
-                                    window_exists = False
-                            break
+                        # Wait before retry if needed
+                        if attempts < max_retries and should_retry:
+                            time.sleep(5)
                 
-                # Re-enable buttons if window still exists
-                if window_exists:
-                    try:
-                        for widget in buttons_frame.winfo_children():
-                            widget.configure(state="normal")
-                    except (TclError, RuntimeError):
-                        pass
-                    
+                if not success:
+                    error_message = "\n".join(errors)
+                    messagebox.showerror("خطأ", f"فشل في إرسال الإشعار:\n{error_message}")
+                    logging.error(f"Failed to send notification to {name} after {max_retries} attempts")
+                
             except Exception as e:
                 messagebox.showerror("خطأ", f"حدث خطأ غير متوقع: {str(e)}")
                 logging.error(f"Unexpected error in send_message: {str(e)}")
@@ -3018,11 +3016,6 @@ def check_due_installments():
             # Check each customer
             for customer in data:
                 try:
-                    # Only process customers with notification not yet sent
-                    if customer.get("Notification Sent", False):
-                        skip_count += 1
-                        continue
-                        
                     # Get installment dates
                     dates_str = customer.get("Installment Dates", "")
                     if not dates_str:
@@ -3035,13 +3028,19 @@ def check_due_installments():
                     except:
                         paid_installments = []
                         
+                    # Get notified installments
+                    try:
+                        notified_installments = eval(customer.get("Notified_Installments", "[]"))
+                    except:
+                        notified_installments = []
+                        
                     installment_dates = dates_str.split(";")
                     
                     # Check each installment date
                     for date_str in installment_dates:
                         try:
-                            # Skip if already paid
-                            if date_str in paid_installments:
+                            # Skip if already paid or notified
+                            if date_str in paid_installments or date_str in notified_installments:
                                 continue
                                 
                             date = datetime.strptime(date_str.strip(), "%Y-%m-%d")
@@ -3081,15 +3080,16 @@ def check_due_installments():
                                         kit.sendwhatmsg_instantly(
                                             phone_no=phone,
                                             message=message,
-                                            wait_time=5,
+                                            wait_time=15,  # Increased wait time to 15 seconds
                                             tab_close=True,
-                                            close_time=3
+                                            close_time=10  # Increased close time to 10 seconds
                                         )
                                         
-                                        # Update notification status
-                                        customer["Notification Sent"] = True
+                                        # Update notification status for this installment
+                                        notified_installments.append(date_str)
+                                        customer["Notified_Installments"] = str(notified_installments)
                                         csv_manager.save_data(data)
-                                        logging.info(f"Automatic notification sent to {customer['Name']} at {phone}")
+                                        logging.info(f"Automatic notification sent to {customer['Name']} at {phone} for installment {date_str}")
                                         success = True
                                         success_count += 1
                                         
