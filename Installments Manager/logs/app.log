@@ -1,0 +1,46 @@
+2025-04-07 13:40:26,603 - INFO - The-Project.py:350 - Starting application initialization...
+2025-04-07 13:40:26,686 - INFO - The-Project.py:363 - Appearance mode set successfully
+2025-04-07 13:40:26,687 - INFO - The-Project.py:375 - Window centered successfully
+2025-04-07 13:40:26,687 - INFO - The-Project.py:135 - Theme setup completed successfully
+2025-04-07 13:40:26,687 - INFO - The-Project.py:3236 - Theme setup completed
+2025-04-07 13:40:26,703 - INFO - The-Project.py:3259 - Created frame: home
+2025-04-07 13:40:26,705 - INFO - The-Project.py:3259 - Created frame: add
+2025-04-07 13:40:26,707 - INFO - The-Project.py:3259 - Created frame: delete
+2025-04-07 13:40:26,708 - INFO - The-Project.py:3259 - Created frame: edit
+2025-04-07 13:40:26,711 - INFO - The-Project.py:3259 - Created frame: view
+2025-04-07 13:40:26,712 - INFO - The-Project.py:3259 - Created frame: manage_installments
+2025-04-07 13:40:26,713 - INFO - The-Project.py:3259 - Created frame: backup_restore
+2025-04-07 13:40:26,715 - INFO - The-Project.py:3259 - Created frame: send_notification
+2025-04-07 13:40:27,038 - INFO - The-Project.py:3279 - setup_home_page completed successfully
+2025-04-07 13:40:27,153 - INFO - The-Project.py:3279 - setup_add_page completed successfully
+2025-04-07 13:40:27,215 - INFO - The-Project.py:3279 - setup_view_page completed successfully
+2025-04-07 13:40:27,245 - INFO - The-Project.py:3279 - setup_manage_installments_page completed successfully
+2025-04-07 13:40:27,299 - INFO - The-Project.py:3279 - setup_backup_restore_page completed successfully
+2025-04-07 13:40:27,321 - INFO - The-Project.py:3279 - setup_send_notification_page completed successfully
+2025-04-07 13:40:27,321 - INFO - The-Project.py:2988 - Starting automatic installment check
+2025-04-07 13:40:27,321 - INFO - The-Project.py:3120 - Notification thread started
+2025-04-07 13:40:27,321 - INFO - The-Project.py:390 - Application starting...
+2025-04-07 13:40:27,322 - INFO - The-Project.py:2993 - No customer data found for notifications
+2025-04-07 13:43:08,379 - INFO - The-Project.py:350 - Starting application initialization...
+2025-04-07 13:43:08,463 - INFO - The-Project.py:363 - Appearance mode set successfully
+2025-04-07 13:43:08,463 - INFO - The-Project.py:375 - Window centered successfully
+2025-04-07 13:43:08,463 - INFO - The-Project.py:135 - Theme setup completed successfully
+2025-04-07 13:43:08,463 - INFO - The-Project.py:3236 - Theme setup completed
+2025-04-07 13:43:08,478 - INFO - The-Project.py:3259 - Created frame: home
+2025-04-07 13:43:08,480 - INFO - The-Project.py:3259 - Created frame: add
+2025-04-07 13:43:08,481 - INFO - The-Project.py:3259 - Created frame: delete
+2025-04-07 13:43:08,483 - INFO - The-Project.py:3259 - Created frame: edit
+2025-04-07 13:43:08,484 - INFO - The-Project.py:3259 - Created frame: view
+2025-04-07 13:43:08,486 - INFO - The-Project.py:3259 - Created frame: manage_installments
+2025-04-07 13:43:08,487 - INFO - The-Project.py:3259 - Created frame: backup_restore
+2025-04-07 13:43:08,489 - INFO - The-Project.py:3259 - Created frame: send_notification
+2025-04-07 13:43:08,777 - INFO - The-Project.py:3279 - setup_home_page completed successfully
+2025-04-07 13:43:08,880 - INFO - The-Project.py:3279 - setup_add_page completed successfully
+2025-04-07 13:43:08,923 - INFO - The-Project.py:3279 - setup_view_page completed successfully
+2025-04-07 13:43:08,941 - INFO - The-Project.py:3279 - setup_manage_installments_page completed successfully
+2025-04-07 13:43:08,987 - INFO - The-Project.py:3279 - setup_backup_restore_page completed successfully
+2025-04-07 13:43:09,005 - INFO - The-Project.py:3279 - setup_send_notification_page completed successfully
+2025-04-07 13:43:09,005 - INFO - The-Project.py:2988 - Starting automatic installment check
+2025-04-07 13:43:09,005 - INFO - The-Project.py:3120 - Notification thread started
+2025-04-07 13:43:09,006 - INFO - The-Project.py:390 - Application starting...
+2025-04-07 13:43:09,006 - INFO - The-Project.py:2993 - No customer data found for notifications
