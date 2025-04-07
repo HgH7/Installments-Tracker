@@ -2645,7 +2645,7 @@ def setup_send_notification_page():
     table_frame.grid_rowconfigure(0, weight=1)
     
     # Create a Treeview widget with modern styling
-    columns = ("Name", "Phone", "Installment Date", "Installment Value", "Notification Sent")
+    columns = ("Name", "Phone", "Installment Date", "Installment Value")
     tree = ttk.Treeview(
         table_frame,
         columns=columns,
@@ -2658,16 +2658,14 @@ def setup_send_notification_page():
         "Name": 150,
         "Phone": 120,
         "Installment Date": 120,
-        "Installment Value": 120,
-        "Notification Sent": 120
+        "Installment Value": 120
     }
     
     column_headers = {
         "Name": "اسم العميل",
         "Phone": "رقم الهاتف",
         "Installment Date": "تاريخ القسط",
-        "Installment Value": "قيمة القسط",
-        "Notification Sent": "تم الإرسال"
+        "Installment Value": "قيمة القسط"
     }
     
     for col in columns:
@@ -2698,19 +2696,13 @@ def setup_send_notification_page():
                 date_obj = datetime.strptime(date, "%Y-%m-%d").date()
                 # Only show upcoming installments
                 if date_obj >= today:
-                    notification_sent = "نعم" if customer["Notification Sent"] else "لا"
                     values = (
                         customer["Name"],
                         customer["Phone"],
                         date,
-                        customer["Installment Value"],
-                        notification_sent
+                        customer["Installment Value"]
                     )
-                    item = tree.insert("", "end", values=values)
-                    
-                    # Add tag for sent notifications
-                    if notification_sent == "نعم":
-                        tree.item(item, tags=("sent",))
+                    tree.insert("", "end", values=values)
         
         # Configure sent notification style
         tree.tag_configure("sent", foreground=StyleManager.COLORS["success"])
