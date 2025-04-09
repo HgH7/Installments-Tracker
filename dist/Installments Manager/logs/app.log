@@ -1,0 +1,30 @@
+2025-04-09 17:12:12,293 - INFO - The-Project.py:356 - Starting application initialization...
+2025-04-09 17:12:12,382 - INFO - The-Project.py:369 - Appearance mode set successfully
+2025-04-09 17:12:12,382 - INFO - The-Project.py:381 - Window centered successfully
+2025-04-09 17:12:12,383 - INFO - The-Project.py:135 - Theme setup completed successfully
+2025-04-09 17:12:12,383 - INFO - The-Project.py:3274 - Theme setup completed
+2025-04-09 17:12:12,398 - INFO - The-Project.py:3297 - Created frame: home
+2025-04-09 17:12:12,400 - INFO - The-Project.py:3297 - Created frame: add
+2025-04-09 17:12:12,402 - INFO - The-Project.py:3297 - Created frame: delete
+2025-04-09 17:12:12,403 - INFO - The-Project.py:3297 - Created frame: edit
+2025-04-09 17:12:12,405 - INFO - The-Project.py:3297 - Created frame: view
+2025-04-09 17:12:12,406 - INFO - The-Project.py:3297 - Created frame: manage_installments
+2025-04-09 17:12:12,408 - INFO - The-Project.py:3297 - Created frame: backup_restore
+2025-04-09 17:12:12,409 - INFO - The-Project.py:3297 - Created frame: send_notification
+2025-04-09 17:12:12,691 - INFO - The-Project.py:3317 - setup_home_page completed successfully
+2025-04-09 17:12:12,798 - INFO - The-Project.py:3317 - setup_add_page completed successfully
+2025-04-09 17:12:12,839 - INFO - The-Project.py:3317 - setup_view_page completed successfully
+2025-04-09 17:12:12,858 - INFO - The-Project.py:3317 - setup_manage_installments_page completed successfully
+2025-04-09 17:12:12,902 - INFO - The-Project.py:3317 - setup_backup_restore_page completed successfully
+2025-04-09 17:12:12,918 - INFO - The-Project.py:3317 - setup_send_notification_page completed successfully
+2025-04-09 17:12:12,918 - INFO - The-Project.py:3026 - Starting automatic installment check
+2025-04-09 17:12:12,918 - INFO - The-Project.py:3158 - Notification thread started
+2025-04-09 17:12:12,919 - INFO - The-Project.py:396 - Application starting...
+2025-04-09 17:12:12,919 - INFO - The-Project.py:3031 - No customer data found for notifications
+2025-04-09 17:12:42,399 - INFO - The-Project.py:695 - Backup created: backups\backup_20250409_171242.csv
+2025-04-09 17:12:42,400 - INFO - The-Project.py:246 - Created customer directory: D:\installments project\dist\Installments Manager\_internal\customer_files\mohamed ahmed
+2025-04-09 17:12:42,403 - INFO - The-Project.py:278 - Added file Picture1-Copy.jpg for customer mohamed ahmed
+2025-04-09 17:12:42,406 - INFO - The-Project.py:278 - Added file Picture1.jpg for customer mohamed ahmed
+2025-04-09 17:12:42,408 - INFO - The-Project.py:278 - Added file Screenshot2024-01-31050433-Copy.png for customer mohamed ahmed
+2025-04-09 17:12:42,409 - INFO - The-Project.py:964 - Successfully saved files for customer mohamed ahmed
+2025-04-09 17:28:10,512 - INFO - The-Project.py:695 - Backup created: backups\backup_20250409_172810.csv
