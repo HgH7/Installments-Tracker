@@ -456,7 +456,8 @@ class CSVManager:
         self.backup_folder = backup_folder
         self.columns = ["Name", "Phone", "Amount", "Installments", 
                        "Installment Value", "Start Date", "Installment Dates", 
-                       "Notification Sent", "Paid_Installments", "Notified_Installments"]
+                       "Notification Sent", "Paid_Installments", "Notified_Installments",
+                       "Installment_Values"]
         self._cache = {}
         self._cache_timestamp = None
         self._cache_duration = 60  # Cache duration in seconds
@@ -618,10 +619,14 @@ class CSVManager:
             missing_fields = [field for field in self.columns if field not in customer_data]
             if missing_fields:
                 logging.error(f"Missing required fields: {missing_fields}")
+                messagebox.showerror("خطأ", f"الحقول التالية مطلوبة: {', '.join(missing_fields)}")
                 return False
             
             # Create backup before appending
-            self.create_backup()
+            if not self.create_backup():
+                logging.error("Failed to create backup before appending customer")
+                messagebox.showerror("خطأ", "فشل في إنشاء نسخة احتياطية")
+                return False
             
             # Check if file exists and has headers
             file_exists = os.path.exists(self.csv_file) and os.path.getsize(self.csv_file) > 0
@@ -636,10 +641,15 @@ class CSVManager:
             self._cache = {}
             self._cache_timestamp = None
             return True
+        except PermissionError:
+            logging.error("Permission denied while writing to CSV file")
+            messagebox.showerror("خطأ", "لا يوجد صلاحية للوصول إلى ملف البيانات")
+            return False
         except Exception as e:
             logging.error(f"Error appending customer: {str(e)}")
+            messagebox.showerror("خطأ", f"حدث خطأ أثناء حفظ البيانات: {str(e)}")
             return False
-            
+    
     def update_customer(self, name: str, updated_data: Dict) -> bool:
         """Update customer data in CSV file."""
         try:
@@ -819,8 +829,23 @@ class CSVManager:
                     date_index = installment_dates.index(old_date)
                     installment_dates[date_index] = new_date
                     
-                    # Update the installment value
-                    data[i]["Installment Value"] = new_value
+                    # Get or create installment values dictionary
+                    try:
+                        installment_values = eval(customer.get("Installment_Values", "{}"))
+                        if not isinstance(installment_values, dict):
+                            installment_values = {}
+                    except:
+                        installment_values = {}
+                    
+                    # If Installment_Values doesn't exist, initialize it with default values
+                    if not installment_values:
+                        default_value = float(customer["Installment Value"])
+                        for date in installment_dates:
+                            installment_values[date] = default_value
+                    
+                    # Update the specific installment value
+                    installment_values[new_date] = new_value
+                    data[i]["Installment_Values"] = str(installment_values)
                     
                     # Join back the dates
                     data[i]["Installment Dates"] = ";".join(installment_dates)
@@ -892,41 +917,41 @@ def save_to_csv_and_excel(data):
 
 def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry, start_date_entry, file_list=None):
     """Validate and save customer data"""
-    # Get values from entries
-    name = name_entry.get().strip()
-    phone = phone_entry.get().strip()
-    amount = amount_entry.get().strip()
-    installments = installments_entry.get().strip()
-    start_date = start_date_entry.get().strip()
-
-    # Validate all fields are filled
-    if not all([name, phone, amount, installments, start_date]):
-        messagebox.showerror("خطأ", "جميع الحقول مطلوبة.")
-        return False
-
-    # Validate phone number
-    if not re.match(r"^\+?\d{10,15}$", phone):
-        messagebox.showerror("خطأ", "رقم الهاتف غير صالح.")
-        return False
-
-    # Validate amount
-    if not re.match(r"^\d+(\.\d{1,2})?$", amount):
-        messagebox.showerror("خطأ", "المبلغ يجب أن يكون رقمًا صالحًا.")
-        return False
-
-    # Validate installments
-    if not installments.isdigit() or int(installments) <= 0:
-        messagebox.showerror("خطأ", "عدد الأقساط يجب أن يكون رقمًا صحيحًا أكبر من صفر.")
-        return False
-
-    # Validate date format
     try:
-        datetime.strptime(start_date, "%Y-%m-%d")
-    except ValueError:
-        messagebox.showerror("خطأ", "تنسيق التاريخ غير صحيح. يجب أن يكون بهذا الشكل: YYYY-MM-DD")
-        return False
+        # Get values from entries
+        name = name_entry.get().strip()
+        phone = phone_entry.get().strip()
+        amount = amount_entry.get().strip()
+        installments = installments_entry.get().strip()
+        start_date = start_date_entry.get().strip()
 
-    try:
+        # Validate all fields are filled
+        if not all([name, phone, amount, installments, start_date]):
+            messagebox.showerror("خطأ", "جميع الحقول مطلوبة.")
+            return False
+
+        # Validate phone number
+        if not re.match(r"^\+?\d{10,15}$", phone):
+            messagebox.showerror("خطأ", "رقم الهاتف غير صالح.")
+            return False
+
+        # Validate amount
+        if not re.match(r"^\d+(\.\d{1,2})?$", amount):
+            messagebox.showerror("خطأ", "المبلغ يجب أن يكون رقمًا صالحًا.")
+            return False
+
+        # Validate installments
+        if not installments.isdigit() or int(installments) <= 0:
+            messagebox.showerror("خطأ", "عدد الأقساط يجب أن يكون رقمًا صحيحًا أكبر من صفر.")
+            return False
+
+        # Validate date format
+        try:
+            datetime.strptime(start_date, "%Y-%m-%d")
+        except ValueError:
+            messagebox.showerror("خطأ", "تنسيق التاريخ غير صحيح. يجب أن يكون بهذا الشكل: YYYY-MM-DD")
+            return False
+
         amount = float(amount)
         installments = int(installments)
         installment_value = round(amount / installments, 2)
@@ -953,7 +978,8 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
             "Installment Dates": ";".join(installment_dates),
             "Notification Sent": False,
             "Paid_Installments": "[]",
-            "Notified_Installments": "[]"
+            "Notified_Installments": "[]",
+            "Installment_Values": "{}"  # Initialize empty installment values
         }
 
         # Save customer data
@@ -964,6 +990,7 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
                     logging.info(f"Successfully saved files for customer {name}")
                 else:
                     logging.error(f"Failed to save files for customer {name}")
+                    messagebox.showwarning("تحذير", "تم حفظ بيانات العميل ولكن فشل حفظ الملفات المرفقة")
             
             # Clear all entry fields
             name_entry.delete(0, "end")
@@ -982,7 +1009,6 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
             messagebox.showinfo("نجاح", "تم إضافة العميل بنجاح.")
             return True
         else:
-            messagebox.showerror("خطأ", "فشل في إضافة العميل.")
             return False
             
     except Exception as e:
@@ -2123,16 +2149,27 @@ def setup_manage_installments_page():
                 installment_dates = customer["Installment Dates"].split(";")
                 paid_installments = eval(customer.get("Paid_Installments", "[]"))
                 
+                # Get individual installment values
+                try:
+                    installment_values = eval(customer.get("Installment_Values", "{}"))
+                    if not isinstance(installment_values, dict):
+                        installment_values = {}
+                except:
+                    installment_values = {}
+                
                 for date in installment_dates:
                     date_obj = datetime.strptime(date, "%Y-%m-%d").date()
                     is_paid = date in paid_installments
+                    
+                    # Get the specific installment value or use the default
+                    value = installment_values.get(date, customer["Installment Value"])
                     
                     all_installments.append({
                         "name": customer["Name"],
                         "phone": customer["Phone"],
                         "date": date_obj,
                         "date_str": date,
-                        "value": customer["Installment Value"],
+                        "value": value,
                         "is_paid": is_paid
                     })
             
