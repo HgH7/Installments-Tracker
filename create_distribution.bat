@@ -2,47 +2,50 @@
 echo Creating distribution package...
 
 :: Create distribution folder
-if exist "Installments Manager" rmdir /s /q "Installments Manager"
-mkdir "Installments Manager"
+if exist "Installments-Tracker-Distribution" (
+    echo Removing old distribution folder...
+    rmdir /s /q "Installments-Tracker-Distribution"
+)
+mkdir "Installments-Tracker-Distribution"
 
-:: Copy executable and its dependencies
+:: Copy executable
 echo Copying executable...
-xcopy /E /I /Y "dist\Installments Manager\*" "Installments Manager\"
+copy "dist\Installments-Tracker.exe" "Installments-Tracker-Distribution\"
 
-:: Copy data folders (create empty ones)
-echo Creating data folders...
-mkdir "Installments Manager\customer_files"
-mkdir "Installments Manager\backups"
-mkdir "Installments Manager\logs"
+:: Copy data files
+echo Copying data files...
+copy "customers.csv" "Installments-Tracker-Distribution\"
+copy "PyWhatKit_DB.txt" "Installments-Tracker-Distribution\"
 
-:: Copy empty data files
-echo Creating data files...
-echo Name,Phone,Amount,Installments,Start Date,Installment Dates,Paid Installments> "Installments Manager\customers.csv"
-echo.> "Installments Manager\PyWhatKit_DB.txt"
+:: Copy folders
+echo Copying folders...
+xcopy /E /I "customer_files" "Installments-Tracker-Distribution\customer_files"
+xcopy /E /I "backups" "Installments-Tracker-Distribution\backups"
+xcopy /E /I "logs" "Installments-Tracker-Distribution\logs"
 
 :: Create README
-echo Creating README...
+echo Creating README file...
 (
-echo # Installments Manager
+echo Installments Tracker - Installation Instructions
 echo.
-echo This is a standalone application for managing customer installments.
+echo 1. Extract all files to a folder of your choice
+echo 2. Double-click Installments-Tracker.exe to run the program
+echo 3. The program will create necessary folders automatically
 echo.
-echo ## Contents
-echo - Installments Manager.exe: Main application executable
-echo - customer_files/: Directory for customer-related files
-echo - backups/: Directory containing backup files
-echo - logs/: Directory containing application logs
-echo - customers.csv: Customer database
-echo - PyWhatKit_DB.txt: WhatsApp integration database
-echo.
-echo ## Usage
-echo 1. Double-click Installments Manager.exe to start the application
-echo 2. All data will be automatically saved in the respective folders
-echo 3. Backups are created automatically
-) > "Installments Manager\README.md"
+echo Important Notes:
+echo - Keep all files in the same folder
+echo - Do not delete any of the included folders
+echo - The program will create backups automatically
+echo - Customer files are stored in the customer_files folder
+echo - Logs are stored in the logs folder
+) > "Installments-Tracker-Distribution\README.txt"
+
+:: Create zip file
+echo Creating zip file...
+powershell Compress-Archive -Path "Installments-Tracker-Distribution" -DestinationPath "Installments-Tracker-Distribution.zip" -Force
 
 echo.
 echo Distribution package created successfully!
-echo Location: Installments Manager
+echo The zip file is: Installments-Tracker-Distribution.zip
 echo.
 pause 

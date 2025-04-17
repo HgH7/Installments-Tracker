@@ -658,7 +658,14 @@ class CSVManager:
             
             for i, row in enumerate(data):
                 if row["Name"] == name:
-                    data[i].update(updated_data)
+                    # Preserve existing fields that are not in updated_data
+                    preserved_fields = {
+                        "Notification Sent": row.get("Notification Sent", False),
+                        "Paid_Installments": row.get("Paid_Installments", "[]"),
+                        "Notified_Installments": row.get("Notified_Installments", "[]"),
+                        "Installment_Values": row.get("Installment_Values", "{}")
+                    }
+                    data[i] = {**row, **updated_data, **preserved_fields}
                     customer_found = True
                     break
             
@@ -666,7 +673,10 @@ class CSVManager:
                 logging.error(f"Customer not found: {name}")
                 return False
                 
-            return self.save_data(data)
+            success = self.save_data(data)
+            if success:
+                logging.info(f"Successfully updated customer: {name}")
+            return success
         except Exception as e:
             logging.error(f"Error updating customer: {str(e)}")
             return False
@@ -861,11 +871,15 @@ class CSVManager:
                         logging.error(f"Error updating paid status: {str(e)}")
                     
                     # Save the updated data
-                    return self.save_data(data)
+                    if self.save_data(data):
+                        # Refresh payment history views after successful update
+                        refresh_payment_history_views()
+                        return True
+                    return False
             
             logging.warning(f"Customer not found: {customer_name}")
             return False
-            
+        
         except Exception as e:
             logging.error(f"Error updating installment: {str(e)}")
             return False
@@ -1905,6 +1919,12 @@ def setup_view_page():
                 return
             
             try:
+                datetime.strptime(start_date, "%Y-%m-%d")
+            except ValueError:
+                messagebox.showerror("خطأ", "تنسيق التاريخ غير صحيح. يجب أن يكون بهذا الشكل: YYYY-MM-DD")
+                return
+            
+            try:
                 # Convert and calculate values
                 amount_float = float(amount)
                 installments_int = int(installments)
@@ -1938,6 +1958,7 @@ def setup_view_page():
                         messagebox.showinfo("نجاح", "تم تحديث بيانات العميل بنجاح!")
                         edit_window.destroy()
                         refresh_treeview(tree)
+                        refresh_payment_history_views()  # Refresh payment history views
                     else:
                         messagebox.showerror("خطأ", "فشل في تحديث بيانات العميل.")
                 else:
@@ -1946,14 +1967,15 @@ def setup_view_page():
                         messagebox.showinfo("نجاح", "تم تحديث بيانات العميل بنجاح!")
                         edit_window.destroy()
                         refresh_treeview(tree)
+                        refresh_payment_history_views()  # Refresh payment history views
                     else:
                         messagebox.showerror("خطأ", "فشل في تحديث بيانات العميل.")
-                        
+                
             except ValueError as e:
                 messagebox.showerror("خطأ", f"خطأ في البيانات المدخلة: {str(e)}")
             except Exception as e:
                 messagebox.showerror("خطأ", f"حدث خطأ غير متوقع: {str(e)}")
-        
+            
         # Save Button
         StyleManager.create_button(
             buttons_frame,
@@ -2065,7 +2087,7 @@ def setup_view_page():
     edit_btn.pack(side="right", padx=(0, 10), pady=10)
 
 def setup_manage_installments_page():
-    frame = frames["manage_installments"]
+    frame = frames["manage"]
     frame.grid_columnconfigure(0, weight=1)
     
     # Create header
@@ -2423,6 +2445,7 @@ def setup_manage_installments_page():
                         messagebox.showinfo("نجاح", "تم تحديث بيانات القسط بنجاح.")
                         edit_window.destroy()
                         load_data()  # Refresh the view
+                        refresh_payment_history_views()  # Refresh payment history views
                     else:
                         messagebox.showerror("خطأ", "فشل في تحديث بيانات القسط.")
                         
@@ -3233,7 +3256,7 @@ def setup_home_page():
         },
         {
             "text": "إدارة الأقساط",
-            "command": lambda: show_frame(frames["manage_installments"]),
+            "command": lambda: show_frame(frames["manage"]),  # Changed from manage_installments to manage
             "icon": "💰",
             "color": "#9C27B0"
         },
@@ -3297,6 +3320,303 @@ def setup_home_page():
         button.bind("<Enter>", on_enter)
         button.bind("<Leave>", on_leave)
 
+def refresh_payment_history_views():
+    """Refresh all open payment history windows."""
+    for widget in app.winfo_children():
+        if isinstance(widget, CTkToplevel) and "سجل المدفوعات" in widget.title():
+            widget.destroy()
+
+def load_installments_data():
+    """Load data into the installments management treeview"""
+    try:
+        frame = frames["manage"]
+        tree = frame.tree
+        
+        # Clear existing items
+        for item in tree.get_children():
+            tree.delete(item)
+            
+        # Get customer data
+        data = csv_manager.read_data()
+        
+        for customer in data:
+            try:
+                # Get paid and total installments
+                paid_installments = eval(customer.get("Paid_Installments", "[]"))
+                total_installments = int(customer.get("Installments", 0))
+                
+                # Get next due date
+                installment_dates = customer.get("Installment Dates", "").split(";")
+                next_due = ""
+                for date in installment_dates:
+                    if date not in paid_installments:
+                        next_due = date
+                        break
+                
+                # Format amount with two decimal places
+                amount = float(customer.get("Amount", 0))
+                formatted_amount = f"{amount:.2f}"
+                
+                # Insert into tree
+                item = tree.insert("", "end", values=(
+                    customer.get("Name", ""),
+                    customer.get("Phone", ""),
+                    formatted_amount,
+                    total_installments,
+                    f"{len(paid_installments)}/{total_installments}",
+                    next_due
+                ))
+                
+                # Add color coding based on payment status
+                if len(paid_installments) == total_installments:
+                    tree.item(item, tags=("paid",))
+                else:
+                    tree.item(item, tags=("unpaid",))
+                
+            except Exception as e:
+                logging.error(f"Error processing customer in load_installments_data: {str(e)}")
+                continue
+        
+        # Configure payment status styles
+        tree.tag_configure("paid", foreground=StyleManager.COLORS["success"])
+        tree.tag_configure("unpaid", foreground=StyleManager.COLORS["danger"])
+                
+    except Exception as e:
+        logging.error(f"Error loading installments data: {str(e)}")
+        messagebox.showerror("خطأ", "حدث خطأ أثناء تحميل البيانات")
+
+def show_installment_details(event):
+    """Show details of a selected installment"""
+    try:
+        # Get the selected item
+        tree = frames["manage"].tree
+        selection = tree.selection()
+        if not selection:
+            return
+            
+        # Get customer data
+        item = selection[0]
+        values = tree.item(item, "values")
+        customer_name = values[0]
+        phone = values[1]
+        
+        # Get customer data from CSV
+        data = csv_manager.read_data()
+        customer = next((c for c in data if c["Name"] == customer_name and c["Phone"] == phone), None)
+        if not customer:
+            messagebox.showerror("خطأ", "لم يتم العثور على بيانات العميل")
+            return
+            
+        # Create details window
+        details_window = CTkToplevel(app)
+        details_window.title(f"تفاصيل الأقساط - {customer_name}")
+        details_window.geometry("600x400")
+        details_window.resizable(False, False)
+        
+        # Create main frame
+        main_frame = StyleManager.create_frame(details_window)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Create header
+        header_frame = StyleManager.create_frame(main_frame)
+        header_frame.pack(fill="x", pady=(0, 20))
+        
+        StyleManager.create_label(
+            header_frame,
+            text=f"تفاصيل أقساط العميل: {customer_name}",
+            font_style="subheading"
+        ).pack()
+        
+        # Create treeview
+        tree_frame = StyleManager.create_frame(main_frame)
+        tree_frame.pack(fill="both", expand=True)
+        
+        # Add scrollbars
+        y_scroll = ttk.Scrollbar(tree_frame, orient="vertical")
+        x_scroll = ttk.Scrollbar(tree_frame, orient="horizontal")
+        
+        # Create treeview
+        tree = ttk.Treeview(
+            tree_frame,
+            columns=("date", "amount", "status"),
+            show="headings",
+            yscrollcommand=y_scroll.set,
+            xscrollcommand=x_scroll.set
+        )
+        
+        # Configure columns
+        tree.heading("date", text="تاريخ القسط")
+        tree.heading("amount", text="المبلغ")
+        tree.heading("status", text="الحالة")
+        
+        tree.column("date", width=150, anchor="center")
+        tree.column("amount", width=150, anchor="center")
+        tree.column("status", width=150, anchor="center")
+        
+        # Pack tree and scrollbars
+        tree.pack(side="left", fill="both", expand=True)
+        y_scroll.pack(side="right", fill="y")
+        x_scroll.pack(side="bottom", fill="x")
+        
+        y_scroll.config(command=tree.yview)
+        x_scroll.config(command=tree.xview)
+        
+        # Get installment data
+        total_amount = float(customer.get("Amount", 0))
+        total_installments = int(customer.get("Installments", 0))
+        installment_amount = total_amount / total_installments
+        paid_installments = eval(customer.get("Paid_Installments", "[]"))
+        installment_dates = customer.get("Installment Dates", "").split(";")
+        
+        # Add installments to tree
+        for date in installment_dates:
+            if date:
+                status = "مدفوع" if date in paid_installments else "غير مدفوع"
+                tree.insert("", "end", values=(
+                    date,
+                    f"{installment_amount:.2f}",
+                    status
+                ))
+        
+        # Configure styles
+        tree.tag_configure("paid", foreground=StyleManager.COLORS["success"])
+        tree.tag_configure("unpaid", foreground=StyleManager.COLORS["danger"])
+        
+        # Add buttons frame
+        buttons_frame = StyleManager.create_frame(main_frame)
+        buttons_frame.pack(fill="x", pady=(20, 0))
+        
+        # Add mark as paid button
+        def mark_as_paid():
+            selection = tree.selection()
+            if not selection:
+                messagebox.showwarning("تنبيه", "الرجاء اختيار قسط")
+                return
+                
+            item = selection[0]
+            values = tree.item(item, "values")
+            date = values[0]
+            
+            if date in paid_installments:
+                messagebox.showinfo("معلومات", "هذا القسط مدفوع بالفعل")
+                return
+                
+            if csv_manager.mark_installment_as_paid(customer_name, date):
+                tree.item(item, values=(date, values[1], "مدفوع"), tags=("paid",))
+                messagebox.showinfo("نجاح", "تم تسجيل القسط كمدفوع")
+                load_installments_data()  # Refresh main view
+            else:
+                messagebox.showerror("خطأ", "فشل في تسجيل القسط كمدفوع")
+        
+        StyleManager.create_button(
+            buttons_frame,
+            text="تسجيل كمدفوع",
+            command=mark_as_paid
+        ).pack(side="right", padx=5)
+        
+        # Add unmark as paid button
+        def unmark_as_paid():
+            selection = tree.selection()
+            if not selection:
+                messagebox.showwarning("تنبيه", "الرجاء اختيار قسط")
+                return
+                
+            item = selection[0]
+            values = tree.item(item, "values")
+            date = values[0]
+            
+            if date not in paid_installments:
+                messagebox.showinfo("معلومات", "هذا القسط غير مدفوع")
+                return
+                
+            if csv_manager.unmark_installment_as_paid(customer_name, date):
+                tree.item(item, values=(date, values[1], "غير مدفوع"), tags=("unpaid",))
+                messagebox.showinfo("نجاح", "تم إلغاء تسجيل القسط كمدفوع")
+                load_installments_data()  # Refresh main view
+            else:
+                messagebox.showerror("خطأ", "فشل في إلغاء تسجيل القسط كمدفوع")
+        
+        StyleManager.create_button(
+            buttons_frame,
+            text="إلغاء تسجيل الدفع",
+            command=unmark_as_paid
+        ).pack(side="right", padx=5)
+        
+        # Add close button
+        StyleManager.create_button(
+            buttons_frame,
+            text="إغلاق",
+            command=details_window.destroy
+        ).pack(side="left")
+        
+    except Exception as e:
+        logging.error(f"Error showing installment details: {str(e)}")
+        messagebox.showerror("خطأ", "حدث خطأ أثناء عرض تفاصيل الأقساط")
+
+def perform_installment_search():
+    """Search for installments based on the search query"""
+    try:
+        frame = frames["manage"]
+        search_query = frame.search_entry.get().strip().lower()
+        tree = frame.tree
+        
+        # Clear existing items
+        for item in tree.get_children():
+            tree.delete(item)
+            
+        # Get customer data
+        data = csv_manager.read_data()
+        
+        for customer in data:
+            try:
+                # Check if customer matches search query
+                if (search_query in customer.get("Name", "").lower() or 
+                    search_query in customer.get("Phone", "").lower()):
+                    
+                    # Get paid and total installments
+                    paid_installments = eval(customer.get("Paid_Installments", "[]"))
+                    total_installments = int(customer.get("Installments", 0))
+                    
+                    # Get next due date
+                    installment_dates = customer.get("Installment Dates", "").split(";")
+                    next_due = ""
+                    for date in installment_dates:
+                        if date not in paid_installments:
+                            next_due = date
+                            break
+                    
+                    # Format amount with two decimal places
+                    amount = float(customer.get("Amount", 0))
+                    formatted_amount = f"{amount:.2f}"
+                    
+                    # Insert into tree
+                    item = tree.insert("", "end", values=(
+                        customer.get("Name", ""),
+                        customer.get("Phone", ""),
+                        formatted_amount,
+                        total_installments,
+                        f"{len(paid_installments)}/{total_installments}",
+                        next_due
+                    ))
+                    
+                    # Add color coding based on payment status
+                    if len(paid_installments) == total_installments:
+                        tree.item(item, tags=("paid",))
+                    else:
+                        tree.item(item, tags=("unpaid",))
+                
+            except Exception as e:
+                logging.error(f"Error processing customer in search: {str(e)}")
+                continue
+        
+        # Configure payment status styles
+        tree.tag_configure("paid", foreground=StyleManager.COLORS["success"])
+        tree.tag_configure("unpaid", foreground=StyleManager.COLORS["danger"])
+                
+    except Exception as e:
+        logging.error(f"Error performing installment search: {str(e)}")
+        messagebox.showerror("خطأ", "حدث خطأ أثناء البحث")
+
 # Initialize the application and create frames
 if __name__ == "__main__":
     try:
@@ -3322,7 +3642,7 @@ if __name__ == "__main__":
         container.grid_rowconfigure(0, weight=1)
         
         # Create frames
-        page_names = ["home", "add", "delete", "edit", "view", "manage_installments", "backup_restore", "send_notification"]
+        page_names = ["home", "add", "view", "manage", "backup_restore", "send_notification"]  # Removed manage_installments, using manage instead
         
         for name in page_names:
             try:
