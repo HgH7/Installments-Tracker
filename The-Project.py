@@ -1144,7 +1144,7 @@ def show_payment_history():
             
         # Create payment history window
         history_window = CTkToplevel(app)
-        history_window.geometry("800x760")  # Increased from 710 to 760
+        history_window.geometry("800x760")
         history_window.title(f"سجل المدفوعات - {customer_name}")
         
         # Make window modal
@@ -1251,8 +1251,187 @@ def show_payment_history():
                 logging.error(f"Error marking installment as paid: {str(e)}")
                 messagebox.showerror("خطأ", f"حدث خطأ أثناء تسجيل القسط: {str(e)}")
                 
-        # Bind double-click event
+        # Function to edit installment
+        def edit_installment(event):
+            try:
+                item = tree.identify_row(event.y)
+                if not item:
+                    return
+                    
+                values = tree.item(item)["values"]
+                date = values[0]
+                value = values[1]
+                is_paid = values[2] == "مدفوع"
+                
+                # Create edit installment window
+                edit_window = CTkToplevel(history_window)
+                edit_window.geometry("500x450")
+                edit_window.title("تعديل القسط")
+                
+                # Make window modal
+                edit_window.transient(history_window)
+                edit_window.grab_set()
+                
+                # Create main frame
+                main_frame = StyleManager.create_frame(edit_window)
+                main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+                
+                # Add title
+                StyleManager.create_label(
+                    main_frame,
+                    text="تعديل بيانات القسط",
+                    font_style="subheading"
+                ).pack(pady=(0, 20))
+                
+                # Customer info (non-editable)
+                info_frame = StyleManager.create_frame(main_frame)
+                info_frame.pack(fill="x", pady=10)
+                
+                StyleManager.create_label(
+                    info_frame,
+                    text=f"العميل: {customer_name}",
+                    font_style="body_bold"
+                ).pack(anchor="w")
+                
+                # Editable fields
+                fields_frame = StyleManager.create_frame(main_frame)
+                fields_frame.pack(fill="x", pady=20)
+                
+                # Date field
+                date_frame = StyleManager.create_frame(fields_frame)
+                date_frame.pack(fill="x", pady=10)
+                
+                StyleManager.create_label(
+                    date_frame,
+                    text="تاريخ القسط:",
+                    font_style="body"
+                ).pack(side="left", padx=(0, 10))
+                
+                date_entry = StyleManager.create_entry(date_frame)
+                date_entry.pack(side="left", fill="x", expand=True)
+                date_entry.insert(0, date)
+                
+                # Date picker button
+                def open_date_picker():
+                    DatePicker(edit_window, date_entry)
+                    
+                date_picker_btn = StyleManager.create_button(
+                    date_frame,
+                    text="📅",
+                    width=40,
+                    command=open_date_picker
+                )
+                date_picker_btn.pack(side="left", padx=(10, 0))
+                
+                # Amount field
+                amount_frame = StyleManager.create_frame(fields_frame)
+                amount_frame.pack(fill="x", pady=10)
+                
+                StyleManager.create_label(
+                    amount_frame,
+                    text="قيمة القسط:",
+                    font_style="body"
+                ).pack(side="left", padx=(0, 10))
+                
+                amount_entry = StyleManager.create_entry(amount_frame)
+                amount_entry.pack(side="left", fill="x", expand=True)
+                amount_entry.insert(0, str(value))
+                
+                # Paid status
+                paid_frame = StyleManager.create_frame(fields_frame)
+                paid_frame.pack(fill="x", pady=10)
+                
+                paid_status = tk.BooleanVar(value=is_paid)
+                
+                paid_checkbox = CTkCheckBox(
+                    paid_frame,
+                    text="مدفوع",
+                    variable=paid_status,
+                    onvalue=True,
+                    offvalue=False,
+                    checkbox_width=24,
+                    checkbox_height=24,
+                    corner_radius=5,
+                    border_width=2,
+                    fg_color=StyleManager.COLORS["primary"],
+                    hover_color=StyleManager.COLORS["secondary"],
+                    checkmark_color=StyleManager.COLORS["text"]
+                )
+                paid_checkbox.pack(anchor="w")
+                
+                # Action buttons
+                buttons_frame = StyleManager.create_frame(main_frame)
+                buttons_frame.pack(fill="x", pady=(20, 10))
+                buttons_frame.grid_columnconfigure(0, weight=1)
+                buttons_frame.grid_columnconfigure(1, weight=1)
+                
+                # Save changes
+                def save_changes():
+                    try:
+                        new_date = date_entry.get().strip()
+                        new_value_str = amount_entry.get().strip()
+                        new_paid_status = paid_status.get()
+                        
+                        # Validate date format
+                        try:
+                            datetime.strptime(new_date, "%Y-%m-%d")
+                        except ValueError:
+                            messagebox.showerror("خطأ", "تنسيق التاريخ غير صحيح. يجب أن يكون بهذا الشكل: YYYY-MM-DD")
+                            return
+                        
+                        # Validate amount
+                        if not re.match(r"^\d+(\.\d{1,2})?$", new_value_str):
+                            messagebox.showerror("خطأ", "قيمة القسط يجب أن تكون رقمًا صالحًا.")
+                            return
+                            
+                        new_value = float(new_value_str)
+                        
+                        # Update installment in database
+                        if csv_manager.update_installment(customer_name, date, new_date, new_value):
+                            # Update paid status if needed
+                            if is_paid != new_paid_status:
+                                if new_paid_status:
+                                    csv_manager.mark_installment_as_paid(customer_name, new_date)
+                                else:
+                                    csv_manager.unmark_installment_as_paid(customer_name, new_date)
+                                
+                            messagebox.showinfo("نجاح", "تم تحديث بيانات القسط بنجاح.")
+                            edit_window.destroy()
+                            # Refresh the payment history view
+                            history_window.destroy()
+                            show_payment_history()
+                        else:
+                            messagebox.showerror("خطأ", "فشل في تحديث بيانات القسط.")
+                            
+                    except Exception as e:
+                        logging.error(f"Error saving installment changes: {str(e)}")
+                        messagebox.showerror("خطأ", f"حدث خطأ أثناء حفظ التغييرات: {str(e)}")
+                    
+                StyleManager.create_button(
+                    buttons_frame,
+                    text="حفظ التغييرات",
+                    width=200,
+                    command=save_changes
+                ).grid(row=0, column=0, padx=5, pady=5)
+                
+                # Cancel button
+                StyleManager.create_button(
+                    buttons_frame,
+                    text="إلغاء",
+                    width=200,
+                    style="secondary",
+                    command=edit_window.destroy
+                ).grid(row=0, column=1, padx=5, pady=5)
+                
+            except Exception as e:
+                logging.error(f"Error opening edit installment window: {str(e)}")
+                messagebox.showerror("خطأ", f"حدث خطأ أثناء فتح نافذة التعديل: {str(e)}")
+        
+        # Bind double-click event for marking as paid
         tree.bind("<Double-1>", mark_as_paid)
+        
+        # Bind right-click event for editing
+        tree.bind("<Button-3>", edit_installment)
         
         # Calculate payment summary
         if customer_data:
@@ -2164,10 +2343,12 @@ def setup_manage_installments_page():
             data = csv_manager.read_data()
             today = datetime.now().date()
             
-            # Sort data by date for better organization
-            all_installments = []
+            # Group installments by customer
+            customer_installments = {}
             
             for customer in data:
+                customer_name = customer["Name"]
+                customer_phone = customer["Phone"]
                 installment_dates = customer["Installment Dates"].split(";")
                 paid_installments = eval(customer.get("Paid_Installments", "[]"))
                 
@@ -2179,46 +2360,98 @@ def setup_manage_installments_page():
                 except:
                     installment_values = {}
                 
+                # Create customer group
+                if customer_name not in customer_installments:
+                    customer_installments[customer_name] = {
+                        "phone": customer_phone,
+                        "installments": []
+                    }
+                
+                # Add installments to customer group
                 for date in installment_dates:
                     date_obj = datetime.strptime(date, "%Y-%m-%d").date()
                     is_paid = date in paid_installments
-                    
-                    # Get the specific installment value or use the default
                     value = installment_values.get(date, customer["Installment Value"])
                     
-                    all_installments.append({
-                        "name": customer["Name"],
-                        "phone": customer["Phone"],
+                    customer_installments[customer_name]["installments"].append({
                         "date": date_obj,
                         "date_str": date,
                         "value": value,
                         "is_paid": is_paid
                     })
             
-            # Sort installments by date
-            all_installments.sort(key=lambda x: x["date"])
+            # Sort customers by name
+            sorted_customers = sorted(customer_installments.items())
             
             # Insert into tree
-            for installment in all_installments:
-                values = (
-                    installment["name"],
-                    installment["phone"],
-                    installment["date_str"],
-                    installment["value"],
-                    "نعم" if installment["is_paid"] else "لا"
-                )
+            for customer_name, customer_data in sorted_customers:
+                # Sort installments by date
+                installments = sorted(customer_data["installments"], key=lambda x: x["date"])
                 
-                item = tree.insert("", "end", values=values)
+                # Calculate payment summary
+                total_installments = len(installments)
+                paid_count = sum(1 for i in installments if i["is_paid"])
+                payment_status = f"مدفوع: {paid_count}/{total_installments}"
                 
-                # Add tag for paid/unpaid status
-                if installment["is_paid"]:
-                    tree.item(item, tags=("paid",))
-                else:
-                    tree.item(item, tags=("unpaid",))
+                # Insert customer header with arrow and payment status
+                header_item = tree.insert("", "end", values=(
+                    f"▼ {customer_name}",  # Add arrow to indicate expandable
+                    customer_data["phone"],
+                    payment_status,  # Show payment status in date column
+                    "",  # Empty value
+                    ""   # Empty paid status
+                ), tags=("header",))
+                
+                # Insert installments under header
+                for installment in installments:
+                    values = (
+                        "",  # Empty name (will be indented)
+                        "",  # Empty phone
+                        installment["date_str"],
+                        installment["value"],
+                        "نعم" if installment["is_paid"] else "لا"
+                    )
+                    
+                    item = tree.insert(header_item, "end", values=values)
+                    
+                    # Add tag for paid/unpaid status
+                    if installment["is_paid"]:
+                        tree.item(item, tags=("paid",))
+                    else:
+                        tree.item(item, tags=("unpaid",))
+                
+                # Initially collapse the customer's installments
+                tree.item(header_item, open=False)
             
-            # Configure payment status styles
-            tree.tag_configure("paid", foreground=StyleManager.COLORS["success"])
-            tree.tag_configure("unpaid", foreground=StyleManager.COLORS["danger"])
+            # Configure styles
+            tree.tag_configure("header", 
+                background=StyleManager.COLORS["surface"],
+                font=StyleManager.FONTS["body_bold"]
+            )
+            tree.tag_configure("paid", 
+                foreground=StyleManager.COLORS["success"],
+                font=StyleManager.FONTS["body"]
+            )
+            tree.tag_configure("unpaid", 
+                foreground=StyleManager.COLORS["danger"],
+                font=StyleManager.FONTS["body"]
+            )
+            
+            # Add click handler for headers
+            def on_header_click(event):
+                item = tree.identify_row(event.y)
+                if item and "header" in tree.item(item)["tags"]:
+                    # Toggle the arrow direction
+                    values = list(tree.item(item)["values"])
+                    if values[0].startswith("▼"):
+                        values[0] = values[0].replace("▼", "▶")
+                        tree.item(item, open=False)
+                    else:
+                        values[0] = values[0].replace("▶", "▼")
+                        tree.item(item, open=True)
+                    tree.item(item, values=values)
+            
+            tree.bind("<Button-1>", on_header_click)
             
         except Exception as e:
             logging.error(f"Error loading installments data: {str(e)}")
@@ -2255,8 +2488,13 @@ def setup_manage_installments_page():
         
         try:
             for item in selected_items:
+                # Skip if header item is selected
+                if "header" in tree.item(item)["tags"]:
+                    continue
+                    
                 values = tree.item(item)["values"]
-                customer_name = values[0]
+                parent = tree.parent(item)
+                customer_name = tree.item(parent)["values"][0].replace("▼ ", "").replace("▶ ", "")
                 installment_date = values[2]
                 
                 if csv_manager.mark_installment_as_paid(customer_name, installment_date):
@@ -2297,9 +2535,15 @@ def setup_manage_installments_page():
             
         try:
             item = selected_items[0]
+            # Skip if header item is selected
+            if "header" in tree.item(item)["tags"]:
+                messagebox.showerror("خطأ", "يرجى تحديد قسط للتعديل.")
+                return
+                
             values = tree.item(item)["values"]
-            customer_name = values[0]
-            customer_phone = values[1]
+            parent = tree.parent(item)
+            customer_name = tree.item(parent)["values"][0].replace("▼ ", "").replace("▶ ", "")
+            customer_phone = tree.item(parent)["values"][1]
             installment_date = values[2]
             installment_value = values[3]
             is_paid = values[4] == "نعم"
@@ -3166,14 +3410,17 @@ def check_due_installments():
                                     try:
                                         logging.info(f"Attempt {retry_count} to send notification to {customer['Name']} at {phone}")
                                         
-                                        # Send WhatsApp message
+                                        # Send WhatsApp message with increased delays
                                         kit.sendwhatmsg_instantly(
                                             phone_no=phone,
                                             message=message,
-                                            wait_time=15,  # Increased wait time to 15 seconds
+                                            wait_time=30,  # Increased wait time to 30 seconds
                                             tab_close=True,
-                                            close_time=10  # Increased close time to 10 seconds
+                                            close_time=20  # Increased close time to 20 seconds
                                         )
+                                        
+                                        # Add additional delay after sending
+                                        time.sleep(5)
                                         
                                         # Update notification status for this installment
                                         notified_installments.append(date_str)
@@ -3189,7 +3436,7 @@ def check_due_installments():
                                         
                                         # Wait before retry
                                         if retry_count < max_retries:
-                                            time.sleep(5)
+                                            time.sleep(10)  # Increased retry delay to 10 seconds
                                 
                                 if not success:
                                     fail_count += 1
