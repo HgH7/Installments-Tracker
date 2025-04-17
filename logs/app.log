@@ -3532,3 +3532,32 @@ KeyError: 'success'
 2025-04-18 01:42:54,447 - INFO - The-Project.py:3429 - Automatic notification sent to mohamed abdelfatah at +201120530157 for installment 2025-04-19
 2025-04-18 01:42:54,447 - INFO - The-Project.py:3453 - Notification check completed. Success: 1, Failed: 0, Skipped: 0
 2025-04-18 01:43:15,296 - INFO - The-Project.py:715 - Backup created: backups\backup_20250418_014315.csv
+2025-04-18 01:45:36,111 - INFO - The-Project.py:356 - Starting application initialization...
+2025-04-18 01:45:36,254 - INFO - The-Project.py:369 - Appearance mode set successfully
+2025-04-18 01:45:36,254 - INFO - The-Project.py:381 - Window centered successfully
+2025-04-18 01:45:36,256 - INFO - The-Project.py:135 - Theme setup completed successfully
+2025-04-18 01:45:36,256 - INFO - The-Project.py:3886 - Theme setup completed
+2025-04-18 01:45:36,278 - INFO - The-Project.py:3909 - Created frame: home
+2025-04-18 01:45:36,280 - INFO - The-Project.py:3909 - Created frame: add
+2025-04-18 01:45:36,283 - INFO - The-Project.py:3909 - Created frame: view
+2025-04-18 01:45:36,286 - INFO - The-Project.py:3909 - Created frame: manage
+2025-04-18 01:45:36,288 - INFO - The-Project.py:3909 - Created frame: backup_restore
+2025-04-18 01:45:36,290 - INFO - The-Project.py:3909 - Created frame: send_notification
+2025-04-18 01:45:36,652 - INFO - The-Project.py:3929 - setup_home_page completed successfully
+2025-04-18 01:45:36,774 - INFO - The-Project.py:3929 - setup_add_page completed successfully
+2025-04-18 01:45:36,827 - INFO - The-Project.py:3929 - setup_view_page completed successfully
+2025-04-18 01:45:36,849 - INFO - The-Project.py:3929 - setup_manage_installments_page completed successfully
+2025-04-18 01:45:36,895 - INFO - The-Project.py:3929 - setup_backup_restore_page completed successfully
+2025-04-18 01:45:36,914 - INFO - The-Project.py:3929 - setup_send_notification_page completed successfully
+2025-04-18 01:45:36,915 - INFO - The-Project.py:3338 - Starting automatic installment check
+2025-04-18 01:45:36,915 - INFO - The-Project.py:3473 - Notification thread started
+2025-04-18 01:45:36,915 - INFO - The-Project.py:3356 - Checking notifications for 2 customers
+2025-04-18 01:45:36,915 - INFO - The-Project.py:396 - Application starting...
+2025-04-18 01:45:36,916 - INFO - The-Project.py:3461 - Notification check completed. Success: 0, Failed: 0, Skipped: 0
+2025-04-18 01:46:19,678 - INFO - The-Project.py:715 - Backup created: backups\backup_20250418_014619.csv
+2025-04-18 01:46:19,679 - INFO - The-Project.py:246 - Created customer directory: D:\installments project\customer_files\mohamed elzingy el mo3geza
+2025-04-18 01:46:19,682 - INFO - The-Project.py:278 - Added file Screenshot2024-01-31050625.png for customer mohamed elzingy el mo3geza
+2025-04-18 01:46:19,705 - INFO - The-Project.py:278 - Added file Screenshot2024-10-30161708.png for customer mohamed elzingy el mo3geza
+2025-04-18 01:46:19,708 - INFO - The-Project.py:278 - Added file Screenshot2024-11-15190137.png for customer mohamed elzingy el mo3geza
+2025-04-18 01:46:19,708 - INFO - The-Project.py:1001 - Successfully saved files for customer mohamed elzingy el mo3geza
+2025-04-18 01:46:40,179 - INFO - The-Project.py:715 - Backup created: backups\backup_20250418_014640.csv

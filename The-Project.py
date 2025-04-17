@@ -821,44 +821,41 @@ class CSVManager:
             return False
             
     def update_installment(self, customer_name: str, old_date: str, new_date: str, new_value: float) -> bool:
-        """Update a specific installment's date and value."""
+        """Update an installment's date and value."""
         try:
             data = self.read_data()
             
             for i, customer in enumerate(data):
                 if customer["Name"] == customer_name:
-                    # Get current installment dates and values
-                    installment_dates = customer["Installment Dates"].split(";")
-                    
-                    # Find the old date index
-                    if old_date not in installment_dates:
-                        logging.warning(f"Installment date not found: {old_date}")
+                    # Get installment dates
+                    dates_str = customer.get("Installment Dates", "")
+                    if not dates_str:
+                        logging.warning(f"Customer {customer_name} has no installment dates")
                         return False
+                        
+                    installment_dates = dates_str.split(";")
                     
+                    # Check if old date exists
+                    if old_date not in installment_dates:
+                        logging.warning(f"Installment date {old_date} not found for customer {customer_name}")
+                        return False
+                        
                     # Update the date
-                    date_index = installment_dates.index(old_date)
-                    installment_dates[date_index] = new_date
+                    installment_dates[installment_dates.index(old_date)] = new_date
+                    data[i]["Installment Dates"] = ";".join(installment_dates)
                     
-                    # Get or create installment values dictionary
+                    # Update installment values if they exist
                     try:
                         installment_values = eval(customer.get("Installment_Values", "{}"))
-                        if not isinstance(installment_values, dict):
-                            installment_values = {}
+                        if old_date in installment_values:
+                            installment_values[new_date] = new_value
+                            del installment_values[old_date]
+                        else:
+                            installment_values[new_date] = new_value
+                        data[i]["Installment_Values"] = str(installment_values)
                     except:
-                        installment_values = {}
-                    
-                    # If Installment_Values doesn't exist, initialize it with default values
-                    if not installment_values:
-                        default_value = float(customer["Installment Value"])
-                        for date in installment_dates:
-                            installment_values[date] = default_value
-                    
-                    # Update the specific installment value
-                    installment_values[new_date] = new_value
-                    data[i]["Installment_Values"] = str(installment_values)
-                    
-                    # Join back the dates
-                    data[i]["Installment Dates"] = ";".join(installment_dates)
+                        # If no installment values exist, create new dictionary
+                        data[i]["Installment_Values"] = str({new_date: new_value})
                     
                     # Update payment status if needed
                     try:
@@ -879,7 +876,7 @@ class CSVManager:
             
             logging.warning(f"Customer not found: {customer_name}")
             return False
-        
+            
         except Exception as e:
             logging.error(f"Error updating installment: {str(e)}")
             return False
@@ -1196,8 +1193,14 @@ def show_payment_history():
             
         if customer_data:
             installment_dates = customer_data["Installment Dates"].split(";")
-            installment_value = customer_data["Installment Value"]
+            default_value = float(customer_data["Installment Value"])
             paid_installments = eval(customer_data.get("Paid_Installments", "[]"))
+            
+            # Get installment values if they exist
+            try:
+                installment_values = eval(customer_data.get("Installment_Values", "{}"))
+            except:
+                installment_values = {}
             
             # Create a dictionary to store row IDs for each installment date
             date_to_row_map = {}
@@ -1208,6 +1211,9 @@ def show_payment_history():
                 status = "مدفوع" if is_paid else "غير مدفوع"
                 status_tags = ("paid",) if is_paid else ("unpaid",)
                 
+                # Get the installment value, using the specific value if it exists
+                value = installment_values.get(date, default_value)
+                
                 # Determine if this installment date is in the future
                 is_future = date > today
                 
@@ -1215,7 +1221,7 @@ def show_payment_history():
                 action = "" if is_paid else "تسجيل كمدفوع" if not is_future else "موعد مستقبلي"
                 
                 # Insert row and store the row ID
-                row_id = tree.insert("", "end", values=(date, installment_value, status, action), tags=status_tags)
+                row_id = tree.insert("", "end", values=(date, f"{value:.2f}", status, action), tags=status_tags)
                 date_to_row_map[date] = row_id
         
         # Configure tags
@@ -1438,8 +1444,10 @@ def show_payment_history():
             total_installments = len(installment_dates)
             paid_count = len(paid_installments)
             remaining_count = total_installments - paid_count
-            paid_amount = float(installment_value) * paid_count
-            total_amount = float(customer_data["Amount"])
+            
+            # Calculate total amounts
+            total_amount = sum(float(installment_values.get(date, default_value)) for date in installment_dates)
+            paid_amount = sum(float(installment_values.get(date, default_value)) for date in paid_installments)
             remaining_amount = total_amount - paid_amount
             
             # Create summary frame
@@ -1455,13 +1463,13 @@ def show_payment_history():
             
             StyleManager.create_label(
                 summary_frame,
-                text=f"المبلغ المدفوع: {paid_amount} من {total_amount} ({round(paid_amount/total_amount*100, 1)}%)",
+                text=f"المبلغ المدفوع: {paid_amount:.2f} من {total_amount:.2f} ({round(paid_amount/total_amount*100, 1)}%)",
                 font_style="body_bold"
             ).pack(pady=5)
             
             StyleManager.create_label(
                 summary_frame,
-                text=f"المبلغ المتبقي: {remaining_amount}",
+                text=f"المبلغ المتبقي: {remaining_amount:.2f}",
                 font_style="body_bold"
             ).pack(pady=5)
         
