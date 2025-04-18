@@ -1,0 +1,22 @@
+2025-04-18 02:18:26,682 - INFO - The-Project.py:232 - Created base directory: C:\Users\ahsn1\AppData\Local\Temp\_MEI183482\customer_files
+2025-04-18 02:18:26,683 - INFO - The-Project.py:356 - Starting application initialization...
+2025-04-18 02:18:26,806 - INFO - The-Project.py:369 - Appearance mode set successfully
+2025-04-18 02:18:26,806 - INFO - The-Project.py:381 - Window centered successfully
+2025-04-18 02:18:26,806 - INFO - The-Project.py:135 - Theme setup completed successfully
+2025-04-18 02:18:26,806 - INFO - The-Project.py:3886 - Theme setup completed
+2025-04-18 02:18:26,825 - INFO - The-Project.py:3909 - Created frame: home
+2025-04-18 02:18:26,827 - INFO - The-Project.py:3909 - Created frame: add
+2025-04-18 02:18:26,829 - INFO - The-Project.py:3909 - Created frame: view
+2025-04-18 02:18:26,831 - INFO - The-Project.py:3909 - Created frame: manage
+2025-04-18 02:18:26,833 - INFO - The-Project.py:3909 - Created frame: backup_restore
+2025-04-18 02:18:26,835 - INFO - The-Project.py:3909 - Created frame: send_notification
+2025-04-18 02:18:27,176 - INFO - The-Project.py:3929 - setup_home_page completed successfully
+2025-04-18 02:18:27,344 - INFO - The-Project.py:3929 - setup_add_page completed successfully
+2025-04-18 02:18:27,401 - INFO - The-Project.py:3929 - setup_view_page completed successfully
+2025-04-18 02:18:27,427 - INFO - The-Project.py:3929 - setup_manage_installments_page completed successfully
+2025-04-18 02:18:27,483 - INFO - The-Project.py:3929 - setup_backup_restore_page completed successfully
+2025-04-18 02:18:27,505 - INFO - The-Project.py:3929 - setup_send_notification_page completed successfully
+2025-04-18 02:18:27,505 - INFO - The-Project.py:3338 - Starting automatic installment check
+2025-04-18 02:18:27,505 - INFO - The-Project.py:3473 - Notification thread started
+2025-04-18 02:18:27,505 - INFO - The-Project.py:396 - Application starting...
+2025-04-18 02:18:27,506 - INFO - The-Project.py:3343 - No customer data found for notifications

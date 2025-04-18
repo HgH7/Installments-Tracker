@@ -1,2 +1,0 @@
-Name,Phone,Amount,Installments,Installment Value,Start Date,Installment Dates,Notification Sent,Paid_Installments,Notified_Installments,Installment_Values
-hassan,+67980968709687,10000.0,1,10000.0,2025-04-25,2025-04-25,False,[],[],{'2025-04-25': 10000.0}

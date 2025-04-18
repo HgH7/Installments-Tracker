@@ -1,2 +1,0 @@
-Name,Phone,Amount,Installments,Installment Value,Start Date,Installment Dates,Notification Sent,Paid_Installments,Notified_Installments,Installment_Values
-ghdsfghsrtd,+201120530157,12000.0,3,4000.0,2025-04-01,2025-04-01;2025-05-01;2025-06-01,False,[],[],"{'2025-04-01': 6000.0, '2025-05-01': 4000.0, '2025-06-01': 4000.0}"
