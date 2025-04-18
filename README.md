@@ -11,18 +11,6 @@
 - دعم اللغة العربية
 - حفظ البيانات في ملف CSV
 
-## متطلبات التشغيل
-
-- Python 3.13
-- المتطلبات التالية:
-  - customtkinter
-  - Pillow
-  - pandas
-  - selenium
-  - webdriver_manager
-  - arabic-reshaper
-  - python-bidi
-
 ## طريقة التشغيل
 
 1. قم بتثبيت Python 3.13 من [الموقع الرسمي](https://www.python.org/downloads/)
@@ -67,11 +55,3 @@
 2. إنشاء فرع جديد
 3. إجراء التعديلات
 4. عمل Pull Request
-
-## الترخيص
-
-هذا المشروع مرخص تحت رخصة MIT.
-
-## الدعم
-
-إذا واجهتك أي مشكلة، يرجى فتح issue في صفحة المشروع على GitHub. 
