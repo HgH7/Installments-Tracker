@@ -1,6 +1,6 @@
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from tkinter import messagebox, ttk
 from customtkinter import CTkToplevel, CTkButton, CTkEntry, CTkTextbox
 
@@ -9,7 +9,6 @@ def setup_view_page(
     frames,
     StyleManager,
     customer_service,
-    csv_manager,
     refresh_treeview,
     show_frame,
     app,
@@ -148,7 +147,7 @@ def setup_view_page(
 
     refresh_treeview(tree)
 
-    data = csv_manager.read_data()
+    data = customer_service.get_all_customers()
     status_label.configure(text=f"العملاء: {len(data)}")
 
     def edit_customer():
@@ -161,8 +160,7 @@ def setup_view_page(
         values = item["values"]
         customer_name = values[0]
 
-        data = csv_manager.read_data()
-        customer = next((c for c in data if c["Name"] == customer_name), None)
+        customer = customer_service.get_customer_by_name(customer_name)
         if not customer:
             messagebox.showerror("خطأ", "لم يتم العثور على بيانات العميل.")
             return
@@ -268,31 +266,23 @@ def setup_view_page(
                 return
 
             try:
-                amount_float = float(amount)
-                installments_int = int(installments)
-                installment_value = round(amount_float / installments_int, 2)
-                start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
-
-                installment_dates = [
-                    (start_date_obj + timedelta(days=30 * i)).strftime("%Y-%m-%d")
-                    for i in range(installments_int)
-                ]
-
-                updated_data = {
-                    "Name": name,
-                    "Phone": phone,
-                    "Amount": amount_float,
-                    "Installments": installments_int,
-                    "Installment Value": installment_value,
-                    "Start Date": start_date,
-                    "Installment Dates": ";".join(installment_dates)
-                }
+                updated_data = customer_service.build_customer_record(
+                    name,
+                    phone,
+                    amount,
+                    installments,
+                    start_date,
+                    date_strategy="thirty_day",
+                    include_tracking_fields=False,
+                )
 
                 if customer_name != name:
                     if customer_service.delete_customer(customer_name) and customer_service.append_customer({
                         **updated_data,
                         "Notification Sent": customer.get("Notification Sent", False),
-                        "Paid_Installments": customer.get("Paid_Installments", "[]")
+                        "Paid_Installments": customer.get("Paid_Installments", "[]"),
+                        "Notified_Installments": customer.get("Notified_Installments", "[]"),
+                        "Installment_Values": customer.get("Installment_Values", "{}"),
                     }):
                         messagebox.showinfo("نجاح", "تم تحديث بيانات العميل بنجاح!")
                         edit_window.destroy()

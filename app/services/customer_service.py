@@ -1,9 +1,13 @@
 import logging
-import re
 from tkinter import messagebox
 from typing import Dict, List
 
 from app.repositories.csv_repository import CSVRepository
+from app.utils.installments import (
+    generate_calendar_month_installment_dates,
+    generate_thirty_day_installment_dates,
+)
+from app.utils.serialization import dump_json, load_json_dict, load_json_list
 
 
 class CustomerService:
@@ -90,21 +94,72 @@ class CustomerService:
             logging.error(f"Error searching customers: {str(e)}")
             return []
 
+    def get_all_customers(self) -> List[Dict]:
+        try:
+            return self.repository.read_data()
+        except Exception as e:
+            logging.error(f"Error reading customers: {str(e)}")
+            return []
+
+    def get_customer_by_name(self, customer_name: str) -> Dict:
+        try:
+            return next(
+                (customer for customer in self.repository.read_data() if customer["Name"] == customer_name),
+                {},
+            )
+        except Exception as e:
+            logging.error(f"Error reading customer {customer_name}: {str(e)}")
+            return {}
+
+    def build_customer_record(
+        self,
+        name: str,
+        phone: str,
+        amount: str,
+        installments: str,
+        start_date: str,
+        date_strategy: str = "calendar_month",
+        include_tracking_fields: bool = True,
+    ) -> Dict:
+        amount_float = float(amount)
+        installments_int = int(installments)
+        installment_value = round(amount_float / installments_int, 2)
+
+        if date_strategy == "thirty_day":
+            installment_dates = generate_thirty_day_installment_dates(start_date, installments_int)
+        else:
+            installment_dates = generate_calendar_month_installment_dates(start_date, installments_int)
+
+        customer_data = {
+            "Name": name,
+            "Phone": phone,
+            "Amount": amount_float,
+            "Installments": installments_int,
+            "Installment Value": installment_value,
+            "Start Date": start_date,
+            "Installment Dates": ";".join(installment_dates),
+        }
+
+        if include_tracking_fields:
+            customer_data.update({
+                "Notification Sent": False,
+                "Paid_Installments": "[]",
+                "Notified_Installments": "[]",
+                "Installment_Values": "{}",
+            })
+
+        return customer_data
+
     def mark_installment_as_paid(self, customer_name: str, installment_date: str) -> bool:
         try:
             data = self.repository.read_data()
             for i, row in enumerate(data):
                 if row["Name"] == customer_name:
-                    try:
-                        paid_installments = eval(row.get("Paid_Installments", "[]"))
-                        if not isinstance(paid_installments, list):
-                            paid_installments = []
-                    except Exception:
-                        paid_installments = []
+                    paid_installments = load_json_list(row.get("Paid_Installments", "[]"))
 
                     if installment_date not in paid_installments:
                         paid_installments.append(installment_date)
-                        data[i]["Paid_Installments"] = str(paid_installments)
+                        data[i]["Paid_Installments"] = dump_json(paid_installments)
                         return self.repository.save_data(data)
                     logging.info(f"Installment already paid: {installment_date}")
                     return True
@@ -120,11 +175,8 @@ class CustomerService:
             data = self.repository.read_data()
             for customer in data:
                 if customer["Name"] == customer_name:
-                    try:
-                        paid_installments = eval(customer.get("Paid_Installments", "[]"))
-                        return installment_date in paid_installments
-                    except Exception:
-                        return False
+                    paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
+                    return installment_date in paid_installments
             return False
         except Exception as e:
             logging.error(f"Error checking payment status: {str(e)}")
@@ -156,23 +208,20 @@ class CustomerService:
                     installment_dates[installment_dates.index(old_date)] = new_date
                     data[i]["Installment Dates"] = ";".join(installment_dates)
 
-                    try:
-                        installment_values = eval(customer.get("Installment_Values", "{}"))
-                        if old_date in installment_values:
-                            installment_values[new_date] = new_value
-                            del installment_values[old_date]
-                        else:
-                            installment_values[new_date] = new_value
-                        data[i]["Installment_Values"] = str(installment_values)
-                    except Exception:
-                        data[i]["Installment_Values"] = str({new_date: new_value})
+                    installment_values = load_json_dict(customer.get("Installment_Values", "{}"))
+                    if old_date in installment_values:
+                        installment_values[new_date] = new_value
+                        del installment_values[old_date]
+                    else:
+                        installment_values[new_date] = new_value
+                    data[i]["Installment_Values"] = dump_json(installment_values)
 
                     try:
-                        paid_installments = eval(customer.get("Paid_Installments", "[]"))
+                        paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
                         if old_date in paid_installments:
                             paid_installments.remove(old_date)
                             paid_installments.append(new_date)
-                            data[i]["Paid_Installments"] = str(paid_installments)
+                            data[i]["Paid_Installments"] = dump_json(paid_installments)
                     except Exception as e:
                         logging.error(f"Error updating paid status: {str(e)}")
 
@@ -193,16 +242,11 @@ class CustomerService:
             data = self.repository.read_data()
             for i, row in enumerate(data):
                 if row["Name"] == customer_name:
-                    try:
-                        paid_installments = eval(row.get("Paid_Installments", "[]"))
-                        if not isinstance(paid_installments, list):
-                            paid_installments = []
-                    except Exception:
-                        paid_installments = []
+                    paid_installments = load_json_list(row.get("Paid_Installments", "[]"))
 
                     if installment_date in paid_installments:
                         paid_installments.remove(installment_date)
-                        data[i]["Paid_Installments"] = str(paid_installments)
+                        data[i]["Paid_Installments"] = dump_json(paid_installments)
                         return self.repository.save_data(data)
                     logging.info(f"Installment wasn't marked as paid: {installment_date}")
                     return True

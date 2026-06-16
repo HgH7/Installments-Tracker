@@ -5,6 +5,8 @@ from datetime import datetime
 from tkinter import messagebox, ttk
 from customtkinter import CTkToplevel, CTkButton, CTkCheckBox
 
+from app.utils.serialization import load_json_list
+
 
 def setup_manage_installments_page(
     frames,
@@ -84,7 +86,7 @@ def setup_manage_installments_page(
         try:
             for customer in data:
                 installment_dates = customer.get("Installment Dates", "").split(";")
-                paid_installments = eval(customer.get("Paid_Installments", "[]"))
+                paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
                 total_installments = len(installment_dates)
                 next_due = ""
 

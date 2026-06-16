@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+
+logs/
+customer_files/
+
+customers_export_*.xlsx

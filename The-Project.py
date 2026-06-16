@@ -7,7 +7,7 @@ import re
 import csv
 import os
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 from tkcalendar import Calendar
 import shutil
 import threading
@@ -28,6 +28,7 @@ from app.ui.pages.view import setup_view_page as setup_view_page_module
 from app.ui.pages.manage import setup_manage_installments_page as setup_manage_installments_page_module
 from app.ui.pages.backup_restore import setup_backup_restore_page as setup_backup_restore_page_module
 from app.ui.pages.send_notification import setup_send_notification_page as setup_send_notification_page_module
+from app.utils.serialization import dump_json, load_json_dict, load_json_list
 
 # Ensure logs directory exists
 logs_dir = "logs"
@@ -49,7 +50,6 @@ console_handler.setFormatter(formatter)
 logging.getLogger().addHandler(console_handler)
 
 # Global variables
-app = None
 frames = {}
 
 
@@ -58,21 +58,20 @@ file_manager = FileManager(os.path.join(os.path.dirname(os.path.abspath(__file__
 
 def initialize_app():
     """Initialize the main application window with error handling"""
-    global app
     try:
         logging.info("Starting application initialization...")
         
         # Initialize the main window
-        app = CTk()
-        if not app:
+        app_window = CTk()
+        if not app_window:
             raise Exception("Failed to create main window")
             
-        app.geometry("1280x800")
-        app.title("نظام إدارة الأقساط")
+        app_window.geometry("1280x800")
+        app_window.title("نظام إدارة الأقساط")
         
         # Try setting appearance mode
         try:
-            app._set_appearance_mode("dark")
+            app_window._set_appearance_mode("dark")
             logging.info("Appearance mode set successfully")
         except Exception as e:
             logging.error(f"Failed to set appearance mode: {str(e)}")
@@ -80,39 +79,37 @@ def initialize_app():
         
         # Center the window on screen
         try:
-            screen_width = app.winfo_screenwidth()
-            screen_height = app.winfo_screenheight()
+            screen_width = app_window.winfo_screenwidth()
+            screen_height = app_window.winfo_screenheight()
             x = (screen_width - 1280) // 2
             y = (screen_height - 800) // 2
-            app.geometry(f"1280x800+{x}+{y}")
+            app_window.geometry(f"1280x800+{x}+{y}")
             logging.info("Window centered successfully")
         except Exception as e:
             logging.error(f"Failed to center window: {str(e)}")
             # Continue anyway as this is not critical
         
-        return app
+        return app_window
     except Exception as e:
         logging.critical(f"Failed to initialize application: {str(e)}\n{traceback.format_exc()}")
         messagebox.showerror("خطأ حرج", "فشل في بدء التطبيق. يرجى مراجعة ملف السجل للتفاصيل.")
         sys.exit(1)
 
-def main():
+def main(app_window):
     """Main application entry point with error handling"""
-    global app
     try:
         logging.info("Application starting...")
-        if not app:
-            app = initialize_app()
-        app.mainloop()
+        app_window.mainloop()
     except Exception as e:
         logging.critical(f"Critical error in main: {str(e)}\n{traceback.format_exc()}")
         messagebox.showerror("خطأ حرج", f"حدث خطأ غير متوقع: {str(e)}\nيرجى مراجعة ملف السجل للتفاصيل.")
         sys.exit(1)
 
 def show_frame(frame):
-    """Show the specified frame and hide others"""
-    for f in frames.values():
-        f.grid_remove()
+    """Show the specified frame and hide sibling pages."""
+    for child in frame.master.winfo_children():
+        if hasattr(child, "grid_remove"):
+            child.grid_remove()
     frame.grid()
 
 def refresh_treeview(tree, data=None):
@@ -123,7 +120,7 @@ def refresh_treeview(tree, data=None):
         
     # If no data provided, read from CSV
     if data is None:
-        data = csv_manager.read_data()
+        data = csv_repository.read_data()
     
     # Get column names
     columns = tree["columns"]
@@ -136,7 +133,7 @@ def refresh_treeview(tree, data=None):
                 # Get the first installment date and check if it's paid
                 installment_dates = customer.get("Installment Dates", "").split(";")
                 first_date = installment_dates[0] if installment_dates else ""
-                paid_installments = eval(customer.get("Paid_Installments", "[]"))
+                paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
                 is_paid = first_date in paid_installments
                 values.append("نعم" if is_paid else "لا")
             else:
@@ -162,15 +159,6 @@ csv_filename = "customers.csv"
 backup_folder = "backups"
 csv_repository = CSVRepository(csv_filename, backup_folder)
 customer_service = CustomerService(csv_repository)
-csv_manager = csv_repository
-
-def read_csv_safely():
-    """Read data from CSV file using CSVManager."""
-    return csv_manager.read_data()
-
-def save_to_csv_and_excel(data):
-    """Save data using CSVManager."""
-    return csv_manager.save_data(data)
 
 def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry, start_date_entry, file_list=None):
     """Validate and save customer data"""
@@ -209,35 +197,14 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
             messagebox.showerror("خطأ", "تنسيق التاريخ غير صحيح. يجب أن يكون بهذا الشكل: YYYY-MM-DD")
             return False
 
-        amount = float(amount)
-        installments = int(installments)
-        installment_value = round(amount / installments, 2)
-        start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
-        
-        # Generate installment dates (one per month)
-        installment_dates = []
-        current_date = start_date_obj
-        for _ in range(installments):
-            installment_dates.append(current_date.strftime("%Y-%m-%d"))
-            # Add one month to current date
-            if current_date.month == 12:
-                current_date = current_date.replace(year=current_date.year + 1, month=1)
-            else:
-                current_date = current_date.replace(month=current_date.month + 1)
-        
-        customer_data = {
-            "Name": name,
-            "Phone": phone,
-            "Amount": amount,
-            "Installments": installments,
-            "Installment Value": installment_value,
-            "Start Date": start_date,
-            "Installment Dates": ";".join(installment_dates),
-            "Notification Sent": False,
-            "Paid_Installments": "[]",
-            "Notified_Installments": "[]",
-            "Installment_Values": "{}"  # Initialize empty installment values
-        }
+        customer_data = customer_service.build_customer_record(
+            name,
+            phone,
+            amount,
+            installments,
+            start_date,
+            date_strategy="calendar_month",
+        )
 
         # Save customer data
         if customer_service.append_customer(customer_data):
@@ -374,7 +341,7 @@ def show_payment_history():
         customer_name = tree.item(item)["values"][0]
         
         # Get customer data
-        data = csv_manager.read_data()
+        data = csv_repository.read_data()
         customer_data = None
         for customer in data:
             if customer["Name"] == customer_name:
@@ -440,11 +407,11 @@ def show_payment_history():
         if customer_data:
             installment_dates = customer_data["Installment Dates"].split(";")
             default_value = float(customer_data["Installment Value"])
-            paid_installments = eval(customer_data.get("Paid_Installments", "[]"))
+            paid_installments = load_json_list(customer_data.get("Paid_Installments", "[]"))
             
             # Get installment values if they exist
             try:
-                installment_values = eval(customer_data.get("Installment_Values", "{}"))
+                installment_values = load_json_dict(customer_data.get("Installment_Values", "{}"))
             except:
                 installment_values = {}
             
@@ -735,7 +702,7 @@ def show_payment_history():
 def export_to_excel():
     """Export customer data to Excel file with enhanced formatting."""
     try:
-        data = csv_manager.read_data()
+        data = csv_repository.read_data()
         if not data:
             messagebox.showerror("خطأ", "لا توجد بيانات للتصدير.")
             return
@@ -1026,7 +993,7 @@ def export_to_excel():
     refresh_treeview(tree)
     
     # Update status label with initial count
-    data = csv_manager.read_data()
+    data = csv_repository.read_data()
     status_label.configure(text=f"العملاء: {len(data)}")
     
     # Edit customer function - keeping functionality intact
@@ -1042,7 +1009,7 @@ def export_to_excel():
         customer_name = values[0]
         
         # Get full customer data
-        data = csv_manager.read_data()
+        data = csv_repository.read_data()
         customer = next((c for c in data if c["Name"] == customer_name), None)
         
         if not customer:
@@ -1165,35 +1132,24 @@ def export_to_excel():
                 return
             
             try:
-                # Convert and calculate values
-                amount_float = float(amount)
-                installments_int = int(installments)
-                installment_value = round(amount_float / installments_int, 2)
-                start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
-                
-                # Generate new installment dates
-                installment_dates = [
-                    (start_date_obj + timedelta(days=30 * i)).strftime("%Y-%m-%d") 
-                    for i in range(installments_int)
-                ]
-                
-                # Prepare updated data
-                updated_data = {
-                    "Name": name,
-                    "Phone": phone,
-                    "Amount": amount_float,
-                    "Installments": installments_int,
-                    "Installment Value": installment_value,
-                    "Start Date": start_date,
-                    "Installment Dates": ";".join(installment_dates)
-                }
+                updated_data = customer_service.build_customer_record(
+                    name,
+                    phone,
+                    amount,
+                    installments,
+                    start_date,
+                    date_strategy="thirty_day",
+                    include_tracking_fields=False,
+                )
                 
                 # If name changed, delete old record and create new one
                 if customer_name != name:
                     if customer_service.delete_customer(customer_name) and customer_service.append_customer({
                         **updated_data,
                         "Notification Sent": customer.get("Notification Sent", False),
-                        "Paid_Installments": customer.get("Paid_Installments", "[]")
+                        "Paid_Installments": customer.get("Paid_Installments", "[]"),
+                        "Notified_Installments": customer.get("Notified_Installments", "[]"),
+                        "Installment_Values": customer.get("Installment_Values", "{}"),
                     }):
                         messagebox.showinfo("نجاح", "تم تحديث بيانات العميل بنجاح!")
                         edit_window.destroy()
@@ -1333,7 +1289,7 @@ def check_due_installments():
             logging.info("Starting automatic installment check")
             
             # Read customer data
-            data = csv_manager.read_data()
+            data = csv_repository.read_data()
             if not data:
                 logging.info("No customer data found for notifications")
                 time.sleep(60 * 60)  # Check again in 1 hour
@@ -1361,13 +1317,13 @@ def check_due_installments():
                         
                     # Get paid installments to skip them
                     try:
-                        paid_installments = eval(customer.get("Paid_Installments", "[]"))
+                        paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
                     except:
                         paid_installments = []
                         
                     # Get notified installments
                     try:
-                        notified_installments = eval(customer.get("Notified_Installments", "[]"))
+                        notified_installments = load_json_list(customer.get("Notified_Installments", "[]"))
                     except:
                         notified_installments = []
                         
@@ -1427,8 +1383,8 @@ def check_due_installments():
                                         
                                         # Update notification status for this installment
                                         notified_installments.append(date_str)
-                                        customer["Notified_Installments"] = str(notified_installments)
-                                        csv_manager.save_data(data)
+                                        customer["Notified_Installments"] = dump_json(notified_installments)
+                                        csv_repository.save_data(data)
                                         logging.info(f"Automatic notification sent to {customer['Name']} at {phone} for installment {date_str}")
                                         success = True
                                         success_count += 1
@@ -1484,12 +1440,12 @@ def load_installments_data():
             tree.delete(item)
             
         # Get customer data
-        data = csv_manager.read_data()
+        data = csv_repository.read_data()
         
         for customer in data:
             try:
                 # Get paid and total installments
-                paid_installments = eval(customer.get("Paid_Installments", "[]"))
+                paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
                 total_installments = int(customer.get("Installments", 0))
                 
                 # Get next due date
@@ -1548,7 +1504,7 @@ def show_installment_details(event):
         phone = values[1]
         
         # Get customer data from CSV
-        data = csv_manager.read_data()
+        data = csv_repository.read_data()
         customer = next((c for c in data if c["Name"] == customer_name and c["Phone"] == phone), None)
         if not customer:
             messagebox.showerror("خطأ", "لم يتم العثور على بيانات العميل")
@@ -1612,7 +1568,7 @@ def show_installment_details(event):
         total_amount = float(customer.get("Amount", 0))
         total_installments = int(customer.get("Installments", 0))
         installment_amount = total_amount / total_installments
-        paid_installments = eval(customer.get("Paid_Installments", "[]"))
+        paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
         installment_dates = customer.get("Installment Dates", "").split(";")
         
         # Add installments to tree
@@ -1712,7 +1668,7 @@ def perform_installment_search():
             tree.delete(item)
             
         # Get customer data
-        data = csv_manager.read_data()
+        data = csv_repository.read_data()
         
         for customer in data:
             try:
@@ -1721,7 +1677,7 @@ def perform_installment_search():
                     search_query in customer.get("Phone", "").lower()):
                     
                     # Get paid and total installments
-                    paid_installments = eval(customer.get("Paid_Installments", "[]"))
+                    paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
                     total_installments = int(customer.get("Installments", 0))
                     
                     # Get next due date
@@ -1813,7 +1769,6 @@ if __name__ == "__main__":
                     frames,
                     StyleManager,
                     customer_service,
-                    csv_manager,
                     refresh_treeview,
                     show_frame,
                     app,
@@ -1837,7 +1792,7 @@ if __name__ == "__main__":
                 ),
             ),
             ("setup_backup_restore_page", lambda: setup_backup_restore_page_module(frames, StyleManager, csv_repository, show_frame, app)),
-            ("setup_send_notification_page", lambda: setup_send_notification_page_module(frames, StyleManager, csv_manager, show_frame, app))
+            ("setup_send_notification_page", lambda: setup_send_notification_page_module(frames, StyleManager, csv_repository, show_frame, app))
         ]
         
         for func_name, func in setup_functions:
@@ -1855,7 +1810,7 @@ if __name__ == "__main__":
         start_notification_thread()
         
         # Start the main loop
-        main()
+        main(app)
     except Exception as e:
         logging.critical(f"Application failed to start: {str(e)}\n{traceback.format_exc()}")
         messagebox.showerror("خطأ حرج", "فشل في بدء التطبيق. يرجى التأكد من تثبيت جميع المكتبات المطلوبة.")
