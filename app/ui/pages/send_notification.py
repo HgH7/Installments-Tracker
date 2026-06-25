@@ -2,11 +2,11 @@ import logging
 import time
 from datetime import datetime
 from tkinter import messagebox, StringVar, BooleanVar, ttk
-from customtkinter import CTkToplevel, CTkTextbox, CTkCheckBox
+from customtkinter import CTkToplevel
 import pywhatkit as kit
 
 
-def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, app):
+def setup_send_notification_page(frames, StyleManager, csv_repository, show_frame, app):
     frame = frames["send_notification"]
     frame.configure(fg_color=StyleManager.COLORS["background"])
     frame.grid_columnconfigure(0, weight=1)
@@ -17,10 +17,10 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
         "Notifications",
         "Send installment reminders to customers through WhatsApp.",
     )
-    header_frame.grid(row=0, column=0, sticky="ew", padx=30, pady=(28, 16))
+    header_frame.grid(row=0, column=0, sticky="ew", padx=24, pady=(24, 16))
 
     table_frame = StyleManager.create_frame(frame)
-    table_frame.grid(row=1, column=0, sticky="nsew", padx=30, pady=(0, 16))
+    table_frame.grid(row=1, column=0, sticky="nsew", padx=24, pady=(0, 16))
     table_frame.grid_columnconfigure(0, weight=1)
     table_frame.grid_rowconfigure(0, weight=1)
 
@@ -62,7 +62,7 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
         for row in tree.get_children():
             tree.delete(row)
 
-        data = csv_manager.read_data()
+        data = csv_repository.read_data()
         today = datetime.now().date()
 
         for customer in data:
@@ -85,10 +85,14 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
     load_data()
 
     buttons_frame = StyleManager.create_frame(frame)
-    buttons_frame.grid(row=2, column=0, sticky="ew", padx=30, pady=(0, 30))
+    buttons_frame.grid(row=2, column=0, sticky="ew", padx=24, pady=(0, 24))
     buttons_frame.grid_columnconfigure(0, weight=1)
     buttons_frame.grid_columnconfigure(1, weight=1)
-    buttons_frame.grid_columnconfigure(2, weight=1)
+
+    left_side = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+    left_side.grid(row=0, column=0, sticky="w")
+    right_side = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+    right_side.grid(row=0, column=1, sticky="e")
 
     def send_whatsapp_notification():
         selected_item = tree.selection()
@@ -107,95 +111,90 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
             phone = "+" + phone
 
         preview_window = CTkToplevel(app)
-        preview_window.geometry("500x550")
+        preview_window.geometry("520x560")
         preview_window.title("Message Preview")
+        preview_window.transient(app)
+        preview_window.grab_set()
+
+        main_frame = StyleManager.create_frame(preview_window)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
 
         StyleManager.create_label(
-            preview_window,
-            text="WhatsApp Message Preview",
-            font_style="heading"
-        ).pack(pady=(20, 10))
+            main_frame,
+            text="Message Preview",
+            font_style="subheading"
+        ).pack(pady=(0, 6))
 
+        StyleManager.create_label(
+            main_frame,
+            text=f"Send WhatsApp reminder to {name}",
+            font_style="small",
+            text_color=StyleManager.COLORS["text_muted"]
+        ).pack(pady=(0, 20))
+
+        message_text = StyleManager.create_textbox(
+            main_frame, width=460, height=140, readonly=False,
+            fg_color=StyleManager.COLORS["surface_high"], font=StyleManager.FONTS["body"],
+        )
+        message_text.pack(pady=(0, 10))
         default_message = (
             f"Hello {name},\n"
             f"This is a reminder for an installment payment of {installment_value} SAR due on {installment_date}.\n"
             f"Thank you for your business."
         )
-
-        customization_frame = StyleManager.create_frame(preview_window)
-        customization_frame.pack(fill="x", padx=20, pady=10)
-
-        StyleManager.create_label(
-            customization_frame,
-            text="Message Text:",
-            font_style="body_bold"
-        ).pack(anchor="w", pady=(5, 0))
-
-        message_text = CTkTextbox(
-            customization_frame,
-            width=400,
-            height=150,
-            font=StyleManager.FONTS["body"]
-        )
-        message_text.pack(pady=10, padx=10, fill="both", expand=True)
         message_text.insert("end", default_message)
 
-        template_info = StyleManager.create_frame(preview_window)
-        template_info.pack(fill="x", padx=20, pady=5)
+        template_frame = StyleManager.create_frame(main_frame)
+        template_frame.pack(fill="x", pady=(0, 16))
 
         StyleManager.create_label(
-            template_info,
-            text="You can use these variables in the message:",
-            font_style="small"
-        ).pack(anchor="w")
-
-        StyleManager.create_label(
-            template_info,
-            text="{name} - Customer Name\n{date} - Installment Date\n{value} - Installment Value",
+            template_frame,
+            text="Template variables:  {name}  {date}  {value}",
             font_style="small",
-            text_color=StyleManager.COLORS["text_secondary"]
+            text_color=StyleManager.COLORS["text_muted"]
         ).pack(anchor="w")
 
-        options_frame = StyleManager.create_frame(preview_window)
-        options_frame.pack(fill="x", padx=20, pady=10)
+        options_frame = StyleManager.create_frame(main_frame)
+        options_frame.pack(fill="x", pady=(0, 16))
 
         retry_var = BooleanVar(value=True)
-        retry_check = CTkCheckBox(
-            options_frame,
-            text="Retry if sending fails",
-            variable=retry_var
+        retry_check = StyleManager.create_checkbox(
+            options_frame, text="Retry if sending fails", variable=retry_var,
         )
-        retry_check.pack(anchor="w", pady=5)
-
-        retry_count_frame = StyleManager.create_frame(options_frame)
-        retry_count_frame.pack(fill="x", pady=5)
+        retry_check.pack(side="left", padx=(0, 20))
 
         StyleManager.create_label(
-            retry_count_frame,
+            options_frame,
             text="Attempts:",
             font_style="body"
-        ).pack(side="left", padx=(0, 10))
+        ).pack(side="left", padx=(0, 8))
 
         retry_count_var = StringVar(value="3")
         retry_count_entry = StyleManager.create_entry(
-            retry_count_frame,
-            width=50,
+            options_frame,
+            width=60,
+            height=32,
             textvariable=retry_count_var
         )
         retry_count_entry.pack(side="left")
 
-        button_frame = StyleManager.create_frame(preview_window)
-        button_frame.pack(fill="x", padx=20, pady=20)
+        status_label = StyleManager.create_label(
+            main_frame,
+            text="",
+            font_style="small",
+            text_color=StyleManager.COLORS["text_muted"]
+        )
+        status_label.pack(pady=(0, 12))
+
+        button_frame = StyleManager.create_frame(main_frame)
+        button_frame.pack(fill="x")
         button_frame.grid_columnconfigure(0, weight=1)
         button_frame.grid_columnconfigure(1, weight=1)
 
-        status_label = StyleManager.create_label(
-            preview_window,
-            text="",
-            font_style="small",
-            text_color=StyleManager.COLORS["text_secondary"]
-        )
-        status_label.pack(pady=(0, 10))
+        left_side = StyleManager.create_frame(button_frame, fg_color="transparent")
+        left_side.grid(row=0, column=0, sticky="w")
+        right_side = StyleManager.create_frame(button_frame, fg_color="transparent")
+        right_side.grid(row=0, column=1, sticky="e")
 
         def send_message():
             try:
@@ -222,7 +221,7 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
                     attempts += 1
                     try:
                         if window_exists:
-                            status_label.configure(text=f"Sending message... attempt {attempts}/{max_retries}")
+                            status_label.configure(text=f"Sending... attempt {attempts}/{max_retries}")
                             preview_window.update()
 
                         try:
@@ -236,7 +235,7 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
                         except Exception as e:
                             raise Exception(f"Failed to send message: {str(e)}")
 
-                        data = csv_manager.read_data()
+                        data = csv_repository.read_data()
                         updated = False
                         for customer in data:
                             if customer.get("Name") == name:
@@ -244,7 +243,7 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
                                 updated = True
                                 break
 
-                        if updated and csv_manager.save_data(data):
+                        if updated and csv_repository.save_data(data):
                             success = True
                             if window_exists:
                                 status_label.configure(text="Sent successfully.")
@@ -274,38 +273,38 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
                     pass
 
         StyleManager.create_button(
-            button_frame,
+            left_side,
             text="Send",
-            width=200,
+            width=160,
             command=send_message
-        ).grid(row=0, column=0, padx=10)
+        ).pack(side="left", pady=10)
 
         StyleManager.create_button(
-            button_frame,
+            right_side,
             text="Cancel",
             style="secondary",
-            width=200,
+            width=120,
             command=preview_window.destroy
-        ).grid(row=0, column=1, padx=10)
+        ).pack(side="right", pady=10)
 
     StyleManager.create_button(
-        buttons_frame,
+        left_side,
         text="Refresh Data",
-        width=200,
+        width=140,
         command=load_data
-    ).grid(row=0, column=0, padx=10, pady=10)
+    ).pack(side="left", padx=(0, 10), pady=10)
 
     StyleManager.create_button(
-        buttons_frame,
+        left_side,
         text="Send Notification",
-        width=200,
+        width=160,
         command=send_whatsapp_notification
-    ).grid(row=0, column=1, padx=10, pady=10)
+    ).pack(side="left", padx=(0, 10), pady=10)
 
     StyleManager.create_button(
-        buttons_frame,
+        right_side,
         text="Back",
         style="secondary",
-        width=200,
+        width=120,
         command=lambda: show_frame(frames["home"])
-    ).grid(row=0, column=2, padx=10, pady=10)
+    ).pack(side="right", pady=10)

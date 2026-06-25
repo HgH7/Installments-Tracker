@@ -3,7 +3,7 @@ import re
 import tkinter as tk
 from datetime import datetime
 from tkinter import messagebox, ttk
-from customtkinter import CTkToplevel, CTkButton, CTkCheckBox
+from customtkinter import CTkToplevel, CTkButton
 
 from app.utils.serialization import load_json_list
 
@@ -30,14 +30,14 @@ def setup_manage_installments_page(
         "Installments",
         "Review and manage current installments.",
     )
-    header_frame.grid(row=0, column=0, sticky="ew", padx=30, pady=(28, 16))
+    header_frame.grid(row=0, column=0, sticky="ew", padx=24, pady=(24, 16))
 
     table_frame = StyleManager.create_frame(frame)
-    table_frame.grid(row=1, column=0, sticky="nsew", padx=30, pady=(0, 16))
+    table_frame.grid(row=1, column=0, sticky="nsew", padx=24, pady=(0, 16))
     table_frame.grid_columnconfigure(0, weight=1)
     table_frame.grid_rowconfigure(0, weight=1)
 
-    columns = ("Name", "Phone", "Amount", "Installments", "Installment Value", "Next Due", "Paid")
+    columns = ("Name", "Phone", "Amount", "Installments", "Installment Value", "Next Due", "Progress")
     tree = ttk.Treeview(
         table_frame,
         columns=columns,
@@ -52,7 +52,7 @@ def setup_manage_installments_page(
         "Installments": "Installments",
         "Installment Value": "Installment Value",
         "Next Due": "Next Due",
-        "Paid": "Paid"
+        "Progress": "Progress"
     }
 
     for col in columns:
@@ -92,7 +92,8 @@ def setup_manage_installments_page(
                     except ValueError:
                         continue
 
-                is_paid = "Yes" if len(paid_installments) == total_installments and total_installments > 0 else "No"
+                paid_count = len(paid_installments)
+                progress_str = f"{paid_count}/{total_installments}" if total_installments > 0 else "0/0"
                 item = tree.insert("", "end", values=(
                     customer.get("Name", ""),
                     customer.get("Phone", ""),
@@ -100,16 +101,19 @@ def setup_manage_installments_page(
                     total_installments,
                     customer.get("Installment Value", ""),
                     next_due,
-                    is_paid
+                    progress_str
                 ))
 
-                if is_paid == "Yes":
+                if paid_count == total_installments and total_installments > 0:
                     tree.item(item, tags=("paid",))
-                else:
+                elif paid_count == 0:
                     tree.item(item, tags=("unpaid",))
+                else:
+                    tree.item(item, tags=("partial",))
 
             tree.tag_configure("paid", foreground=StyleManager.COLORS["success"])
             tree.tag_configure("unpaid", foreground=StyleManager.COLORS["danger"])
+            tree.tag_configure("partial", foreground=StyleManager.COLORS["warning"])
         except Exception as e:
             logging.error(f"Error loading installments data: {str(e)}")
             messagebox.showerror("Error", "An error occurred while loading data.")
@@ -117,20 +121,26 @@ def setup_manage_installments_page(
     load_data()
 
     buttons_frame = StyleManager.create_frame(frame)
-    buttons_frame.grid(row=2, column=0, sticky="ew", padx=30, pady=(0, 30))
-    for column in range(5):
-        buttons_frame.grid_columnconfigure(column, weight=1)
+    buttons_frame.grid(row=2, column=0, sticky="ew", padx=24, pady=(0, 24))
+    buttons_frame.grid_columnconfigure(0, weight=1)
+    buttons_frame.grid_columnconfigure(1, weight=1)
 
     def refresh_installments():
         load_data()
         messagebox.showinfo("Success", "Data refreshed successfully.")
 
+    left_buttons = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+    left_buttons.grid(row=0, column=0, sticky="w")
+
+    right_buttons = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+    right_buttons.grid(row=0, column=1, sticky="e")
+
     StyleManager.create_button(
-        buttons_frame,
+        left_buttons,
         text="Refresh Data",
-        width=200,
+        width=140,
         command=refresh_installments
-    ).grid(row=0, column=0, padx=10, pady=10)
+    ).pack(side="left", padx=(0, 10), pady=10)
 
     def mark_as_paid():
         selected_items = tree.selection()
@@ -146,10 +156,16 @@ def setup_manage_installments_page(
                 values = tree.item(item)["values"]
                 customer_name = values[0]
                 installment_date = values[5]
+                progress_parts = values[6].split("/")
+                paid_so_far = int(progress_parts[0]) if len(progress_parts) == 2 else 0
+                total_inst = int(progress_parts[1]) if len(progress_parts) == 2 else 0
 
                 if customer_service.mark_installment_as_paid(customer_name, installment_date):
-                    tree.set(item, "Paid", "Yes")
-                    tree.item(item, tags=("paid",))
+                    new_paid = paid_so_far + 1
+                    new_progress = f"{new_paid}/{total_inst}"
+                    tree.set(item, "Progress", new_progress)
+                    tag = "paid" if new_paid == total_inst else "partial"
+                    tree.item(item, tags=(tag,))
                 else:
                     messagebox.showerror("Error", f"Failed to mark installment as paid for customer {customer_name}")
                     return
@@ -163,11 +179,11 @@ def setup_manage_installments_page(
             messagebox.showerror("Error", "An error occurred while marking installments as paid.")
 
     StyleManager.create_button(
-        buttons_frame,
+        left_buttons,
         text="Mark as Paid",
-        width=200,
+        width=140,
         command=mark_as_paid
-    ).grid(row=0, column=1, padx=10, pady=10)
+    ).pack(side="left", padx=(0, 10), pady=10)
 
     def edit_installment():
         selected_items = tree.selection()
@@ -190,7 +206,8 @@ def setup_manage_installments_page(
             customer_phone = values[1]
             installment_date = values[5]
             installment_value = values[4]
-            is_paid = values[6] == "Yes"
+            progress_parts_edit = values[6].split("/")
+            is_paid = len(progress_parts_edit) == 2 and progress_parts_edit[0] == progress_parts_edit[1] != "0"
 
             edit_window = CTkToplevel(app)
             edit_window.geometry("500x450")
@@ -203,7 +220,7 @@ def setup_manage_installments_page(
 
             StyleManager.create_label(
                 main_frame,
-                text="Edit Installment Details",
+                text="Edit Installment",
                 font_style="subheading"
             ).pack(pady=(0, 20))
 
@@ -225,67 +242,55 @@ def setup_manage_installments_page(
             fields_frame = StyleManager.create_frame(main_frame)
             fields_frame.pack(fill="x", pady=20)
 
-            date_frame = StyleManager.create_frame(fields_frame)
-            date_frame.pack(fill="x", pady=10)
-
             StyleManager.create_label(
-                date_frame,
+                fields_frame,
                 text="Installment Date:",
-                font_style="body"
-            ).pack(side="left", padx=(0, 10))
+                font_style="label"
+            ).pack(anchor="w", pady=(0, 4))
 
-            date_entry = StyleManager.create_entry(date_frame)
-            date_entry.pack(side="left", fill="x", expand=True)
+            date_row = StyleManager.create_frame(fields_frame, fg_color="transparent", border_width=0)
+            date_row.pack(fill="x", pady=(0, 12))
+            date_row.grid_columnconfigure(0, weight=1)
+
+            date_entry = StyleManager.create_entry(date_row)
+            date_entry.grid(row=0, column=0, sticky="ew", padx=(0, 10))
             date_entry.insert(0, installment_date)
 
             def open_date_picker():
                 DatePicker(edit_window, date_entry)
 
-            date_picker_btn = StyleManager.create_button(
-                date_frame,
+            StyleManager.create_button(
+                date_row,
                 text="Date",
-                width=40,
+                width=60,
                 command=open_date_picker
-            )
-            date_picker_btn.pack(side="left", padx=(10, 0))
-
-            amount_frame = StyleManager.create_frame(fields_frame)
-            amount_frame.pack(fill="x", pady=10)
+            ).grid(row=0, column=1)
 
             StyleManager.create_label(
-                amount_frame,
+                fields_frame,
                 text="Installment Value:",
-                font_style="body"
-            ).pack(side="left", padx=(0, 10))
+                font_style="label"
+            ).pack(anchor="w", pady=(0, 4))
 
-            amount_entry = StyleManager.create_entry(amount_frame)
-            amount_entry.pack(side="left", fill="x", expand=True)
+            amount_entry = StyleManager.create_entry(fields_frame)
+            amount_entry.pack(fill="x", pady=(0, 12))
             amount_entry.insert(0, str(installment_value))
 
-            paid_frame = StyleManager.create_frame(fields_frame)
-            paid_frame.pack(fill="x", pady=10)
-
             paid_status = tk.BooleanVar(value=is_paid)
-            paid_checkbox = CTkCheckBox(
-                paid_frame,
-                text="Paid",
-                variable=paid_status,
-                onvalue=True,
-                offvalue=False,
-                checkbox_width=24,
-                checkbox_height=24,
-                corner_radius=5,
-                border_width=2,
-                fg_color=StyleManager.COLORS["primary"],
-                hover_color=StyleManager.COLORS["secondary"],
-                checkmark_color=StyleManager.COLORS["text"]
+            paid_checkbox = StyleManager.create_checkbox(
+                fields_frame, text="Paid", variable=paid_status,
             )
             paid_checkbox.pack(anchor="w")
 
-            buttons_frame = StyleManager.create_frame(main_frame)
-            buttons_frame.pack(fill="x", pady=(20, 10))
-            buttons_frame.grid_columnconfigure(0, weight=1)
-            buttons_frame.grid_columnconfigure(1, weight=1)
+            modal_buttons = StyleManager.create_frame(main_frame)
+            modal_buttons.pack(fill="x", pady=(20, 10))
+            modal_buttons.grid_columnconfigure(0, weight=1)
+            modal_buttons.grid_columnconfigure(1, weight=1)
+
+            left_side = StyleManager.create_frame(modal_buttons, fg_color="transparent")
+            left_side.grid(row=0, column=0, sticky="w")
+            right_side = StyleManager.create_frame(modal_buttons, fg_color="transparent")
+            right_side.grid(row=0, column=1, sticky="e")
 
             def save_changes():
                 try:
@@ -322,29 +327,29 @@ def setup_manage_installments_page(
                     messagebox.showerror("Error", f"An error occurred while saving changes: {str(e)}")
 
             StyleManager.create_button(
-                buttons_frame,
+                left_side,
                 text="Save Changes",
-                width=200,
+                width=160,
                 command=save_changes
-            ).grid(row=0, column=0, padx=5, pady=5)
+            ).pack(side="left", pady=10)
 
             StyleManager.create_button(
-                buttons_frame,
+                right_side,
                 text="Cancel",
-                width=200,
+                width=120,
                 style="secondary",
                 command=edit_window.destroy
-            ).grid(row=0, column=1, padx=5, pady=5)
+            ).pack(side="right", pady=10)
         except Exception as e:
             logging.error(f"Error opening edit installment window: {str(e)}")
             messagebox.showerror("Error", f"An error occurred while opening the edit window: {str(e)}")
 
     StyleManager.create_button(
-        buttons_frame,
+        left_buttons,
         text="Edit Installment",
-        width=200,
+        width=140,
         command=edit_installment
-    ).grid(row=0, column=2, padx=10, pady=10)
+    ).pack(side="left", padx=(0, 10), pady=10)
 
     def delete_customer():
         selected_items = tree.selection()
@@ -364,17 +369,17 @@ def setup_manage_installments_page(
                 messagebox.showerror("Error", "Failed to delete customer.")
 
     StyleManager.create_button(
-        buttons_frame,
+        right_buttons,
         text="Delete Customer",
         style="danger",
-        width=200,
+        width=140,
         command=delete_customer
-    ).grid(row=0, column=3, padx=10, pady=10)
+    ).pack(side="right", padx=(0, 10), pady=10)
 
     StyleManager.create_button(
-        buttons_frame,
+        right_buttons,
         text="Back",
         style="secondary",
-        width=200,
+        width=120,
         command=lambda: show_frame(frames["home"])
-    ).grid(row=0, column=4, padx=10, pady=10)
+    ).pack(side="right", padx=(0, 0), pady=10)

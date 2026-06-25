@@ -112,6 +112,9 @@ def show_frame(frame):
         if hasattr(child, "grid_remove"):
             child.grid_remove()
     frame.grid()
+    on_show = getattr(frame, "page_on_show", None)
+    if on_show:
+        on_show()
     active_page = getattr(frame, "page_name", None)
     for page_name, button in nav_buttons.items():
         if page_name == active_page:
@@ -227,44 +230,16 @@ def create_app_shell(app):
 
 def refresh_treeview(tree, data=None):
     """Refresh the treeview with data."""
-    # Clear existing items
     for item in tree.get_children():
         tree.delete(item)
-        
-    # If no data provided, read from CSV
+
     if data is None:
         data = csv_repository.read_data()
-    
-    # Get column names
+
     columns = tree["columns"]
-    
-    # Insert data into treeview with proper status handling
     for customer in data:
-        values = []
-        for col in columns:
-            if col == "Paid":
-                # Get the first installment date and check if it's paid
-                installment_dates = customer.get("Installment Dates", "").split(";")
-                first_date = installment_dates[0] if installment_dates else ""
-                paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
-                is_paid = first_date in paid_installments
-                values.append("Yes" if is_paid else "No")
-            else:
-                values.append(customer.get(col, ""))
-        
-        item = tree.insert("", "end", values=values)
-        
-        # Add color coding for paid status if applicable
-        if "Paid" in columns:
-            if values[columns.index("Paid")] == "Yes":
-                tree.item(item, tags=("paid",))
-            else:
-                tree.item(item, tags=("unpaid",))
-    
-    # Configure payment status styles if needed
-    if "Paid" in columns:
-        tree.tag_configure("paid", foreground=StyleManager.COLORS["success"])
-        tree.tag_configure("unpaid", foreground=StyleManager.COLORS["danger"])
+        values = [customer.get(col, "") for col in columns]
+        tree.insert("", "end", values=values)
 
 
 # Initialize CSV repository and customer service
@@ -393,29 +368,31 @@ class DatePicker(CTkToplevel):
         self.cal.pack(pady=20, padx=20, fill="both", expand=True)
         
         # Buttons frame
-        buttons_frame = StyleManager.create_frame(main_frame)
+        buttons_frame = StyleManager.create_frame(main_frame, fg_color="transparent")
         buttons_frame.pack(fill="x", pady=(20, 0))
         buttons_frame.grid_columnconfigure(0, weight=1)
         buttons_frame.grid_columnconfigure(1, weight=1)
         
-        # Select button
-        StyleManager.create_button(
-            buttons_frame,
-            text="Select",
-            width=150,
-            command=self.select_date
-        ).grid(row=0, column=0, padx=5)
+        left_side = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+        left_side.grid(row=0, column=0, sticky="w")
+        right_side = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+        right_side.grid(row=0, column=1, sticky="e")
         
-        # Cancel button
         StyleManager.create_button(
-            buttons_frame,
+            left_side,
+            text="Select",
+            width=140,
+            command=self.select_date
+        ).pack(side="left", pady=10)
+        
+        StyleManager.create_button(
+            right_side,
             text="Cancel",
             style="secondary",
-            width=150,
+            width=120,
             command=self.destroy
-        ).grid(row=0, column=1, padx=5)
+        ).pack(side="right", pady=10)
         
-        # Make the window modal
         self.transient(parent)
         self.grab_set()
         self.focus_set()
@@ -467,7 +444,7 @@ def show_payment_history():
             
         # Create payment history window
         history_window = CTkToplevel(app)
-        history_window.geometry("800x760")
+        history_window.geometry("760x700")
         history_window.title(f"Payment History - {customer_name}")
         
         # Make window modal
@@ -481,9 +458,54 @@ def show_payment_history():
         # Add title
         StyleManager.create_label(
             main_frame,
-            text=f"Payment History - {customer_name}",
+            text=f"Payment History",
             font_style="subheading"
+        ).pack(pady=(0, 4))
+        
+        StyleManager.create_label(
+            main_frame,
+            text=customer_name,
+            font_style="small",
+            text_color=StyleManager.COLORS["text_muted"]
         ).pack(pady=(0, 20))
+        
+        # Parse installment data
+        installment_dates = customer_data["Installment Dates"].split(";")
+        default_value = float(customer_data["Installment Value"])
+        paid_installments = load_json_list(customer_data.get("Paid_Installments", "[]"))
+        
+        try:
+            installment_values = load_json_dict(customer_data.get("Installment_Values", "{}"))
+        except:
+            installment_values = {}
+        
+        total_count = len(installment_dates)
+        paid_count = len(paid_installments)
+        progress_pct = paid_count / total_count if total_count > 0 else 0
+        total_amount = sum(float(installment_values.get(d, default_value)) for d in installment_dates)
+        paid_amount = sum(float(installment_values.get(d, default_value)) for d in paid_installments)
+        remaining = total_amount - paid_amount
+        collected_pct = paid_amount / total_amount * 100 if total_amount > 0 else 0
+        
+        progress_section = StyleManager.create_frame(main_frame, fg_color="transparent", border_width=0)
+        progress_section.pack(fill="x", pady=(0, 16))
+        
+        progress_bar = StyleManager.create_progress_bar(progress_section, width=0)
+        progress_bar.pack(fill="x", pady=(0, 8))
+        progress_bar.set(progress_pct)
+        
+        StyleManager.create_label(
+            progress_section,
+            text=f"{paid_count} of {total_count} installments paid — {collected_pct:.0f}% collected",
+            font_style="body_bold"
+        ).pack(anchor="w")
+        
+        StyleManager.create_label(
+            progress_section,
+            text=f"Collected: {paid_amount:.2f} / {total_amount:.2f}  |  Remaining: {remaining:.2f}",
+            font_style="small",
+            text_color=StyleManager.COLORS["text_muted"]
+        ).pack(anchor="w")
         
         # Create table container
         table_frame = StyleManager.create_frame(main_frame)
@@ -517,38 +539,20 @@ def show_payment_history():
             tree.column(col, width=column_widths[col], anchor="center")
             tree.heading(col, text=column_headers[col])
             
-        if customer_data:
-            installment_dates = customer_data["Installment Dates"].split(";")
-            default_value = float(customer_data["Installment Value"])
-            paid_installments = load_json_list(customer_data.get("Paid_Installments", "[]"))
+        date_to_row_map = {}
+        today = datetime.now().strftime("%Y-%m-%d")
+        
+        for date in installment_dates:
+            is_paid = date in paid_installments
+            status = "Paid" if is_paid else "Unpaid"
+            status_tags = ("paid",) if is_paid else ("unpaid",)
             
-            # Get installment values if they exist
-            try:
-                installment_values = load_json_dict(customer_data.get("Installment_Values", "{}"))
-            except:
-                installment_values = {}
+            value = installment_values.get(date, default_value)
+            is_future = date > today
+            action = "" if is_paid else "Mark as Paid" if not is_future else "Future Due Date"
             
-            # Create a dictionary to store row IDs for each installment date
-            date_to_row_map = {}
-            today = datetime.now().strftime("%Y-%m-%d")
-            
-            for date in installment_dates:
-                is_paid = date in paid_installments
-                status = "Paid" if is_paid else "Unpaid"
-                status_tags = ("paid",) if is_paid else ("unpaid",)
-                
-                # Get the installment value, using the specific value if it exists
-                value = installment_values.get(date, default_value)
-                
-                # Determine if this installment date is in the future
-                is_future = date > today
-                
-                # For unpaid installments, add a "Mark as Paid" button, unless it's in the future
-                action = "" if is_paid else "Mark as Paid" if not is_future else "Future Due Date"
-                
-                # Insert row and store the row ID
-                row_id = tree.insert("", "end", values=(date, f"{value:.2f}", status, action), tags=status_tags)
-                date_to_row_map[date] = row_id
+            row_id = tree.insert("", "end", values=(date, f"{value:.2f}", status, action), tags=status_tags)
+            date_to_row_map[date] = row_id
         
         # Configure tags
         tree.tag_configure("paid", foreground=StyleManager.COLORS["success"])
@@ -697,30 +701,30 @@ def show_payment_history():
                 buttons_frame.grid_columnconfigure(0, weight=1)
                 buttons_frame.grid_columnconfigure(1, weight=1)
                 
-                # Save changes
+                left_side = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+                left_side.grid(row=0, column=0, sticky="w")
+                right_side = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+                right_side.grid(row=0, column=1, sticky="e")
+                
                 def save_changes():
                     try:
                         new_date = date_entry.get().strip()
                         new_value_str = amount_entry.get().strip()
                         new_paid_status = paid_status.get()
                         
-                        # Validate date format
                         try:
                             datetime.strptime(new_date, "%Y-%m-%d")
                         except ValueError:
                             messagebox.showerror("Error", "Invalid date format. Use YYYY-MM-DD.")
                             return
                         
-                        # Validate amount
                         if not re.match(r"^\d+(\.\d{1,2})?$", new_value_str):
                             messagebox.showerror("Error", "Installment value must be a valid number.")
                             return
                             
                         new_value = float(new_value_str)
                         
-                        # Update installment in database
                         if customer_service.update_installment(customer_name, date, new_date, new_value):
-                            # Update paid status if needed
                             if is_paid != new_paid_status:
                                 if new_paid_status:
                                     customer_service.mark_installment_as_paid(customer_name, new_date)
@@ -729,7 +733,6 @@ def show_payment_history():
                                 
                             messagebox.showinfo("Success", "Installment updated successfully.")
                             edit_window.destroy()
-                            # Refresh the payment history view
                             history_window.destroy()
                             show_payment_history()
                         else:
@@ -740,73 +743,38 @@ def show_payment_history():
                         messagebox.showerror("Error", f"An error occurred while saving changes: {str(e)}")
                     
                 StyleManager.create_button(
-                    buttons_frame,
+                    left_side,
                     text="Save Changes",
-                    width=200,
+                    width=160,
                     command=save_changes
-                ).grid(row=0, column=0, padx=5, pady=5)
+                ).pack(side="left", pady=10)
                 
-                # Cancel button
                 StyleManager.create_button(
-                    buttons_frame,
+                    right_side,
                     text="Cancel",
-                    width=200,
+                    width=120,
                     style="secondary",
                     command=edit_window.destroy
-                ).grid(row=0, column=1, padx=5, pady=5)
+                ).pack(side="right", pady=10)
                 
             except Exception as e:
                 logging.error(f"Error opening edit installment window: {str(e)}")
                 messagebox.showerror("Error", f"An error occurred while opening the edit window: {str(e)}")
         
-        # Bind double-click event for marking as paid
         tree.bind("<Double-1>", mark_as_paid)
-        
-        # Bind right-click event for editing
         tree.bind("<Button-3>", edit_installment)
         
-        # Calculate payment summary
-        if customer_data:
-            total_installments = len(installment_dates)
-            paid_count = len(paid_installments)
-            remaining_count = total_installments - paid_count
-            
-            # Calculate total amounts
-            total_amount = sum(float(installment_values.get(date, default_value)) for date in installment_dates)
-            paid_amount = sum(float(installment_values.get(date, default_value)) for date in paid_installments)
-            remaining_amount = total_amount - paid_amount
-            
-            # Create summary frame
-            summary_frame = StyleManager.create_frame(main_frame)
-            summary_frame.pack(fill="x", padx=20, pady=(0, 20))
-            
-            # Add summary information
-            StyleManager.create_label(
-                summary_frame,
-                text=f"Paid installments: {paid_count} of {total_installments}",
-                font_style="body_bold"
-            ).pack(pady=5)
-            
-            StyleManager.create_label(
-                summary_frame,
-                text=f"Paid amount: {paid_amount:.2f} of {total_amount:.2f} ({round(paid_amount/total_amount*100, 1)}%)",
-                font_style="body_bold"
-            ).pack(pady=5)
-            
-            StyleManager.create_label(
-                summary_frame,
-                text=f"Remaining amount: {remaining_amount:.2f}",
-                font_style="body_bold"
-            ).pack(pady=5)
+        button_row = StyleManager.create_frame(main_frame)
+        button_row.pack(fill="x", pady=(20, 0))
+        button_row.grid_columnconfigure(0, weight=1)
         
-        # Close button
         StyleManager.create_button(
-            main_frame,
+            button_row,
             text="Close",
             style="secondary",
-            width=200,
+            width=120,
             command=history_window.destroy
-        ).pack(side="bottom", pady=20)
+        ).grid(row=0, column=0)
         
     except Exception as e:
         logging.error(f"Error showing payment history: {str(e)}")
@@ -956,444 +924,7 @@ def export_to_excel():
         logging.error(f"Error exporting to Excel: {str(e)}")
         messagebox.showerror("Error", "An error occurred while exporting data.")
 
-    frame = frames["view"]
-    frame.grid_columnconfigure(0, weight=1)
-    frame.grid_rowconfigure(0, weight=0)  # Header
-    frame.grid_rowconfigure(1, weight=0)  # Search bar
-    frame.grid_rowconfigure(2, weight=1)  # Table
-    frame.grid_rowconfigure(3, weight=0)  # Buttons
-    
-    # Simplified header with clean design
-    header_frame = StyleManager.create_frame(frame)
-    header_frame.grid(row=0, column=0, sticky="ew", padx=30, pady=(25, 15))
-    header_frame.grid_columnconfigure(0, weight=1)
-    
-    StyleManager.create_label(
-        header_frame,
-        text="Customers",
-        font_style="heading"
-    ).grid(row=0, column=0, pady=(5, 5), sticky="w")
-    
-    # Simplified search area with better spacing
-    search_frame = StyleManager.create_frame(frame)
-    search_frame.grid(row=1, column=0, sticky="ew", padx=30, pady=(0, 15))
-    search_frame.grid_columnconfigure(1, weight=1)
-    
-    # Simple search label
-    StyleManager.create_label(
-        search_frame,
-        text="Search:",
-        font_style="body_bold"
-    ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
-    
-    # Clean search entry
-    search_entry = StyleManager.create_entry(
-        search_frame,
-        width=400,
-        font=("Arial", 14),
-        height=35,
-        placeholder_text="Enter customer name or phone number..."
-    )
-    search_entry.grid(row=0, column=1, padx=(0, 10), pady=5, sticky="ew")
-    
-    def perform_search():
-        query = search_entry.get().strip()
-        results = customer_service.search_customers(query)
-        refresh_treeview(frame.tree, results)
-        
-        # Update status message with search results
-        result_count = len(results)
-        status_label.configure(text=f"Customers: {result_count}")
-    
-    # Add keyboard binding for Enter key
-    search_entry.bind("<Return>", lambda event: perform_search())
-    
-    search_button = StyleManager.create_button(
-        search_frame,
-        text="Search",
-        width=100,
-        height=35,
-        command=perform_search
-    )
-    search_button.grid(row=0, column=2, padx=(0, 0), pady=5)
-    
-    # Simple status label
-    status_label = StyleManager.create_label(
-        search_frame,
-        text="",
-        font_style="small",
-        text_color=StyleManager.COLORS["text_secondary"]
-    )
-    status_label.grid(row=0, column=3, padx=(10, 0), pady=5, sticky="e")
-    
-    # Clean table container with more breathing room
-    table_frame = StyleManager.create_frame(frame)
-    table_frame.grid(row=2, column=0, sticky="nsew", padx=30, pady=(0, 20))
-    table_frame.grid_columnconfigure(0, weight=1)
-    table_frame.grid_rowconfigure(0, weight=1)
-    
-    # Configure Treeview style for better visibility and modern look
-    style = ttk.Style()
-    style.configure(
-        "Custom.Treeview",
-        rowheight=40,
-        font=("Arial", 12),
-        background=StyleManager.COLORS["surface"],
-        foreground=StyleManager.COLORS["text"],
-        fieldbackground=StyleManager.COLORS["surface"]
-    )
-    style.configure(
-        "Custom.Treeview.Heading",
-        font=("Arial", 12, "bold"),
-        background=StyleManager.COLORS["primary"],
-        foreground=StyleManager.COLORS["text"]
-    )
-    style.map(
-        "Custom.Treeview",
-        background=[("selected", StyleManager.COLORS["primary"])],
-        foreground=[("selected", StyleManager.COLORS["text"])]
-    )
-    
-    # Define column headers mapping - simplified
-    column_headers = {
-        "Name": "Customer Name",
-        "Phone": "Phone",
-        "Amount": "Amount",
-        "Installments": "Installments",
-        "Installment Value": "Installment Value",
-        "Start Date": "Start Date"
-    }
-    
-    # Create Treeview with responsive columns
-    tree = ttk.Treeview(
-        table_frame,
-        columns=list(column_headers.keys()),
-        show="headings",
-        style="Custom.Treeview"
-    )
-    
-    # Configure column proportions
-    column_weights = {
-        "Name": 25,
-        "Phone": 20,
-        "Amount": 15,
-        "Installments": 15,
-        "Installment Value": 15,
-        "Start Date": 10
-    }
-    
-    # Set dynamic column widths and headers
-    for col in column_headers.keys():
-        width = int((column_weights[col] / 100) * 1200)  # Base width of 1200 pixels
-        tree.column(col, width=width, minwidth=100)
-        tree.heading(col, text=column_headers[col])
-    
-    tree.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
-    
-    # Add scrollbars
-    y_scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
-    y_scrollbar.grid(row=0, column=1, sticky="ns")
-    
-    x_scrollbar = ttk.Scrollbar(table_frame, orient="horizontal", command=tree.xview)
-    x_scrollbar.grid(row=1, column=0, sticky="ew")
-    
-    tree.configure(yscrollcommand=y_scrollbar.set, xscrollcommand=x_scrollbar.set)
-    
-    # Store the Treeview widget as an attribute of the frame
-    frame.tree = tree
-    
-    # Initial data load
-    refresh_treeview(tree)
-    
-    # Update status label with initial count
-    data = csv_repository.read_data()
-    status_label.configure(text=f"Customers: {len(data)}")
-    
-    # Edit customer function - keeping functionality intact
-    def edit_customer():
-        selected_items = tree.selection()
-        if not selected_items:
-            messagebox.showerror("Error", "Select a customer to edit.")
-            return
-            
-        # Get selected customer data
-        item = tree.item(selected_items[0])
-        values = item["values"]
-        customer_name = values[0]
-        
-        # Get full customer data
-        data = csv_repository.read_data()
-        customer = next((c for c in data if c["Name"] == customer_name), None)
-        
-        if not customer:
-            messagebox.showerror("Error", "Customer data was not found.")
-            return
-        
-        # Create edit window
-        edit_window = CTkToplevel(app)
-        edit_window.geometry("800x600")
-        edit_window.title(f"Edit Customer Details: {customer_name}")
-        
-        # Add header
-        StyleManager.create_label(
-            edit_window,
-            text=f"Edit Customer Details: {customer_name}",
-            font_style="heading"
-        ).pack(pady=(20, 10))
-        
-        # Create form container
-        form_frame = StyleManager.create_frame(edit_window)
-        form_frame.pack(fill="both", expand=True, padx=20, pady=20)
-        
-        # Form fields with current values
-        fields = [
-            {"label": "Customer Name:", "key": "Name", "type": "text"},
-            {"label": "Phone:", "key": "Phone", "type": "phone"},
-            {"label": "Amount:", "key": "Amount", "type": "number"},
-            {"label": "Installments:", "key": "Installments", "type": "number"}
-        ]
-        
-        entries = {}
-        row = 0
-        
-        for field in fields:
-            # Create field container
-            field_frame = StyleManager.create_frame(form_frame)
-            field_frame.pack(fill="x", padx=10, pady=10)
-            field_frame.grid_columnconfigure(1, weight=1)
-            
-            # Add label
-            StyleManager.create_label(
-                field_frame,
-                text=field["label"],
-                font_style="body_bold"
-            ).grid(row=0, column=0, padx=10, pady=5, sticky="w")
-            
-            # Add entry with current value
-            entry = StyleManager.create_entry(field_frame, width=300)
-            entry.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
-            entry.insert(0, str(customer.get(field["key"], "")))
-            entries[field["key"]] = entry
-            
-            row += 1
-        
-        # Date Picker Section
-        date_frame = StyleManager.create_frame(form_frame)
-        date_frame.pack(fill="x", padx=10, pady=10)
-        date_frame.grid_columnconfigure(1, weight=1)
-        
-        StyleManager.create_label(
-            date_frame,
-            text="Installment Start Date:",
-            font_style="body_bold"
-        ).grid(row=0, column=0, padx=10, pady=5, sticky="w")
-        
-        start_date_entry = StyleManager.create_entry(date_frame, width=200)
-        start_date_entry.grid(row=0, column=1, padx=10, pady=5, sticky="w")
-        start_date_entry.insert(0, str(customer.get("Start Date", "")))
-        entries["Start Date"] = start_date_entry
-        
-        date_picker_btn = StyleManager.create_button(
-            date_frame,
-            text="Select Date",
-            style="secondary",
-            command=lambda: DatePicker(edit_window, start_date_entry)
-        )
-        date_picker_btn.grid(row=0, column=2, padx=10, pady=5)
-        
-        # Buttons container
-        buttons_frame = StyleManager.create_frame(edit_window)
-        buttons_frame.pack(fill="x", padx=20, pady=20)
-        buttons_frame.grid_columnconfigure(0, weight=1)
-        buttons_frame.grid_columnconfigure(1, weight=1)
-        
-        def save_changes():
-            # Validation patterns
-            name_pattern = r"^[A-Za-z\u0600-\u06FF\s]+$"
-            phone_pattern = r"^\+?\d{10,15}$"
-            amount_pattern = r"^\d+(\.\d{1,2})?$"
-            installments_pattern = r"^\d+$"
-            
-            # Get values from entries
-            name = entries["Name"].get().strip()
-            phone = entries["Phone"].get().strip()
-            amount = entries["Amount"].get().strip()
-            installments = entries["Installments"].get().strip()
-            start_date = entries["Start Date"].get().strip()
-            
-            # Validate inputs
-            if not re.fullmatch(name_pattern, name):
-                messagebox.showerror("Error", "Name can contain only letters and spaces.")
-                return
-                
-            if not re.fullmatch(phone_pattern, phone):
-                messagebox.showerror("Error", "Phone number must contain digits only and may start with +.")
-                return
-                
-            if not re.fullmatch(amount_pattern, amount):
-                messagebox.showerror("Error", "Amount must be a valid number.")
-                return
-                
-            if not re.fullmatch(installments_pattern, installments):
-                messagebox.showerror("Error", "Installments must be a whole number.")
-                return
-            
-            try:
-                datetime.strptime(start_date, "%Y-%m-%d")
-            except ValueError:
-                messagebox.showerror("Error", "Invalid date format. Use YYYY-MM-DD.")
-                return
-            
-            try:
-                updated_data = customer_service.build_customer_record(
-                    name,
-                    phone,
-                    amount,
-                    installments,
-                    start_date,
-                    date_strategy="thirty_day",
-                    include_tracking_fields=False,
-                )
-                
-                # If name changed, delete old record and create new one
-                if customer_name != name:
-                    if customer_service.delete_customer(customer_name) and customer_service.append_customer({
-                        **updated_data,
-                        "Notification Sent": customer.get("Notification Sent", False),
-                        "Paid_Installments": customer.get("Paid_Installments", "[]"),
-                        "Notified_Installments": customer.get("Notified_Installments", "[]"),
-                        "Installment_Values": customer.get("Installment_Values", "{}"),
-                    }):
-                        messagebox.showinfo("Success", "Customer updated successfully.")
-                        edit_window.destroy()
-                        refresh_treeview(tree)
-                        refresh_payment_history_views()  # Refresh payment history views
-                    else:
-                        messagebox.showerror("Error", "Failed to update customer.")
-                else:
-                    # Update existing record
-                    if customer_service.update_customer(customer_name, updated_data):
-                        messagebox.showinfo("Success", "Customer updated successfully.")
-                        edit_window.destroy()
-                        refresh_treeview(tree)
-                        refresh_payment_history_views()  # Refresh payment history views
-                    else:
-                        messagebox.showerror("Error", "Failed to update customer.")
-                
-            except ValueError as e:
-                messagebox.showerror("Error", f"Invalid input data: {str(e)}")
-            except Exception as e:
-                messagebox.showerror("Error", f"An unexpected error occurred: {str(e)}")
-            
-        # Save Button
-        StyleManager.create_button(
-            buttons_frame,
-            text="Save Changes",
-            width=200,
-            command=save_changes
-        ).grid(row=0, column=0, padx=10, pady=10)
-        
-        # Cancel Button
-        StyleManager.create_button(
-            buttons_frame,
-            text="Cancel",
-            style="secondary",
-            width=200,
-            command=edit_window.destroy
-        ).grid(row=0, column=1, padx=10, pady=10)
-        
-        # Make the window modal
-        edit_window.transient(app)
-        edit_window.grab_set()
-        edit_window.focus_set()
-    
-    # Delete customer function
-    def delete_customer():
-        selected_items = tree.selection()
-        if not selected_items:
-            messagebox.showerror("Error", "Select a customer to delete.")
-            return
-            
-        # Get selected customer data
-        item = tree.item(selected_items[0])
-        values = item["values"]
-        customer_name = values[0]
-        
-        # Confirm deletion
-        if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete customer {customer_name}?\nThis action cannot be undone."):
-            if customer_service.delete_customer(customer_name):
-                messagebox.showinfo("Success", f"Deleted customer {customer_name} successfully.")
-                refresh_treeview(tree)
-            else:
-                messagebox.showerror("Error", "Failed to delete customer.")
-    
-    # Action buttons with simplified design
-    buttons_frame = StyleManager.create_frame(frame)
-    buttons_frame.grid(row=3, column=0, sticky="ew", padx=30, pady=(0, 30))
-    
-    # Create two columns for better spacing
-    buttons_frame.grid_columnconfigure(0, weight=1)
-    buttons_frame.grid_columnconfigure(1, weight=1)
-    
-    # Left buttons container
-    left_buttons = StyleManager.create_frame(buttons_frame, fg_color="transparent")
-    left_buttons.grid(row=0, column=0, sticky="w")
-    
-    # Right buttons container
-    right_buttons = StyleManager.create_frame(buttons_frame, fg_color="transparent")
-    right_buttons.grid(row=0, column=1, sticky="e")
-    
-    # Left side buttons - operations
-    refresh_btn = StyleManager.create_button(
-        left_buttons,
-        text="Refresh",
-        width=120,
-        command=lambda: refresh_treeview(tree)
-    )
-    refresh_btn.pack(side="left", padx=(0, 10), pady=10)
-    
-    history_btn = StyleManager.create_button(
-        left_buttons,
-        text="Payment History",
-        width=120,
-        command=show_payment_history
-    )
-    history_btn.pack(side="left", padx=(0, 10), pady=10)
 
-    export_btn = StyleManager.create_button(
-        left_buttons,
-        text="Export Excel",
-        width=120,
-        command=export_to_excel
-    )
-    export_btn.pack(side="left", padx=(0, 10), pady=10)
-    
-    # Right side buttons - customer management
-    back_btn = StyleManager.create_button(
-        right_buttons,
-        text="Back",
-        style="secondary",
-        width=120,
-        command=lambda: show_frame(frames["home"])
-    )
-    back_btn.pack(side="right", padx=(0, 0), pady=10)
-    
-    delete_btn = StyleManager.create_button(
-        right_buttons,
-        text="Delete Customer",
-        style="danger",
-        width=120,
-        command=delete_customer
-    )
-    delete_btn.pack(side="right", padx=(0, 10), pady=10)
-    
-    edit_btn = StyleManager.create_button(
-        right_buttons,
-        text="Edit Customer",
-        width=120,
-        command=edit_customer
-    )
-    edit_btn.pack(side="right", padx=(0, 10), pady=10)
 
 def check_due_installments():
     """Check for installments due in 3 days and send notifications."""
@@ -1542,296 +1073,6 @@ def refresh_payment_history_views():
         if isinstance(widget, CTkToplevel) and "Payment History" in widget.title():
             widget.destroy()
 
-def load_installments_data():
-    """Load data into the installments management treeview"""
-    try:
-        frame = frames["manage"]
-        tree = frame.tree
-        
-        # Clear existing items
-        for item in tree.get_children():
-            tree.delete(item)
-            
-        # Get customer data
-        data = csv_repository.read_data()
-        
-        for customer in data:
-            try:
-                # Get paid and total installments
-                paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
-                total_installments = int(customer.get("Installments", 0))
-                
-                # Get next due date
-                installment_dates = customer.get("Installment Dates", "").split(";")
-                next_due = ""
-                for date in installment_dates:
-                    if date not in paid_installments:
-                        next_due = date
-                        break
-                
-                # Format amount with two decimal places
-                amount = float(customer.get("Amount", 0))
-                formatted_amount = f"{amount:.2f}"
-                
-                # Insert into tree
-                item = tree.insert("", "end", values=(
-                    customer.get("Name", ""),
-                    customer.get("Phone", ""),
-                    formatted_amount,
-                    total_installments,
-                    f"{len(paid_installments)}/{total_installments}",
-                    next_due
-                ))
-                
-                # Add color coding based on payment status
-                if len(paid_installments) == total_installments:
-                    tree.item(item, tags=("paid",))
-                else:
-                    tree.item(item, tags=("unpaid",))
-                
-            except Exception as e:
-                logging.error(f"Error processing customer in load_installments_data: {str(e)}")
-                continue
-        
-        # Configure payment status styles
-        tree.tag_configure("paid", foreground=StyleManager.COLORS["success"])
-        tree.tag_configure("unpaid", foreground=StyleManager.COLORS["danger"])
-                
-    except Exception as e:
-        logging.error(f"Error loading installments data: {str(e)}")
-        messagebox.showerror("Error", "An error occurred while loading data.")
-
-def show_installment_details(event):
-    """Show details of a selected installment"""
-    try:
-        # Get the selected item
-        tree = frames["manage"].tree
-        selection = tree.selection()
-        if not selection:
-            return
-            
-        # Get customer data
-        item = selection[0]
-        values = tree.item(item, "values")
-        customer_name = values[0]
-        phone = values[1]
-        
-        # Get customer data from CSV
-        data = csv_repository.read_data()
-        customer = next((c for c in data if c["Name"] == customer_name and c["Phone"] == phone), None)
-        if not customer:
-            messagebox.showerror("Error", "Customer data was not found.")
-            return
-            
-        # Create details window
-        details_window = CTkToplevel(app)
-        details_window.title(f"Installment Details - {customer_name}")
-        details_window.geometry("600x400")
-        details_window.resizable(False, False)
-        
-        # Create main frame
-        main_frame = StyleManager.create_frame(details_window)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-        
-        # Create header
-        header_frame = StyleManager.create_frame(main_frame)
-        header_frame.pack(fill="x", pady=(0, 20))
-        
-        StyleManager.create_label(
-            header_frame,
-            text=f"Customer Installment Details: {customer_name}",
-            font_style="subheading"
-        ).pack()
-        
-        # Create treeview
-        tree_frame = StyleManager.create_frame(main_frame)
-        tree_frame.pack(fill="both", expand=True)
-        
-        # Add scrollbars
-        y_scroll = ttk.Scrollbar(tree_frame, orient="vertical")
-        x_scroll = ttk.Scrollbar(tree_frame, orient="horizontal")
-        
-        # Create treeview
-        tree = ttk.Treeview(
-            tree_frame,
-            columns=("date", "amount", "status"),
-            show="headings",
-            yscrollcommand=y_scroll.set,
-            xscrollcommand=x_scroll.set
-        )
-        
-        # Configure columns
-        tree.heading("date", text="Installment Date")
-        tree.heading("amount", text="Amount")
-        tree.heading("status", text="Status")
-        
-        tree.column("date", width=150, anchor="center")
-        tree.column("amount", width=150, anchor="center")
-        tree.column("status", width=150, anchor="center")
-        
-        # Pack tree and scrollbars
-        tree.pack(side="left", fill="both", expand=True)
-        y_scroll.pack(side="right", fill="y")
-        x_scroll.pack(side="bottom", fill="x")
-        
-        y_scroll.config(command=tree.yview)
-        x_scroll.config(command=tree.xview)
-        
-        # Get installment data
-        total_amount = float(customer.get("Amount", 0))
-        total_installments = int(customer.get("Installments", 0))
-        installment_amount = total_amount / total_installments
-        paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
-        installment_dates = customer.get("Installment Dates", "").split(";")
-        
-        # Add installments to tree
-        for date in installment_dates:
-            if date:
-                status = "Paid" if date in paid_installments else "Unpaid"
-                tree.insert("", "end", values=(
-                    date,
-                    f"{installment_amount:.2f}",
-                    status
-                ))
-        
-        # Configure styles
-        tree.tag_configure("paid", foreground=StyleManager.COLORS["success"])
-        tree.tag_configure("unpaid", foreground=StyleManager.COLORS["danger"])
-        
-        # Add buttons frame
-        buttons_frame = StyleManager.create_frame(main_frame)
-        buttons_frame.pack(fill="x", pady=(20, 0))
-        
-        # Add mark as paid button
-        def mark_as_paid():
-            selection = tree.selection()
-            if not selection:
-                messagebox.showwarning("Notice", "Please select an installment.")
-                return
-                
-            item = selection[0]
-            values = tree.item(item, "values")
-            date = values[0]
-            
-            if date in paid_installments:
-                messagebox.showinfo("Information", "This installment is already paid.")
-                return
-                
-            if customer_service.mark_installment_as_paid(customer_name, date):
-                tree.item(item, values=(date, values[1], "Paid"), tags=("paid",))
-                messagebox.showinfo("Success", "Installment marked as paid.")
-                load_installments_data()  # Refresh main view
-            else:
-                messagebox.showerror("Error", "Failed to mark installment as paid.")
-        
-        StyleManager.create_button(
-            buttons_frame,
-            text="Mark as Paid",
-            command=mark_as_paid
-        ).pack(side="right", padx=5)
-        
-        # Add unmark as paid button
-        def unmark_as_paid():
-            selection = tree.selection()
-            if not selection:
-                messagebox.showwarning("Notice", "Please select an installment.")
-                return
-                
-            item = selection[0]
-            values = tree.item(item, "values")
-            date = values[0]
-            
-            if date not in paid_installments:
-                messagebox.showinfo("Information", "This installment is not paid.")
-                return
-                
-            if customer_service.unmark_installment_as_paid(customer_name, date):
-                tree.item(item, values=(date, values[1], "Unpaid"), tags=("unpaid",))
-                messagebox.showinfo("Success", "Installment payment mark removed.")
-                load_installments_data()  # Refresh main view
-            else:
-                messagebox.showerror("Error", "Failed to unmark installment as paid.")
-        
-        StyleManager.create_button(
-            buttons_frame,
-            text="Unmark Payment",
-            command=unmark_as_paid
-        ).pack(side="right", padx=5)
-        
-        # Add close button
-        StyleManager.create_button(
-            buttons_frame,
-            text="Close",
-            command=details_window.destroy
-        ).pack(side="left")
-        
-    except Exception as e:
-        logging.error(f"Error showing installment details: {str(e)}")
-        messagebox.showerror("Error", "An error occurred while showing installment details.")
-
-def perform_installment_search():
-    """Search for installments based on the search query"""
-    try:
-        frame = frames["manage"]
-        search_query = frame.search_entry.get().strip().lower()
-        tree = frame.tree
-        
-        # Clear existing items
-        for item in tree.get_children():
-            tree.delete(item)
-            
-        # Get customer data
-        data = csv_repository.read_data()
-        
-        for customer in data:
-            try:
-                # Check if customer matches search query
-                if (search_query in customer.get("Name", "").lower() or 
-                    search_query in customer.get("Phone", "").lower()):
-                    
-                    # Get paid and total installments
-                    paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
-                    total_installments = int(customer.get("Installments", 0))
-                    
-                    # Get next due date
-                    installment_dates = customer.get("Installment Dates", "").split(";")
-                    next_due = ""
-                    for date in installment_dates:
-                        if date not in paid_installments:
-                            next_due = date
-                            break
-                    
-                    # Format amount with two decimal places
-                    amount = float(customer.get("Amount", 0))
-                    formatted_amount = f"{amount:.2f}"
-                    
-                    # Insert into tree
-                    item = tree.insert("", "end", values=(
-                        customer.get("Name", ""),
-                        customer.get("Phone", ""),
-                        formatted_amount,
-                        total_installments,
-                        f"{len(paid_installments)}/{total_installments}",
-                        next_due
-                    ))
-                    
-                    # Add color coding based on payment status
-                    if len(paid_installments) == total_installments:
-                        tree.item(item, tags=("paid",))
-                    else:
-                        tree.item(item, tags=("unpaid",))
-                
-            except Exception as e:
-                logging.error(f"Error processing customer in search: {str(e)}")
-                continue
-        
-        # Configure payment status styles
-        tree.tag_configure("paid", foreground=StyleManager.COLORS["success"])
-        tree.tag_configure("unpaid", foreground=StyleManager.COLORS["danger"])
-                
-    except Exception as e:
-        logging.error(f"Error performing installment search: {str(e)}")
-        messagebox.showerror("Error", "An error occurred while searching.")
 
 # Initialize the application and create frames
 if __name__ == "__main__":
@@ -1870,7 +1111,7 @@ if __name__ == "__main__":
         
         # Setup all pages with error handling
         setup_functions = [
-            ("setup_home_page", lambda: setup_home_page_module(frames, StyleManager, show_frame, app)),
+            ("setup_home_page", lambda: setup_home_page_module(frames, StyleManager, show_frame, app, customer_service, csv_repository)),
             ("setup_add_page", lambda: setup_add_page_module(frames, StyleManager, app, validate_and_save, DatePicker, show_frame)),
             (
                 "setup_view_page",

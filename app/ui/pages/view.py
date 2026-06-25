@@ -30,10 +30,10 @@ def setup_view_page(
         "Customers",
         "Search, review, edit, export, and inspect payment history.",
     )
-    header_frame.grid(row=0, column=0, sticky="ew", padx=30, pady=(28, 16))
+    header_frame.grid(row=0, column=0, sticky="ew", padx=24, pady=(24, 16))
 
     search_frame = StyleManager.create_frame(frame)
-    search_frame.grid(row=1, column=0, sticky="ew", padx=30, pady=(0, 14))
+    search_frame.grid(row=1, column=0, sticky="ew", padx=24, pady=(0, 14))
     search_frame.grid_columnconfigure(1, weight=1)
 
     StyleManager.create_label(
@@ -76,30 +76,9 @@ def setup_view_page(
     status_label.grid(row=0, column=3, padx=(10, 0), pady=5, sticky="e")
 
     table_frame = StyleManager.create_frame(frame)
-    table_frame.grid(row=2, column=0, sticky="nsew", padx=30, pady=(0, 16))
+    table_frame.grid(row=2, column=0, sticky="nsew", padx=24, pady=(0, 16))
     table_frame.grid_columnconfigure(0, weight=1)
     table_frame.grid_rowconfigure(0, weight=1)
-
-    style = ttk.Style()
-    style.configure(
-        "Custom.Treeview",
-        rowheight=34,
-        font=StyleManager.FONTS["data"],
-        background=StyleManager.COLORS["surface"],
-        foreground=StyleManager.COLORS["text"],
-        fieldbackground=StyleManager.COLORS["surface"]
-    )
-    style.configure(
-        "Custom.Treeview.Heading",
-        font=StyleManager.FONTS["section"],
-        background=StyleManager.COLORS["surface_high"],
-        foreground=StyleManager.COLORS["text_secondary"]
-    )
-    style.map(
-        "Custom.Treeview",
-        background=[("selected", StyleManager.COLORS["surface_highest"])],
-        foreground=[("selected", StyleManager.COLORS["text"])]
-    )
 
     column_headers = {
         "Name": "Customer Name",
@@ -185,48 +164,49 @@ def setup_view_page(
         entries = {}
 
         for field in fields:
-            field_frame = StyleManager.create_frame(form_frame)
-            field_frame.pack(fill="x", padx=10, pady=10)
-            field_frame.grid_columnconfigure(1, weight=1)
-
             StyleManager.create_label(
-                field_frame,
+                form_frame,
                 text=field["label"],
-                font_style="body_bold"
-            ).grid(row=0, column=0, padx=10, pady=5, sticky="w")
+                font_style="label",
+            ).pack(anchor="w", padx=16, pady=(12, 4))
 
-            entry = StyleManager.create_entry(field_frame, width=300)
-            entry.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
+            entry = StyleManager.create_entry(form_frame)
+            entry.pack(fill="x", padx=16, pady=(0, 4))
             entry.insert(0, str(customer.get(field["key"], "")))
             entries[field["key"]] = entry
 
-        date_frame = StyleManager.create_frame(form_frame)
-        date_frame.pack(fill="x", padx=10, pady=10)
-        date_frame.grid_columnconfigure(1, weight=1)
-
         StyleManager.create_label(
-            date_frame,
+            form_frame,
             text="Installment Start Date:",
-            font_style="body_bold"
-        ).grid(row=0, column=0, padx=10, pady=5, sticky="w")
+            font_style="label",
+        ).pack(anchor="w", padx=16, pady=(12, 4))
 
-        start_date_entry = StyleManager.create_entry(date_frame, width=200)
-        start_date_entry.grid(row=0, column=1, padx=10, pady=5, sticky="w")
+        date_row = StyleManager.create_frame(form_frame, fg_color="transparent", border_width=0)
+        date_row.pack(fill="x", padx=16, pady=(0, 4))
+        date_row.grid_columnconfigure(0, weight=1)
+
+        start_date_entry = StyleManager.create_entry(date_row)
+        start_date_entry.grid(row=0, column=0, sticky="ew", padx=(0, 10))
         start_date_entry.insert(0, str(customer.get("Start Date", "")))
         entries["Start Date"] = start_date_entry
 
-        date_picker_btn = StyleManager.create_button(
-            date_frame,
+        StyleManager.create_button(
+            date_row,
             text="Select Date",
             style="secondary",
+            width=120,
             command=lambda: DatePicker(edit_window, start_date_entry)
-        )
-        date_picker_btn.grid(row=0, column=2, padx=10, pady=5)
+        ).grid(row=0, column=1)
 
         buttons_frame = StyleManager.create_frame(edit_window)
         buttons_frame.pack(fill="x", padx=20, pady=20)
         buttons_frame.grid_columnconfigure(0, weight=1)
         buttons_frame.grid_columnconfigure(1, weight=1)
+
+        left_side = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+        left_side.grid(row=0, column=0, sticky="w")
+        right_side = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+        right_side.grid(row=0, column=1, sticky="e")
 
         def save_changes():
             name_pattern = r"^[A-Za-z\u0600-\u06FF\s]+$"
@@ -302,19 +282,19 @@ def setup_view_page(
                 messagebox.showerror("Error", f"An unexpected error occurred: {str(e)}")
 
         StyleManager.create_button(
-            buttons_frame,
+            left_side,
             text="Save Changes",
-            width=200,
+            width=160,
             command=save_changes
-        ).grid(row=0, column=0, padx=10, pady=10)
+        ).pack(side="left", pady=10)
 
         StyleManager.create_button(
-            buttons_frame,
+            right_side,
             text="Cancel",
             style="secondary",
-            width=200,
+            width=120,
             command=edit_window.destroy
-        ).grid(row=0, column=1, padx=10, pady=10)
+        ).pack(side="right", pady=10)
 
         edit_window.transient(app)
         edit_window.grab_set()
@@ -338,7 +318,7 @@ def setup_view_page(
                 messagebox.showerror("Error", "Failed to delete customer.")
 
     buttons_frame = StyleManager.create_frame(frame)
-    buttons_frame.grid(row=3, column=0, sticky="ew", padx=30, pady=(0, 30))
+    buttons_frame.grid(row=3, column=0, sticky="ew", padx=24, pady=(0, 24))
     buttons_frame.grid_columnconfigure(0, weight=1)
     buttons_frame.grid_columnconfigure(1, weight=1)
 

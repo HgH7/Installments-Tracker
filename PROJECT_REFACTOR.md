@@ -140,3 +140,53 @@ Transform Installment Tracker from a working internal business tool into a maint
 - Fixed installment page mark/edit actions to read selected table rows directly, matching the current flat table layout.
 - Preserved existing CSV field names, customer data structure, repository/service architecture, backup behavior, export behavior, and notification workflow.
 - TASK-008 verification passed: syntax check and controlled shell startup both completed successfully.
+
+### TASK-009: UI consistency audit and modernization
+- [x] Removed ~730 lines of dead/duplicate code from `The-Project.py` (duplicate view page setup inside `export_to_excel()`, unused `load_installments_data`, `show_installment_details`, `perform_installment_search` functions)
+- [x] Standardized page margins from mixed 24px/30px to consistent 24px (`margin_page`) across all 6 pages
+- [x] Removed all hardcoded `"Arial"` font references; all text now uses `StyleManager.FONTS`
+- [x] Consolidated Treeview styling into single `Custom.Treeview` definition in `app/ui/style.py`, removed duplicate definitions from `view.py`
+- [x] Modernized Backup & Restore page: replaced raw `CTkFrame` usage with `StyleManager`, new card-based layout matching home page design, cleaner restore modal with consistent theming
+- [x] Modernized Send Notification page: fixed `csv_manager` → `csv_repository` parameter name, modernized preview modal with consistent layout and CTkCheckBox theming, left/right button bar pattern
+- [x] Modernized Add Customer form: cleaner label-above-input layout, removed nested field_frame wrappers, left/right button bar, better file section integration
+- [x] Fixed Manage Installments page button bar: replaced 5-column equal grid with left/right alignment pattern
+- [x] Modernized Payment History modal: cleaner summary line, left/right button layout
+- [x] Updated DatePicker and Edit Customer modals with consistent form patterns
+
+### TASK-011: Redesign Home page from launcher to professional landing
+- [x] Replaced 3×2 grid of sidebar-duplicating action cards with information-dense layout:
+  - **Stats row**: 4 metric cards (Customers, Active, Paid, Overdue) with live computed values and tone-colored headings
+  - **Scrollable body** with:
+    - Quick Actions section (4 compact buttons: Add Customer, Customers, Installments, Backup / Restore)
+    - Workspace section (data file path, record count, storage type)
+    - Recent Activity section (visual placeholder for future log)
+- [x] Added `customer_service` dependency to home page setup for live stats computation
+- [x] Created `CTkScrollableFrame` body so content never overflows on smaller screens
+- [x] All existing routing and functionality preserved; no new business logic or dashboard features added
+
+### TASK-012: Activity feed on Home page
+- [x] Replaced placeholder "No recent activity" with live feed derived from existing customer/installment data
+- [x] Feed computes 5 event types on-the-fly (no new logging infrastructure):
+  - **Paid**: installments in `Paid_Installments`, sorted newest-first
+  - **Overdue**: unpaid dates before today, with day count
+  - **Upcoming**: unpaid dates within next 30 days
+  - **New Customer**: customers added within last 60 days by `Start Date`
+  - **Backup**: latest backup from `csv_repository.get_backup_files()` filename timestamp
+- [x] Each entry rendered as compact card with color-coded left border, description, and right-aligned status badge
+- [x] Feed capped at 20 entries, sorted by date descending
+- [x] Empty state preserved when no data exists
+- [x] Added `csv_repository` parameter to `setup_home_page` for backup timestamp access
+- [x] All existing data sources used; no new services, tables, or event infrastructure added
+
+### TASK-010: Progress bars on payment views
+- [x] Added `StyleManager.create_progress_bar()` factory method for `CTkProgressBar` with theme colors
+- [x] Added visual progress bar to Payment History modal (The-Project.py):
+  - `CTkProgressBar` showing paid/total ratio between subtitle and installment table
+  - Summary text: "X of Y installments paid — Z% collected" with monetary breakdown
+  - Removed old text-only summary at bottom of modal
+  - Removed duplicate installment data parsing that was inside `if customer_data:` block
+- [x] Updated Manage Installments table (manage.py):
+  - Renamed "Paid" column → "Progress" with `"X/Y"` format (e.g., `"3/5"`)
+  - Added `"partial"` tag with warning color (`#ffb95f`) for partially paid customers
+  - Updated `mark_as_paid` to recalculate progress string before full table reload
+  - Fixed `edit_installment` to parse progress string instead of comparing to `"Yes"`

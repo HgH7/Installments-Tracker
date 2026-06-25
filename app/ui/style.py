@@ -103,6 +103,29 @@ class StyleManager:
                 font=cls.FONTS["section"],
             )
             style.layout("Treeview", [("Treeview.treearea", {"sticky": "nswe"})])
+
+            style.configure(
+                "Custom.Treeview",
+                rowheight=34,
+                font=cls.FONTS["data"],
+                background=cls.COLORS["surface"],
+                foreground=cls.COLORS["text"],
+                fieldbackground=cls.COLORS["surface"],
+                borderwidth=0,
+            )
+            style.configure(
+                "Custom.Treeview.Heading",
+                font=cls.FONTS["section"],
+                background=cls.COLORS["surface_high"],
+                foreground=cls.COLORS["text_secondary"],
+                borderwidth=0,
+                relief="flat",
+            )
+            style.map(
+                "Custom.Treeview",
+                background=[("selected", cls.COLORS["surface_highest"])],
+                foreground=[("selected", cls.COLORS["text"])],
+            )
             logging.info("Theme setup completed successfully")
         except Exception as e:
             logging.error(f"Error setting up theme: {str(e)}")
@@ -202,3 +225,50 @@ class StyleManager:
         }
         badge_config.update(kwargs)
         return customtkinter.CTkLabel(master, **badge_config)
+
+    @classmethod
+    def create_progress_bar(cls, master, width=200, height=14, corner_radius=7, **kwargs):
+        config = {
+            "width": width,
+            "height": height,
+            "corner_radius": corner_radius,
+            "fg_color": cls.COLORS["surface_highest"],
+            "progress_color": cls.COLORS["primary"],
+            "border_width": 0,
+        }
+        config.update(kwargs)
+        return customtkinter.CTkProgressBar(master, **config)
+
+    @classmethod
+    def create_textbox(cls, master, height=80, readonly=True, **kwargs):
+        config = {
+            "font": cls.FONTS["small"],
+            "fg_color": cls.COLORS["background"],
+            "border_color": cls.COLORS["border"],
+            "border_width": 1,
+            "height": height,
+        }
+        config.update(kwargs)
+        textbox = customtkinter.CTkTextbox(master, **config)
+        if readonly:
+            textbox.configure(state="disabled")
+        return textbox
+
+    @classmethod
+    def create_checkbox(cls, master, text="", variable=None, **kwargs):
+        config = {
+            "fg_color": cls.COLORS["primary_action"],
+            "hover_color": cls.COLORS["primary_hover"],
+            "text_color": cls.COLORS["text"],
+            "font": cls.FONTS["body"],
+            "checkbox_width": 24,
+            "checkbox_height": 24,
+            "corner_radius": 5,
+            "border_width": 2,
+        }
+        if variable is not None:
+            config["variable"] = variable
+            config["onvalue"] = True
+            config["offvalue"] = False
+        config.update(kwargs)
+        return customtkinter.CTkCheckBox(master, text=text, **config)
