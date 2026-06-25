@@ -100,7 +100,7 @@ def create_activity_card(entry, StyleManager, master, row_index):
         border_width=0,
         corner_radius=4,
     )
-    card.grid(row=row_index, column=0, sticky="ew", pady=(0, 4))
+    card.grid(row=row_index, column=0, sticky="ew", pady=(0, 6))
 
     indent_colors = {
         "success": StyleManager.COLORS["success"],
@@ -265,7 +265,7 @@ def setup_home_page(frames, StyleManager, show_frame, app, customer_service, csv
 
         for i, (label, value, tone) in enumerate(stat_cards):
             card = StyleManager.create_frame(stats_frame)
-            card.grid(row=0, column=i, sticky="ew", padx=6)
+            card.grid(row=0, column=i, sticky="ew", padx=8)
 
             tone_color = {
                 "neutral": StyleManager.COLORS["text_secondary"],

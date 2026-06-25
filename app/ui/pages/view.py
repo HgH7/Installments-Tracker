@@ -142,7 +142,7 @@ def setup_view_page(
             return
 
         edit_window = CTkToplevel(app)
-        edit_window.geometry("800x600")
+        edit_window.geometry("520x580")
         edit_window.title(f"Edit Customer Details: {customer_name}")
 
         StyleManager.create_label(
@@ -321,59 +321,57 @@ def setup_view_page(
     buttons_frame.grid(row=3, column=0, sticky="ew", padx=24, pady=(0, 24))
     buttons_frame.grid_columnconfigure(0, weight=1)
     buttons_frame.grid_columnconfigure(1, weight=1)
+    buttons_frame.grid_columnconfigure(2, weight=1)
 
-    left_buttons = StyleManager.create_frame(buttons_frame, fg_color="transparent")
-    left_buttons.grid(row=0, column=0, sticky="w")
+    left_side = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+    left_side.grid(row=0, column=0, sticky="w")
 
-    right_buttons = StyleManager.create_frame(buttons_frame, fg_color="transparent")
-    right_buttons.grid(row=0, column=1, sticky="e")
+    center = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+    center.grid(row=0, column=1)
 
-    refresh_btn = StyleManager.create_button(
-        left_buttons,
+    right_side = StyleManager.create_frame(buttons_frame, fg_color="transparent")
+    right_side.grid(row=0, column=2, sticky="e")
+
+    StyleManager.create_button(
+        left_side,
         text="Refresh",
-        width=120,
+        width=110,
         command=lambda: refresh_treeview(tree)
-    )
-    refresh_btn.pack(side="left", padx=(0, 10), pady=10)
+    ).pack(side="left", padx=(0, 8), pady=10)
 
-    history_btn = StyleManager.create_button(
-        left_buttons,
-        text="Payment History",
-        width=120,
-        command=show_payment_history
-    )
-    history_btn.pack(side="left", padx=(0, 10), pady=10)
-
-    export_btn = StyleManager.create_button(
-        left_buttons,
+    StyleManager.create_button(
+        left_side,
         text="Export Excel",
-        width=120,
+        width=110,
         command=export_to_excel
-    )
-    export_btn.pack(side="left", padx=(0, 10), pady=10)
+    ).pack(side="left", pady=10)
 
-    back_btn = StyleManager.create_button(
-        right_buttons,
-        text="Back",
-        style="secondary",
-        width=120,
-        command=lambda: show_frame(frames["home"])
-    )
-    back_btn.pack(side="right", padx=(0, 0), pady=10)
+    StyleManager.create_button(
+        center,
+        text="Edit Customer",
+        width=130,
+        command=edit_customer
+    ).pack(side="left", padx=(0, 8), pady=10)
 
-    delete_btn = StyleManager.create_button(
-        right_buttons,
+    StyleManager.create_button(
+        center,
+        text="Payment History",
+        width=130,
+        command=show_payment_history
+    ).pack(side="left", pady=10)
+
+    StyleManager.create_button(
+        right_side,
         text="Delete Customer",
         style="danger",
         width=120,
         command=delete_customer
-    )
-    delete_btn.pack(side="right", padx=(0, 10), pady=10)
+    ).pack(side="left", padx=(0, 8), pady=10)
 
-    edit_btn = StyleManager.create_button(
-        right_buttons,
-        text="Edit Customer",
-        width=120,
-        command=edit_customer
-    )
-    edit_btn.pack(side="right", padx=(0, 10), pady=10)
+    StyleManager.create_button(
+        right_side,
+        text="Back",
+        style="secondary",
+        width=100,
+        command=lambda: show_frame(frames["home"])
+    ).pack(side="left", pady=10)

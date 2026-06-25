@@ -107,7 +107,7 @@ class StyleManager:
             style.configure(
                 "Custom.Treeview",
                 rowheight=34,
-                font=cls.FONTS["data"],
+                font=cls.FONTS["body"],
                 background=cls.COLORS["surface"],
                 foreground=cls.COLORS["text"],
                 fieldbackground=cls.COLORS["surface"],

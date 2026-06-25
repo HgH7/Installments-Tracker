@@ -45,9 +45,9 @@ Transform Installment Tracker from a working internal business tool into a maint
 - [ ] Migrate existing data
 
 ### Phase 5 - UI Rebuild
-- [ ] Complete redesign of UI
+- [x] Complete redesign of UI
 - [x] Improve navigation
-- [ ] Add keyboard shortcuts
+- [x] Add keyboard shortcuts
 - [x] Improve user workflows
 - [x] Switch application language from Arabic to English
 - [x] Remove emoji/glyph-heavy UI decoration
@@ -163,6 +163,19 @@ Transform Installment Tracker from a working internal business tool into a maint
 - [x] Added `customer_service` dependency to home page setup for live stats computation
 - [x] Created `CTkScrollableFrame` body so content never overflows on smaller screens
 - [x] All existing routing and functionality preserved; no new business logic or dashboard features added
+
+### TASK-013: Final commercial-quality polish pass
+- [x] **Treeview font**: Changed from `Courier New` (monospace) to `Segoe UI` (body) — eliminates font fracture
+- [x] **Nav spacing + active contrast**: Increased `pady=2` → `pady=3` for breathing room; active nav uses `surface_highest` (was `surface_high`) for clearer active state; hover uses `border_soft` (was `surface_high`); removed unused `icon` parameter from nav items
+- [x] **Dialog size standardization**: Edit customer `800×600` → `520×580`; payment history `760×700` → `680×620`; DatePicker `400×450` → `380×420`; payment history edit installment `500×450` → `480×460`
+- [x] **Payment history edit form modernization**: Converted side-by-side label+entry → label-above-input vertical layout; replaced raw `CTkCheckBox` with `StyleManager.create_checkbox()`
+- [x] **View page button grouping**: 6 buttons now split across 3 groups (left: data actions, center: customer actions, right: navigation + delete) instead of one undifferentiated row
+- [x] **Empty table states**: All Treeviews now show `"—"` placeholder row with muted styling when no data exists
+- [x] **Spacing micro-tweaks**: Stats cards `padx=6` → `padx=8`; activity feed cards `pady=(0,4)` → `pady=(0,6)`
+- [x] **Backup card button prominence**: Card "Open" buttons changed from `secondary` to `primary` style
+- [x] **Payment history Close button**: Changed centered single-column layout to left-aligned secondary button matching other dialogs
+- [x] **"Future Due Date" → "Future"**: Trimmed verbose action text to fit 150px column
+- [x] All changes verified: syntax checks + smoke tests pass; no regressions
 
 ### TASK-012: Activity feed on Home page
 - [x] Replaced placeholder "No recent activity" with live feed derived from existing customer/installment data

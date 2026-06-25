@@ -199,7 +199,7 @@ def setup_backup_restore_page(frames, StyleManager, csv_repository, show_frame, 
         StyleManager.create_button(
             card,
             text="Open",
-            style="secondary",
+            style="primary",
             command=card_data["command"],
             width=96,
         ).grid(row=2, column=0, sticky="w", padx=16, pady=(0, 16))

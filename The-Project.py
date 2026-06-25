@@ -106,6 +106,19 @@ def main(app_window):
         messagebox.showerror("Critical Error", f"An unexpected error occurred: {str(e)}\nPlease review the log file for details.")
         sys.exit(1)
 
+def setup_keyboard_shortcuts(app, frames, show_frame):
+    bindings = [
+        ("<Control-h>", "home"),
+        ("<Control-n>", "add"),
+        ("<Control-f>", "view"),
+        ("<Control-i>", "manage"),
+        ("<Control-b>", "backup_restore"),
+        ("<Control-N>", "send_notification"),
+    ]
+    for sequence, page_name in bindings:
+        app.bind(sequence, lambda e, p=page_name: show_frame(frames[p]))
+    app.bind("<Control-q>", lambda e: app.quit())
+
 def show_frame(frame):
     """Show the specified frame and hide sibling pages."""
     for child in frame.master.winfo_children():
@@ -119,7 +132,7 @@ def show_frame(frame):
     for page_name, button in nav_buttons.items():
         if page_name == active_page:
             button.configure(
-                fg_color=StyleManager.COLORS["surface_high"],
+                fg_color=StyleManager.COLORS["surface_highest"],
                 text_color=StyleManager.COLORS["primary"],
             )
         else:
@@ -173,16 +186,16 @@ def create_app_shell(app):
     nav_frame.grid_columnconfigure(0, weight=1)
 
     nav_items = [
-        ("home", "Home", "", lambda: show_frame(frames["home"])),
-        ("add", "Add Customer", "+", lambda: show_frame(frames["add"])),
-        ("view", "Customers", "", lambda: show_frame(frames["view"])),
-        ("manage", "Installments", "$", lambda: show_frame(frames["manage"])),
-        ("backup_restore", "Backup & Restore", "", lambda: show_frame(frames["backup_restore"])),
-        ("send_notification", "Notifications", "!", lambda: show_frame(frames["send_notification"])),
+        ("home", "Home", lambda: show_frame(frames["home"])),
+        ("add", "Add Customer", lambda: show_frame(frames["add"])),
+        ("view", "Customers", lambda: show_frame(frames["view"])),
+        ("manage", "Installments", lambda: show_frame(frames["manage"])),
+        ("backup_restore", "Backup & Restore", lambda: show_frame(frames["backup_restore"])),
+        ("send_notification", "Notifications", lambda: show_frame(frames["send_notification"])),
     ]
 
     nav_buttons.clear()
-    for index, (page_name, label, icon, command) in enumerate(nav_items):
+    for index, (page_name, label, command) in enumerate(nav_items):
         button = StyleManager.create_button(
             nav_frame,
             text=label,
@@ -192,12 +205,12 @@ def create_app_shell(app):
             width=196,
             height=38,
             fg_color="transparent",
-            hover_color=StyleManager.COLORS["surface_high"],
+            hover_color=StyleManager.COLORS["border_soft"],
             text_color=StyleManager.COLORS["text_secondary"],
             border_width=0,
             corner_radius=4,
         )
-        button.grid(row=index, column=0, sticky="ew", pady=2)
+        button.grid(row=index, column=0, sticky="ew", pady=3)
         nav_buttons[page_name] = button
 
     footer = StyleManager.create_frame(sidebar, fg_color="transparent", border_width=0)
@@ -237,6 +250,12 @@ def refresh_treeview(tree, data=None):
         data = csv_repository.read_data()
 
     columns = tree["columns"]
+    tree.tag_configure("empty", foreground=StyleManager.COLORS["text_muted"])
+    if not data:
+        placeholder = ["—"] * len(columns)
+        tree.insert("", "end", values=placeholder, tags=("empty",))
+        return
+
     for customer in data:
         values = [customer.get(col, "") for col in columns]
         tree.insert("", "end", values=values)
@@ -333,7 +352,7 @@ class DatePicker(CTkToplevel):
     def __init__(self, parent, entry_widget):
         super().__init__(parent)
         self.entry_widget = entry_widget
-        self.geometry("400x450")
+        self.geometry("380x420")
         self.title("Select Date")
         
         # Create main frame
@@ -444,7 +463,7 @@ def show_payment_history():
             
         # Create payment history window
         history_window = CTkToplevel(app)
-        history_window.geometry("760x700")
+        history_window.geometry("680x620")
         history_window.title(f"Payment History - {customer_name}")
         
         # Make window modal
@@ -549,7 +568,7 @@ def show_payment_history():
             
             value = installment_values.get(date, default_value)
             is_future = date > today
-            action = "" if is_paid else "Mark as Paid" if not is_future else "Future Due Date"
+            action = "" if is_paid else "Mark as Paid" if not is_future else "Future"
             
             row_id = tree.insert("", "end", values=(date, f"{value:.2f}", status, action), tags=status_tags)
             date_to_row_map[date] = row_id
@@ -601,7 +620,7 @@ def show_payment_history():
                 
                 # Create edit installment window
                 edit_window = CTkToplevel(history_window)
-                edit_window.geometry("500x450")
+                edit_window.geometry("480x460")
                 edit_window.title("Edit Installment")
                 
                 # Make window modal
@@ -617,87 +636,61 @@ def show_payment_history():
                     main_frame,
                     text="Edit Installment Details",
                     font_style="subheading"
-                ).pack(pady=(0, 20))
-                
-                # Customer info (non-editable)
-                info_frame = StyleManager.create_frame(main_frame)
-                info_frame.pack(fill="x", pady=10)
+                ).pack(pady=(0, 12))
                 
                 StyleManager.create_label(
-                    info_frame,
+                    main_frame,
                     text=f"Customer: {customer_name}",
-                    font_style="body_bold"
-                ).pack(anchor="w")
+                    font_style="body_bold",
+                    text_color=StyleManager.COLORS["text_muted"],
+                ).pack(anchor="w", pady=(0, 16))
                 
                 # Editable fields
-                fields_frame = StyleManager.create_frame(main_frame)
-                fields_frame.pack(fill="x", pady=20)
-                
-                # Date field
-                date_frame = StyleManager.create_frame(fields_frame)
-                date_frame.pack(fill="x", pady=10)
+                fields_frame = StyleManager.create_frame(main_frame, border_width=0)
+                fields_frame.pack(fill="x", pady=(0, 16))
                 
                 StyleManager.create_label(
-                    date_frame,
+                    fields_frame,
                     text="Installment Date:",
-                    font_style="body"
-                ).pack(side="left", padx=(0, 10))
+                    font_style="label",
+                ).pack(anchor="w", pady=(0, 4))
                 
-                date_entry = StyleManager.create_entry(date_frame)
-                date_entry.pack(side="left", fill="x", expand=True)
+                date_row = StyleManager.create_frame(fields_frame, fg_color="transparent", border_width=0)
+                date_row.pack(fill="x", pady=(0, 12))
+                date_row.grid_columnconfigure(0, weight=1)
+                
+                date_entry = StyleManager.create_entry(date_row)
+                date_entry.grid(row=0, column=0, sticky="ew", padx=(0, 10))
                 date_entry.insert(0, date)
                 
-                # Date picker button
                 def open_date_picker():
                     DatePicker(edit_window, date_entry)
                     
-                date_picker_btn = StyleManager.create_button(
-                    date_frame,
+                StyleManager.create_button(
+                    date_row,
                     text="Date",
-                    width=40,
+                    width=60,
                     command=open_date_picker
-                )
-                date_picker_btn.pack(side="left", padx=(10, 0))
-                
-                # Amount field
-                amount_frame = StyleManager.create_frame(fields_frame)
-                amount_frame.pack(fill="x", pady=10)
+                ).grid(row=0, column=1)
                 
                 StyleManager.create_label(
-                    amount_frame,
+                    fields_frame,
                     text="Installment Value:",
-                    font_style="body"
-                ).pack(side="left", padx=(0, 10))
+                    font_style="label",
+                ).pack(anchor="w", pady=(0, 4))
                 
-                amount_entry = StyleManager.create_entry(amount_frame)
-                amount_entry.pack(side="left", fill="x", expand=True)
+                amount_entry = StyleManager.create_entry(fields_frame)
+                amount_entry.pack(fill="x", pady=(0, 12))
                 amount_entry.insert(0, str(value))
                 
-                # Paid status
-                paid_frame = StyleManager.create_frame(fields_frame)
-                paid_frame.pack(fill="x", pady=10)
-                
                 paid_status = tk.BooleanVar(value=is_paid)
-                
-                paid_checkbox = CTkCheckBox(
-                    paid_frame,
-                    text="Paid",
-                    variable=paid_status,
-                    onvalue=True,
-                    offvalue=False,
-                    checkbox_width=24,
-                    checkbox_height=24,
-                    corner_radius=5,
-                    border_width=2,
-                    fg_color=StyleManager.COLORS["primary"],
-                    hover_color=StyleManager.COLORS["secondary"],
-                    checkmark_color=StyleManager.COLORS["text"]
-                )
-                paid_checkbox.pack(anchor="w")
+                StyleManager.create_checkbox(
+                    fields_frame, text="Paid", variable=paid_status,
+                ).pack(anchor="w")
                 
                 # Action buttons
                 buttons_frame = StyleManager.create_frame(main_frame)
-                buttons_frame.pack(fill="x", pady=(20, 10))
+                buttons_frame.pack(fill="x", pady=(12, 0))
                 buttons_frame.grid_columnconfigure(0, weight=1)
                 buttons_frame.grid_columnconfigure(1, weight=1)
                 
@@ -767,14 +760,21 @@ def show_payment_history():
         button_row = StyleManager.create_frame(main_frame)
         button_row.pack(fill="x", pady=(20, 0))
         button_row.grid_columnconfigure(0, weight=1)
-        
+        button_row.grid_columnconfigure(1, weight=1)
+
+        left_side = StyleManager.create_frame(button_row, fg_color="transparent")
+        left_side.grid(row=0, column=0, sticky="w")
+
+        right_side = StyleManager.create_frame(button_row, fg_color="transparent")
+        right_side.grid(row=0, column=1, sticky="e")
+
         StyleManager.create_button(
-            button_row,
+            left_side,
             text="Close",
             style="secondary",
             width=120,
             command=history_window.destroy
-        ).grid(row=0, column=0)
+        ).pack(side="left", pady=10)
         
     except Exception as e:
         logging.error(f"Error showing payment history: {str(e)}")
@@ -1155,6 +1155,9 @@ if __name__ == "__main__":
                 logging.error(f"Error in {func_name}: {str(e)}")
                 raise
         
+        # Set up keyboard shortcuts
+        setup_keyboard_shortcuts(app, frames, show_frame)
+
         # Show home frame and start notification thread
         show_frame(frames["home"])
         start_notification_thread()

@@ -74,6 +74,11 @@ def setup_manage_installments_page(
         data = customer_service.get_all_customers()
         today = datetime.now().date()
 
+        tree.tag_configure("empty", foreground=StyleManager.COLORS["text_muted"])
+        if not data:
+            tree.insert("", "end", values=("—", "—", "—", "—", "—", "—", "—"), tags=("empty",))
+            return
+
         try:
             for customer in data:
                 installment_dates = customer.get("Installment Dates", "").split(";")

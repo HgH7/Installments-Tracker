@@ -65,6 +65,11 @@ def setup_send_notification_page(frames, StyleManager, csv_repository, show_fram
         data = csv_repository.read_data()
         today = datetime.now().date()
 
+        tree.tag_configure("empty", foreground=StyleManager.COLORS["text_muted"])
+        if not data:
+            tree.insert("", "end", values=("—", "—", "—", "—"), tags=("empty",))
+            return
+
         for customer in data:
             installment_dates = customer.get("Installment Dates", "").split(";")
             for date in installment_dates:
