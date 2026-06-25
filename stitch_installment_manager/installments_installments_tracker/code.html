@@ -1,0 +1,551 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Installments Tracker - Installments</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Courier+Prime&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-high": "#272a2c",
+                      "surface-container-lowest": "#0b0f10",
+                      "on-secondary-fixed": "#002109",
+                      "surface-tint": "#b4c5ff",
+                      "background": "#101415",
+                      "on-error": "#690005",
+                      "secondary": "#4ae176",
+                      "surface-container-low": "#191c1e",
+                      "on-secondary-container": "#004119",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface-variant": "#323537",
+                      "surface-dim": "#101415",
+                      "outline": "#8d90a0",
+                      "primary-fixed": "#dbe1ff",
+                      "inverse-on-surface": "#2d3133",
+                      "inverse-primary": "#0053db",
+                      "on-background": "#e0e3e5",
+                      "on-surface-variant": "#c3c6d7",
+                      "on-secondary-fixed-variant": "#005321",
+                      "surface": "#101415",
+                      "secondary-container": "#00b954",
+                      "primary": "#b4c5ff",
+                      "surface-bright": "#363a3b",
+                      "surface-container-highest": "#323537",
+                      "on-primary-fixed": "#00174b",
+                      "on-secondary": "#003915",
+                      "inverse-surface": "#e0e3e5",
+                      "error": "#ffb4ab",
+                      "primary-container": "#2563eb",
+                      "outline-variant": "#434655",
+                      "on-primary-container": "#eeefff",
+                      "secondary-fixed-dim": "#4ae176",
+                      "tertiary-fixed-dim": "#ffb95f",
+                      "on-tertiary-fixed": "#2a1700",
+                      "tertiary": "#ffb95f",
+                      "on-primary": "#002a78",
+                      "tertiary-container": "#996100",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "secondary-fixed": "#6bff8f",
+                      "on-surface": "#e0e3e5",
+                      "on-tertiary": "#472a00",
+                      "on-tertiary-container": "#ffeedd",
+                      "error-container": "#93000a",
+                      "tertiary-fixed": "#ffddb8",
+                      "surface-container": "#1d2022",
+                      "on-error-container": "#ffdad6",
+                      "on-tertiary-fixed-variant": "#653e00"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "component_padding_y": "8px",
+                      "detail_panel_width": "320px",
+                      "margin_page": "24px",
+                      "sidebar_width": "220px",
+                      "component_padding_x": "12px"
+              },
+              "fontFamily": {
+                      "section-header": ["Inter"],
+                      "title-1": ["Inter"],
+                      "label-caps": ["Inter"],
+                      "body-main": ["Inter"],
+                      "data-mono": ["Courier Prime"]
+              },
+              "fontSize": {
+                      "section-header": ["14px", {"lineHeight": "20px", "fontWeight": "700"}],
+                      "title-1": ["18px", {"lineHeight": "24px", "fontWeight": "700"}],
+                      "label-caps": ["11px", {"lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                      "body-main": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                      "data-mono": ["12px", {"lineHeight": "16px", "fontWeight": "400"}]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface h-screen w-screen overflow-hidden flex font-body-main text-body-main">
+<!-- JSON Component: SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-sidebar_width bg-surface-container-low border-r border-outline-variant flex flex-col py-margin_page z-20">
+<div class="px-gutter mb-8 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<div>
+<h1 class="font-title-1 text-title-1 text-primary">Installments Tracker</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant">v2.0.0</p>
+</div>
+</div>
+<div class="flex flex-col flex-1 gap-1 px-2">
+<!-- Dashboard -->
+<a class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="">Dashboard</span>
+</a>
+<!-- Customers -->
+<a class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="">Customers</span>
+</a>
+<!-- Installments (ACTIVE) -->
+<a class="flex items-center gap-3 px-3 py-2 rounded border-l-4 border-primary bg-surface-container-high text-primary font-bold cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="">Installments</span>
+</a>
+<!-- Notifications -->
+<a class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="">Notifications</span>
+</a>
+<!-- Reports -->
+<a class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="">Reports</span>
+</a>
+<!-- Settings -->
+<a class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="">Settings</span>
+</a>
+</div>
+<div class="mt-auto px-2">
+<a class="flex items-center gap-3 px-3 py-2 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="">User Profile</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas Wrapper -->
+<div class="flex-1 flex flex-col ml-sidebar_width mr-detail_panel_width h-full relative">
+<!-- JSON Component: TopNavBar -->
+<header class="absolute top-0 right-0 left-0 h-[52px] z-10 bg-surface-dim border-b border-outline-variant flex items-center justify-between px-gutter">
+<!-- Nav Links (Suppressed intentionally as side nav is primary, but rendering per json instructions for structural accuracy if needed. Assuming top links act as sub-filters or breadcrumbs in this dense view) -->
+<div class="flex items-center gap-6">
+<h2 class="font-section-header text-section-header text-on-surface">Installments Directory</h2>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2 top-1.5 text-on-surface-variant text-sm">search</span>
+<input class="bg-surface-container-highest border border-outline-variant rounded pl-8 pr-3 py-1.5 text-on-surface focus:border-primary focus:ring-0 w-64" placeholder="Global Search..." type="text">
+</div>
+<button class="bg-primary-container text-on-primary-container px-4 py-1.5 rounded font-section-header text-section-header hover:bg-primary transition-colors scale-95 active:scale-90 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">add</span>
+                    New Customer
+                </button>
+</div>
+</header>
+<!-- Scrollable Main Canvas -->
+<main class="flex-1 overflow-y-auto mt-[52px] p-margin_page flex flex-col gap-gutter bg-background">
+<!-- Filter Bar (Level 1) -->
+<div class="bg-surface-container-low border border-outline-variant p-component_padding_x rounded flex items-end gap-4">
+<div class="flex-1 flex gap-4">
+<div class="flex flex-col gap-1 w-1/4">
+<label class="font-label-caps text-label-caps text-on-surface-variant">Customer Name</label>
+<input class="bg-surface-container-highest border border-outline-variant rounded px-3 py-1.5 text-on-surface focus:border-primary focus:ring-0 w-full h-[32px]" placeholder="e.g. Ali Hassan" type="text">
+</div>
+<div class="flex flex-col gap-1 w-1/4">
+<label class="font-label-caps text-label-caps text-on-surface-variant">Status</label>
+<select class="bg-surface-container-highest border border-outline-variant rounded px-3 py-1.5 text-on-surface focus:border-primary focus:ring-0 w-full h-[32px] appearance-none">
+<option value="all">All Statuses</option>
+<option selected="" value="overdue">Overdue</option>
+<option value="due_soon">Due Soon</option>
+<option value="paid">Paid</option>
+</select>
+</div>
+<div class="flex flex-col gap-1 w-1/4">
+<label class="font-label-caps text-label-caps text-on-surface-variant">Period</label>
+<select class="bg-surface-container-highest border border-outline-variant rounded px-3 py-1.5 text-on-surface focus:border-primary focus:ring-0 w-full h-[32px] appearance-none">
+<option>This Month</option>
+<option>Last 30 Days</option>
+<option>Custom Range</option>
+</select>
+</div>
+</div>
+<div class="flex items-center gap-2 h-[32px]">
+<button class="bg-surface-container-highest border border-outline-variant text-on-surface px-4 py-1 rounded hover:bg-surface-variant transition-colors h-full flex items-center">Clear</button>
+<button class="bg-primary-container border border-primary text-on-primary-container px-4 py-1 rounded hover:bg-primary transition-colors h-full flex items-center">Apply</button>
+</div>
+</div>
+<!-- Summary Strip -->
+<div class="grid grid-cols-5 gap-4">
+<div class="bg-surface-container-low border border-outline-variant p-3 rounded flex flex-col gap-1 justify-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Total Shown</span>
+<span class="font-data-mono text-data-mono text-on-surface text-lg">42</span>
+</div>
+<div class="bg-surface-container-low border border-outline-variant p-3 rounded flex flex-col gap-1 justify-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Total Amount</span>
+<span class="font-data-mono text-data-mono text-on-surface text-lg">$145,200.00</span>
+</div>
+<div class="bg-surface-container-low border border-outline-variant p-3 rounded flex flex-col gap-1 justify-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Paid</span>
+<span class="font-data-mono text-data-mono text-secondary text-lg">$82,100.00</span>
+</div>
+<div class="bg-surface-container-low border border-error border-opacity-50 p-3 rounded flex flex-col gap-1 justify-center relative overflow-hidden">
+<div class="absolute inset-0 bg-error opacity-5 pointer-events-none"></div>
+<span class="font-label-caps text-label-caps text-error">Overdue</span>
+<span class="font-data-mono text-data-mono text-error text-lg">$38,500.00</span>
+</div>
+<div class="bg-surface-container-low border border-outline-variant p-3 rounded flex flex-col gap-1 justify-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Collected %</span>
+<span class="font-data-mono text-data-mono text-on-surface text-lg">56.5%</span>
+</div>
+</div>
+<!-- Installment Table (Level 1 Container) -->
+<div class="bg-surface-container-low border border-outline-variant rounded flex-1 flex flex-col min-h-0">
+<div class="overflow-x-auto flex-1">
+<table class="w-full text-left border-collapse whitespace-nowrap">
+<thead class="sticky top-0 z-10 bg-surface-container-low border-b border-outline-variant shadow-[0_1px_0_0_#334155]">
+<tr>
+<th class="py-2 px-3 font-section-header text-section-header text-on-surface-variant w-12">#</th>
+<th class="py-2 px-3 font-section-header text-section-header text-on-surface-variant">Customer</th>
+<th class="py-2 px-3 font-section-header text-section-header text-on-surface-variant">Due Date</th>
+<th class="py-2 px-3 font-section-header text-section-header text-on-surface-variant text-right">Amount</th>
+<th class="py-2 px-3 font-section-header text-section-header text-on-surface-variant text-center">Status</th>
+<th class="py-2 px-3 font-section-header text-section-header text-on-surface-variant text-right">Days Late</th>
+<th class="py-2 px-3 font-section-header text-section-header text-on-surface-variant text-center">Reminder</th>
+<th class="py-2 px-3 font-section-header text-section-header text-on-surface-variant text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 (Active/Selected) -->
+<tr class="bg-surface-container-highest hover:bg-surface-variant transition-colors group cursor-pointer border-l-2 border-l-error">
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface">1042</td>
+<td class="py-2 px-3 font-body-main text-body-main text-on-surface font-bold">Ahmed Khaled</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-error">2023-10-15</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface text-right">$1,200.00</td>
+<td class="py-2 px-3 text-center">
+<div class="inline-flex items-center gap-1 border border-error bg-error bg-opacity-10 px-2 py-0.5 rounded font-label-caps text-label-caps text-error">
+<span class="material-symbols-outlined text-[12px]">close</span>OVERDUE
+                                    </div>
+</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-error text-right">+17</td>
+<td class="py-2 px-3 text-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-secondary">check</span>
+</td>
+<td class="py-2 px-3 text-right">
+<div class="flex justify-end gap-2 opacity-100 transition-opacity">
+<button class="bg-surface-container-high border border-outline-variant text-on-surface px-2 py-1 rounded hover:bg-surface-variant flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">notifications_active</span></button>
+<button class="bg-primary-container text-on-primary-container px-2 py-1 rounded hover:bg-primary flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">payments</span></button>
+</div>
+</td>
+</tr>
+<!-- Rows 2-10 Generated for visual density -->
+<tr class="hover:bg-surface-variant transition-colors group cursor-pointer border-l-2 border-l-transparent">
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface">1043</td>
+<td class="py-2 px-3 font-body-main text-body-main text-on-surface">Sara Mahmoud</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-error">2023-10-18</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface text-right">$850.00</td>
+<td class="py-2 px-3 text-center">
+<div class="inline-flex items-center gap-1 border border-error bg-error bg-opacity-10 px-2 py-0.5 rounded font-label-caps text-label-caps text-error">
+<span class="material-symbols-outlined text-[12px]">close</span>OVERDUE
+                                    </div>
+</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-error text-right">+14</td>
+<td class="py-2 px-3 text-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">pending</span>
+</td>
+<td class="py-2 px-3 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="bg-surface-container-high border border-outline-variant text-on-surface px-2 py-1 rounded hover:bg-surface-variant"><span class="material-symbols-outlined text-[14px]">notifications_active</span></button>
+<button class="bg-primary-container text-on-primary-container px-2 py-1 rounded hover:bg-primary"><span class="material-symbols-outlined text-[14px]">payments</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant transition-colors group cursor-pointer border-l-2 border-l-transparent">
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface">1044</td>
+<td class="py-2 px-3 font-body-main text-body-main text-on-surface">Omar Youssef</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-tertiary">2023-11-02</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface text-right">$2,100.00</td>
+<td class="py-2 px-3 text-center">
+<div class="inline-flex items-center gap-1 border border-tertiary bg-tertiary bg-opacity-10 px-2 py-0.5 rounded font-label-caps text-label-caps text-tertiary">
+<span class="material-symbols-outlined text-[12px]">warning</span>DUE SOON
+                                    </div>
+</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface-variant text-right">-</td>
+<td class="py-2 px-3 text-center text-on-surface-variant">
+                                    -
+                                </td>
+<td class="py-2 px-3 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="bg-primary-container text-on-primary-container px-2 py-1 rounded hover:bg-primary"><span class="material-symbols-outlined text-[14px]">payments</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant transition-colors group cursor-pointer border-l-2 border-l-transparent">
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface">1045</td>
+<td class="py-2 px-3 font-body-main text-body-main text-on-surface">Layla Ibrahim</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-error">2023-10-20</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface text-right">$450.00</td>
+<td class="py-2 px-3 text-center">
+<div class="inline-flex items-center gap-1 border border-error bg-error bg-opacity-10 px-2 py-0.5 rounded font-label-caps text-label-caps text-error">
+<span class="material-symbols-outlined text-[12px]">close</span>OVERDUE
+                                    </div>
+</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-error text-right">+12</td>
+<td class="py-2 px-3 text-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-secondary">check</span>
+</td>
+<td class="py-2 px-3 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="bg-surface-container-high border border-outline-variant text-on-surface px-2 py-1 rounded hover:bg-surface-variant"><span class="material-symbols-outlined text-[14px]">notifications_active</span></button>
+<button class="bg-primary-container text-on-primary-container px-2 py-1 rounded hover:bg-primary"><span class="material-symbols-outlined text-[14px]">payments</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant transition-colors group cursor-pointer border-l-2 border-l-transparent">
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface">1046</td>
+<td class="py-2 px-3 font-body-main text-body-main text-on-surface">Kareem Ali</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-tertiary">2023-11-03</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface text-right">$3,400.00</td>
+<td class="py-2 px-3 text-center">
+<div class="inline-flex items-center gap-1 border border-tertiary bg-tertiary bg-opacity-10 px-2 py-0.5 rounded font-label-caps text-label-caps text-tertiary">
+<span class="material-symbols-outlined text-[12px]">warning</span>DUE SOON
+                                    </div>
+</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface-variant text-right">-</td>
+<td class="py-2 px-3 text-center text-on-surface-variant">
+                                    -
+                                </td>
+<td class="py-2 px-3 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="bg-primary-container text-on-primary-container px-2 py-1 rounded hover:bg-primary"><span class="material-symbols-outlined text-[14px]">payments</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant transition-colors group cursor-pointer border-l-2 border-l-transparent">
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface">1047</td>
+<td class="py-2 px-3 font-body-main text-body-main text-on-surface">Nour El Din</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-error">2023-10-25</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface text-right">$600.00</td>
+<td class="py-2 px-3 text-center">
+<div class="inline-flex items-center gap-1 border border-error bg-error bg-opacity-10 px-2 py-0.5 rounded font-label-caps text-label-caps text-error">
+<span class="material-symbols-outlined text-[12px]">close</span>OVERDUE
+                                    </div>
+</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-error text-right">+7</td>
+<td class="py-2 px-3 text-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">pending</span>
+</td>
+<td class="py-2 px-3 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="bg-surface-container-high border border-outline-variant text-on-surface px-2 py-1 rounded hover:bg-surface-variant"><span class="material-symbols-outlined text-[14px]">notifications_active</span></button>
+<button class="bg-primary-container text-on-primary-container px-2 py-1 rounded hover:bg-primary"><span class="material-symbols-outlined text-[14px]">payments</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant transition-colors group cursor-pointer border-l-2 border-l-transparent">
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface">1048</td>
+<td class="py-2 px-3 font-body-main text-body-main text-on-surface">Fatima Hassan</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-tertiary">2023-11-05</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface text-right">$950.00</td>
+<td class="py-2 px-3 text-center">
+<div class="inline-flex items-center gap-1 border border-tertiary bg-tertiary bg-opacity-10 px-2 py-0.5 rounded font-label-caps text-label-caps text-tertiary">
+<span class="material-symbols-outlined text-[12px]">warning</span>DUE SOON
+                                    </div>
+</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface-variant text-right">-</td>
+<td class="py-2 px-3 text-center text-on-surface-variant">
+                                    -
+                                </td>
+<td class="py-2 px-3 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="bg-primary-container text-on-primary-container px-2 py-1 rounded hover:bg-primary"><span class="material-symbols-outlined text-[14px]">payments</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant transition-colors group cursor-pointer border-l-2 border-l-transparent">
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface">1049</td>
+<td class="py-2 px-3 font-body-main text-body-main text-on-surface">Youssef Tariq</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-error">2023-10-28</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface text-right">$1,500.00</td>
+<td class="py-2 px-3 text-center">
+<div class="inline-flex items-center gap-1 border border-error bg-error bg-opacity-10 px-2 py-0.5 rounded font-label-caps text-label-caps text-error">
+<span class="material-symbols-outlined text-[12px]">close</span>OVERDUE
+                                    </div>
+</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-error text-right">+4</td>
+<td class="py-2 px-3 text-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">pending</span>
+</td>
+<td class="py-2 px-3 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="bg-surface-container-high border border-outline-variant text-on-surface px-2 py-1 rounded hover:bg-surface-variant"><span class="material-symbols-outlined text-[14px]">notifications_active</span></button>
+<button class="bg-primary-container text-on-primary-container px-2 py-1 rounded hover:bg-primary"><span class="material-symbols-outlined text-[14px]">payments</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant transition-colors group cursor-pointer border-l-2 border-l-transparent">
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface">1050</td>
+<td class="py-2 px-3 font-body-main text-body-main text-on-surface">Mona Zaki</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-error">2023-10-30</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface text-right">$320.00</td>
+<td class="py-2 px-3 text-center">
+<div class="inline-flex items-center gap-1 border border-error bg-error bg-opacity-10 px-2 py-0.5 rounded font-label-caps text-label-caps text-error">
+<span class="material-symbols-outlined text-[12px]">close</span>OVERDUE
+                                    </div>
+</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-error text-right">+2</td>
+<td class="py-2 px-3 text-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">pending</span>
+</td>
+<td class="py-2 px-3 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="bg-surface-container-high border border-outline-variant text-on-surface px-2 py-1 rounded hover:bg-surface-variant"><span class="material-symbols-outlined text-[14px]">notifications_active</span></button>
+<button class="bg-primary-container text-on-primary-container px-2 py-1 rounded hover:bg-primary"><span class="material-symbols-outlined text-[14px]">payments</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant transition-colors group cursor-pointer border-l-2 border-l-transparent">
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface">1051</td>
+<td class="py-2 px-3 font-body-main text-body-main text-on-surface">Tarek Hassan</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-tertiary">2023-11-07</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface text-right">$1,100.00</td>
+<td class="py-2 px-3 text-center">
+<div class="inline-flex items-center gap-1 border border-tertiary bg-tertiary bg-opacity-10 px-2 py-0.5 rounded font-label-caps text-label-caps text-tertiary">
+<span class="material-symbols-outlined text-[12px]">warning</span>DUE SOON
+                                    </div>
+</td>
+<td class="py-2 px-3 font-data-mono text-data-mono text-on-surface-variant text-right">-</td>
+<td class="py-2 px-3 text-center text-on-surface-variant">
+                                    -
+                                </td>
+<td class="py-2 px-3 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="bg-primary-container text-on-primary-container px-2 py-1 rounded hover:bg-primary"><span class="material-symbols-outlined text-[14px]">payments</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+</div>
+<!-- Detail Panel (Right Side, Fixed) -->
+<aside class="fixed right-0 top-0 h-full w-detail_panel_width bg-surface-container-low border-l border-outline-variant flex flex-col z-20 shadow-[-4px_0_24px_rgba(0,0,0,0.5)]">
+<!-- Header -->
+<div class="h-[52px] border-b border-outline-variant flex items-center justify-between px-gutter shrink-0">
+<h3 class="font-section-header text-section-header text-on-surface">Installment Details</h3>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors p-1 rounded hover:bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">close</span>
+</button>
+</div>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
+<!-- Snapshot -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-title-1 text-title-1 text-on-surface mb-1">Ahmed Khaled</h4>
+<p class="font-data-mono text-data-mono text-on-surface-variant">ID: CUST-8921</p>
+</div>
+<div class="inline-flex items-center gap-1 border border-error bg-error bg-opacity-10 px-2 py-0.5 rounded font-label-caps text-label-caps text-error">
+<span class="material-symbols-outlined text-[12px]">close</span>OVERDUE
+                    </div>
+</div>
+<div class="grid grid-cols-2 gap-4 mt-2 bg-surface-container-highest border border-outline-variant rounded p-3">
+<div class="flex flex-col gap-1">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Due Date</span>
+<span class="font-data-mono text-data-mono text-error">2023-10-15</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Amount</span>
+<span class="font-data-mono text-data-mono text-on-surface">$1,200.00</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Days Late</span>
+<span class="font-data-mono text-data-mono text-error">+17 Days</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Contract ID</span>
+<span class="font-data-mono text-data-mono text-primary">CTR-5542</span>
+</div>
+</div>
+</div>
+<!-- Payment History -->
+<div class="flex flex-col gap-3">
+<h5 class="font-section-header text-section-header text-on-surface border-b border-outline-variant pb-2">Payment History</h5>
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between text-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px]">check_circle</span>
+<span class="font-data-mono text-data-mono text-on-surface">2023-09-15</span>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface-variant">$1,200.00</span>
+</div>
+<div class="flex items-center justify-between text-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px]">check_circle</span>
+<span class="font-data-mono text-data-mono text-on-surface">2023-08-15</span>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface-variant">$1,200.00</span>
+</div>
+<div class="flex items-center justify-between text-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px]">check_circle</span>
+<span class="font-data-mono text-data-mono text-on-surface">2023-07-15</span>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface-variant">$1,200.00</span>
+</div>
+</div>
+</div>
+<!-- Reminder Log -->
+<div class="flex flex-col gap-3">
+<h5 class="font-section-header text-section-header text-on-surface border-b border-outline-variant pb-2">Recent Logs</h5>
+<div class="bg-surface-variant border border-outline-variant p-2 rounded text-xs text-on-surface-variant font-data-mono flex flex-col gap-1">
+<p class="">[2023-10-25] SMS Reminder sent. (System)</p>
+<p class="">[2023-10-20] Email Reminder sent. (System)</p>
+</div>
+</div>
+</div>
+<!-- Sticky Actions Bottom -->
+<div class="p-4 border-t border-outline-variant bg-surface-container-low flex flex-col gap-2 shrink-0">
+<button class="w-full bg-primary-container text-on-primary-container py-2 rounded font-section-header text-section-header hover:bg-primary transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">price_check</span>
+                Mark as Paid
+            </button>
+<button class="w-full bg-surface-container-highest border border-outline-variant text-on-surface py-2 rounded font-section-header text-section-header hover:bg-surface-variant transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">send</span>
+                Generate Reminder
+            </button>
+<button class="w-full bg-transparent border border-transparent text-primary py-2 rounded font-section-header text-section-header hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">edit_note</span>
+                Add Note
+            </button>
+</div>
+</aside>
+
+
+</body></html>

@@ -18,38 +18,35 @@ def setup_view_page(
     show_payment_history,
 ):
     frame = frames["view"]
+    frame.configure(fg_color=StyleManager.COLORS["background"])
     frame.grid_columnconfigure(0, weight=1)
     frame.grid_rowconfigure(0, weight=0)
     frame.grid_rowconfigure(1, weight=0)
     frame.grid_rowconfigure(2, weight=1)
     frame.grid_rowconfigure(3, weight=0)
 
-    header_frame = StyleManager.create_frame(frame)
-    header_frame.grid(row=0, column=0, sticky="ew", padx=30, pady=(25, 15))
-    header_frame.grid_columnconfigure(0, weight=1)
-
-    StyleManager.create_label(
-        header_frame,
-        text="عرض العملاء",
-        font_style="heading"
-    ).grid(row=0, column=0, pady=(5, 5), sticky="w")
+    header_frame = StyleManager.create_section_header(
+        frame,
+        "Customers",
+        "Search, review, edit, export, and inspect payment history.",
+    )
+    header_frame.grid(row=0, column=0, sticky="ew", padx=30, pady=(28, 16))
 
     search_frame = StyleManager.create_frame(frame)
-    search_frame.grid(row=1, column=0, sticky="ew", padx=30, pady=(0, 15))
+    search_frame.grid(row=1, column=0, sticky="ew", padx=30, pady=(0, 14))
     search_frame.grid_columnconfigure(1, weight=1)
 
     StyleManager.create_label(
         search_frame,
-        text="بحث:",
+        text="Search:",
         font_style="body_bold"
     ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
 
     search_entry = StyleManager.create_entry(
         search_frame,
         width=400,
-        font=("Arial", 14),
         height=35,
-        placeholder_text="أدخل اسم العميل أو رقم الهاتف..."
+        placeholder_text="Enter customer name or phone number..."
     )
     search_entry.grid(row=0, column=1, padx=(0, 10), pady=5, sticky="ew")
 
@@ -57,13 +54,13 @@ def setup_view_page(
         query = search_entry.get().strip()
         results = customer_service.search_customers(query)
         refresh_treeview(frame.tree, results)
-        status_label.configure(text=f"العملاء: {len(results)}")
+        status_label.configure(text=f"Customers: {len(results)}")
 
     search_entry.bind("<Return>", lambda event: perform_search())
 
     search_button = StyleManager.create_button(
         search_frame,
-        text="بحث",
+        text="Search",
         width=100,
         height=35,
         command=perform_search
@@ -79,38 +76,38 @@ def setup_view_page(
     status_label.grid(row=0, column=3, padx=(10, 0), pady=5, sticky="e")
 
     table_frame = StyleManager.create_frame(frame)
-    table_frame.grid(row=2, column=0, sticky="nsew", padx=30, pady=(0, 20))
+    table_frame.grid(row=2, column=0, sticky="nsew", padx=30, pady=(0, 16))
     table_frame.grid_columnconfigure(0, weight=1)
     table_frame.grid_rowconfigure(0, weight=1)
 
     style = ttk.Style()
     style.configure(
         "Custom.Treeview",
-        rowheight=40,
-        font=("Arial", 12),
+        rowheight=34,
+        font=StyleManager.FONTS["data"],
         background=StyleManager.COLORS["surface"],
         foreground=StyleManager.COLORS["text"],
         fieldbackground=StyleManager.COLORS["surface"]
     )
     style.configure(
         "Custom.Treeview.Heading",
-        font=("Arial", 12, "bold"),
-        background=StyleManager.COLORS["primary"],
-        foreground=StyleManager.COLORS["text"]
+        font=StyleManager.FONTS["section"],
+        background=StyleManager.COLORS["surface_high"],
+        foreground=StyleManager.COLORS["text_secondary"]
     )
     style.map(
         "Custom.Treeview",
-        background=[("selected", StyleManager.COLORS["primary"])],
+        background=[("selected", StyleManager.COLORS["surface_highest"])],
         foreground=[("selected", StyleManager.COLORS["text"])]
     )
 
     column_headers = {
-        "Name": "اسم العميل",
-        "Phone": "رقم الهاتف",
-        "Amount": "المبلغ",
-        "Installments": "عدد الأقساط",
-        "Installment Value": "قيمة القسط",
-        "Start Date": "تاريخ البدء"
+        "Name": "Customer Name",
+        "Phone": "Phone",
+        "Amount": "Amount",
+        "Installments": "Installments",
+        "Installment Value": "Installment Value",
+        "Start Date": "Start Date"
     }
 
     tree = ttk.Treeview(
@@ -148,12 +145,12 @@ def setup_view_page(
     refresh_treeview(tree)
 
     data = customer_service.get_all_customers()
-    status_label.configure(text=f"العملاء: {len(data)}")
+    status_label.configure(text=f"Customers: {len(data)}")
 
     def edit_customer():
         selected_items = tree.selection()
         if not selected_items:
-            messagebox.showerror("خطأ", "يرجى تحديد عميل للتعديل.")
+            messagebox.showerror("Error", "Select a customer to edit.")
             return
 
         item = tree.item(selected_items[0])
@@ -162,16 +159,16 @@ def setup_view_page(
 
         customer = customer_service.get_customer_by_name(customer_name)
         if not customer:
-            messagebox.showerror("خطأ", "لم يتم العثور على بيانات العميل.")
+            messagebox.showerror("Error", "Customer data was not found.")
             return
 
         edit_window = CTkToplevel(app)
         edit_window.geometry("800x600")
-        edit_window.title(f"تعديل بيانات العميل: {customer_name}")
+        edit_window.title(f"Edit Customer Details: {customer_name}")
 
         StyleManager.create_label(
             edit_window,
-            text=f"تعديل بيانات العميل: {customer_name}",
+            text=f"Edit Customer Details: {customer_name}",
             font_style="heading"
         ).pack(pady=(20, 10))
 
@@ -179,10 +176,10 @@ def setup_view_page(
         form_frame.pack(fill="both", expand=True, padx=20, pady=20)
 
         fields = [
-            {"label": "اسم العميل:", "key": "Name", "type": "text"},
-            {"label": "رقم الهاتف:", "key": "Phone", "type": "phone"},
-            {"label": "المبلغ:", "key": "Amount", "type": "number"},
-            {"label": "عدد الأقساط:", "key": "Installments", "type": "number"}
+            {"label": "Customer Name:", "key": "Name", "type": "text"},
+            {"label": "Phone:", "key": "Phone", "type": "phone"},
+            {"label": "Amount:", "key": "Amount", "type": "number"},
+            {"label": "Installments:", "key": "Installments", "type": "number"}
         ]
 
         entries = {}
@@ -209,7 +206,7 @@ def setup_view_page(
 
         StyleManager.create_label(
             date_frame,
-            text="تاريخ بدء الأقساط:",
+            text="Installment Start Date:",
             font_style="body_bold"
         ).grid(row=0, column=0, padx=10, pady=5, sticky="w")
 
@@ -220,7 +217,7 @@ def setup_view_page(
 
         date_picker_btn = StyleManager.create_button(
             date_frame,
-            text="اختر التاريخ",
+            text="Select Date",
             style="secondary",
             command=lambda: DatePicker(edit_window, start_date_entry)
         )
@@ -232,7 +229,7 @@ def setup_view_page(
         buttons_frame.grid_columnconfigure(1, weight=1)
 
         def save_changes():
-            name_pattern = r"^[A-Za-z؀-ۿ\s]+$"
+            name_pattern = r"^[A-Za-z\u0600-\u06FF\s]+$"
             phone_pattern = r"^\+?\d{10,15}$"
             amount_pattern = r"^\d+(\.\d{1,2})?$"
             installments_pattern = r"^\d+$"
@@ -244,25 +241,25 @@ def setup_view_page(
             start_date = entries["Start Date"].get().strip()
 
             if not re.fullmatch(name_pattern, name):
-                messagebox.showerror("خطأ", "الاسم يجب أن يحتوي فقط على أحرف ومسافات.")
+                messagebox.showerror("Error", "Name can contain only letters and spaces.")
                 return
 
             if not re.fullmatch(phone_pattern, phone):
-                messagebox.showerror("خطأ", "رقم الهاتف يجب أن يحتوي على أرقام فقط ويبدأ بـ +.")
+                messagebox.showerror("Error", "Phone number must contain digits only and may start with +.")
                 return
 
             if not re.fullmatch(amount_pattern, amount):
-                messagebox.showerror("خطأ", "المبلغ يجب أن يكون رقمًا صالحًا.")
+                messagebox.showerror("Error", "Amount must be a valid number.")
                 return
 
             if not re.fullmatch(installments_pattern, installments):
-                messagebox.showerror("خطأ", "عدد الأقساط يجب أن يكون رقمًا صحيحًا.")
+                messagebox.showerror("Error", "Installments must be a whole number.")
                 return
 
             try:
                 datetime.strptime(start_date, "%Y-%m-%d")
             except ValueError:
-                messagebox.showerror("خطأ", "تنسيق التاريخ غير صحيح. يجب أن يكون بهذا الشكل: YYYY-MM-DD")
+                messagebox.showerror("Error", "Invalid date format. Use YYYY-MM-DD.")
                 return
 
             try:
@@ -284,36 +281,36 @@ def setup_view_page(
                         "Notified_Installments": customer.get("Notified_Installments", "[]"),
                         "Installment_Values": customer.get("Installment_Values", "{}"),
                     }):
-                        messagebox.showinfo("نجاح", "تم تحديث بيانات العميل بنجاح!")
+                        messagebox.showinfo("Success", "Customer updated successfully.")
                         edit_window.destroy()
                         refresh_treeview(tree)
                         refresh_payment_history_views()
                     else:
-                        messagebox.showerror("خطأ", "فشل في تحديث بيانات العميل.")
+                        messagebox.showerror("Error", "Failed to update customer.")
                 else:
                     if customer_service.update_customer(customer_name, updated_data):
-                        messagebox.showinfo("نجاح", "تم تحديث بيانات العميل بنجاح!")
+                        messagebox.showinfo("Success", "Customer updated successfully.")
                         edit_window.destroy()
                         refresh_treeview(tree)
                         refresh_payment_history_views()
                     else:
-                        messagebox.showerror("خطأ", "فشل في تحديث بيانات العميل.")
+                        messagebox.showerror("Error", "Failed to update customer.")
 
             except ValueError as e:
-                messagebox.showerror("خطأ", f"خطأ في البيانات المدخلة: {str(e)}")
+                messagebox.showerror("Error", f"Invalid input data: {str(e)}")
             except Exception as e:
-                messagebox.showerror("خطأ", f"حدث خطأ غير متوقع: {str(e)}")
+                messagebox.showerror("Error", f"An unexpected error occurred: {str(e)}")
 
         StyleManager.create_button(
             buttons_frame,
-            text="حفظ التغييرات",
+            text="Save Changes",
             width=200,
             command=save_changes
         ).grid(row=0, column=0, padx=10, pady=10)
 
         StyleManager.create_button(
             buttons_frame,
-            text="إلغاء",
+            text="Cancel",
             style="secondary",
             width=200,
             command=edit_window.destroy
@@ -326,19 +323,19 @@ def setup_view_page(
     def delete_customer():
         selected_items = tree.selection()
         if not selected_items:
-            messagebox.showerror("خطأ", "يرجى تحديد عميل للحذف.")
+            messagebox.showerror("Error", "Select a customer to delete.")
             return
 
         item = tree.item(selected_items[0])
         values = item["values"]
         customer_name = values[0]
 
-        if messagebox.askyesno("تأكيد الحذف", f"هل أنت متأكد من حذف العميل {customer_name}؟\nلا يمكن التراجع عن هذه العملية."):
+        if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete customer {customer_name}?\nThis action cannot be undone."):
             if customer_service.delete_customer(customer_name):
-                messagebox.showinfo("نجاح", f"تم حذف العميل {customer_name} بنجاح.")
+                messagebox.showinfo("Success", f"Deleted customer {customer_name} successfully.")
                 refresh_treeview(tree)
             else:
-                messagebox.showerror("خطأ", "فشل في حذف العميل.")
+                messagebox.showerror("Error", "Failed to delete customer.")
 
     buttons_frame = StyleManager.create_frame(frame)
     buttons_frame.grid(row=3, column=0, sticky="ew", padx=30, pady=(0, 30))
@@ -353,7 +350,7 @@ def setup_view_page(
 
     refresh_btn = StyleManager.create_button(
         left_buttons,
-        text="تحديث",
+        text="Refresh",
         width=120,
         command=lambda: refresh_treeview(tree)
     )
@@ -361,7 +358,7 @@ def setup_view_page(
 
     history_btn = StyleManager.create_button(
         left_buttons,
-        text="سجل الدفع",
+        text="Payment History",
         width=120,
         command=show_payment_history
     )
@@ -369,7 +366,7 @@ def setup_view_page(
 
     export_btn = StyleManager.create_button(
         left_buttons,
-        text="تصدير Excel",
+        text="Export Excel",
         width=120,
         command=export_to_excel
     )
@@ -377,7 +374,7 @@ def setup_view_page(
 
     back_btn = StyleManager.create_button(
         right_buttons,
-        text="العودة",
+        text="Back",
         style="secondary",
         width=120,
         command=lambda: show_frame(frames["home"])
@@ -386,7 +383,7 @@ def setup_view_page(
 
     delete_btn = StyleManager.create_button(
         right_buttons,
-        text="حذف العميل",
+        text="Delete Customer",
         style="danger",
         width=120,
         command=delete_customer
@@ -395,7 +392,7 @@ def setup_view_page(
 
     edit_btn = StyleManager.create_button(
         right_buttons,
-        text="تعديل العميل",
+        text="Edit Customer",
         width=120,
         command=edit_customer
     )

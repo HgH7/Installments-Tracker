@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Customers | Installments Tracker</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Courier+Prime&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+            font-size: 18px;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #101415;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #434655;
+            border-radius: 10px;
+        }
+        .custom-table-row:hover {
+            background-color: #272a2c;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-container": "#00b954",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "on-secondary-fixed": "#002109",
+                      "outline-variant": "#434655",
+                      "surface-bright": "#363a3b",
+                      "on-secondary-container": "#004119",
+                      "surface-variant": "#323537",
+                      "on-background": "#e0e3e5",
+                      "on-secondary": "#003915",
+                      "inverse-on-surface": "#2d3133",
+                      "surface-dim": "#101415",
+                      "surface-tint": "#b4c5ff",
+                      "surface-container": "#1d2022",
+                      "tertiary-fixed-dim": "#ffb95f",
+                      "on-tertiary": "#472a00",
+                      "primary-container": "#2563eb",
+                      "on-error": "#690005",
+                      "inverse-primary": "#0053db",
+                      "on-primary": "#002a78",
+                      "error": "#ffb4ab",
+                      "outline": "#8d90a0",
+                      "on-tertiary-fixed-variant": "#653e00",
+                      "on-error-container": "#ffdad6",
+                      "surface-container-lowest": "#0b0f10",
+                      "primary-fixed": "#dbe1ff",
+                      "tertiary-container": "#996100",
+                      "error-container": "#93000a",
+                      "inverse-surface": "#e0e3e5",
+                      "secondary": "#4ae176",
+                      "on-tertiary-fixed": "#2a1700",
+                      "on-secondary-fixed-variant": "#005321",
+                      "on-primary-fixed": "#00174b",
+                      "surface-container-low": "#191c1e",
+                      "on-surface": "#e0e3e5",
+                      "primary": "#b4c5ff",
+                      "on-tertiary-container": "#ffeedd",
+                      "secondary-fixed": "#6bff8f",
+                      "surface-container-highest": "#323537",
+                      "on-primary-container": "#eeefff",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "tertiary-fixed": "#ffddb8",
+                      "tertiary": "#ffb95f",
+                      "surface-container-high": "#272a2c",
+                      "secondary-fixed-dim": "#4ae176",
+                      "on-surface-variant": "#c3c6d7",
+                      "background": "#101415",
+                      "surface": "#101415"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "component_padding_y": "8px",
+                      "margin_page": "24px",
+                      "gutter": "16px",
+                      "detail_panel_width": "320px",
+                      "component_padding_x": "12px",
+                      "sidebar_width": "220px"
+              },
+              "fontFamily": {
+                      "body-main": ["Inter"],
+                      "section-header": ["Inter"],
+                      "data-mono": ["Courier Prime"],
+                      "label-caps": ["Inter"],
+                      "title-1": ["Inter"]
+              },
+              "fontSize": {
+                      "body-main": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                      "section-header": ["14px", {"lineHeight": "20px", "fontWeight": "700"}],
+                      "data-mono": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                      "label-caps": ["11px", {"lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                      "title-1": ["18px", {"lineHeight": "24px", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-main text-body-main selection:bg-primary selection:text-on-primary">
+<!-- Sidebar Navigation -->
+<aside class="fixed left-0 top-0 h-full w-[220px] bg-surface-container border-r border-outline-variant flex flex-col py-2 z-50">
+<div class="px-4 py-6 mb-4">
+<h1 class="font-title-1 text-title-1 text-on-surface">Installments Tracker</h1>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">SaaS Management</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center px-4 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined mr-3">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center px-4 py-2 border-l-8 border-primary bg-surface-container-high text-primary font-bold cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined mr-3">group</span>
+                Customers
+            </a>
+<a class="flex items-center px-4 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined mr-3">payments</span>
+                Installments
+            </a>
+<a class="flex items-center px-4 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined mr-3">notifications</span>
+                Notifications
+            </a>
+<a class="flex items-center px-4 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined mr-3">assessment</span>
+                Reports
+            </a>
+<a class="flex items-center px-4 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined mr-3">settings_backup_restore</span>
+                Backup &amp; Restore
+            </a>
+<a class="flex items-center px-4 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined mr-3">settings</span>
+                Settings
+            </a>
+</nav>
+<div class="p-4 border-t border-outline-variant">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary font-bold">JD</div>
+<div class="overflow-hidden">
+<p class="truncate font-bold text-on-surface">John Doe</p>
+<p class="truncate text-[10px] text-on-surface-variant">Admin Account</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 right-0 w-[calc(100%-220px)] h-16 bg-surface border-b border-outline-variant flex items-center justify-between px-6 z-40">
+<div class="flex items-center w-1/3">
+<div class="relative w-full max-w-xs">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-high border border-outline-variant rounded-lg pl-10 pr-4 py-2 text-body-main focus:outline-none focus:border-primary" placeholder="Search customers..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-all duration-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-all duration-200">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-[220px] pt-16 h-screen overflow-hidden flex">
+<!-- Left Section: High-Density Table (70%) -->
+<section class="flex-1 p-6 overflow-y-auto border-r border-outline-variant">
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-section-header text-section-header">Customer Registry</h2>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined">person_add</span>
+                    Add New Customer
+                </button>
+</div>
+<!-- Table Container -->
+<div class="bg-surface-container rounded-xl border border-outline-variant overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high border-b border-outline-variant">
+<th class="px-4 py-3 font-section-header text-section-header text-on-surface-variant">Name</th>
+<th class="px-4 py-3 font-section-header text-section-header text-on-surface-variant">Phone</th>
+<th class="px-4 py-3 font-section-header text-section-header text-on-surface-variant">Contract Value</th>
+<th class="px-4 py-3 font-section-header text-section-header text-on-surface-variant">Installments</th>
+<th class="px-4 py-3 font-section-header text-section-header text-on-surface-variant">Progress</th>
+<th class="px-4 py-3 font-section-header text-section-header text-on-surface-variant">Next Due</th>
+<th class="px-4 py-3 font-section-header text-section-header text-on-surface-variant">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="custom-table-row transition-colors cursor-pointer bg-surface-container-highest">
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A professional headshot of a mature businessman with a warm smile, wearing a charcoal grey suit and a crisp white shirt. The lighting is soft and studio-quality, creating a high-end corporate feel with a dark, professional aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnY-RuwzQ3Z1s8CV5Gy9XhPVJEk-KEyoZTGt1DpIc3YtzVv75Sc2H_WaxtLd-IzTYw4gMQwIZoxzXfVw3sSf7e4BduzViSUdCPWwk4yrSDqOhuMb4422LGO68t-HkFKgPt7gK1M18NdXSwQYkYt6MrjUK2TEvYz59GfseyWRhNOVdSCk9KHUznAxBOxP0vCtO2j07buh9sFtbfdJ1sBgsZlRJE6brZxdGfWjd8AK34AxnTuBxiKQDnGE4sma-D771o8QjFY2EDnMfx"/>
+<span class="font-bold">Adrian Sterling</span>
+</div>
+</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">+1 (555) 012-3456</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">$12,400.00</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">18 / 24</td>
+<td class="px-4 py-3">
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 75%"></div>
+</div>
+</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">Oct 12, 2023</td>
+<td class="px-4 py-3">
+<span class="bg-secondary-container/20 text-secondary px-2 py-0.5 rounded text-[10px] font-bold border border-secondary/30 flex items-center gap-1 w-fit uppercase">
+<span class="material-symbols-outlined !text-[12px]">check</span> ACTIVE
+                                </span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="custom-table-row transition-colors cursor-pointer">
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A high-detail portrait of a young female executive with dark hair, looking directly at the camera with a confident expression. She is in a modern office setting with glass walls and dark wood accents. The lighting is dramatic, highlighting her professional presence against a cool-toned, dark-mode background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsx5i0eK3Oo_mRl8kP5jHmILQuvHHfM0EiWoH8UeRIfUrlYak_WrVpHBWb1FvRdkjnfMssn9z0t9PxL8AUquyPN9XSNI4JCRt8qsImchwwUk10Jtq1UoFatMc-zp4i_TIoH1QmOrCaZEvRJlTz8FW9CGssySBJgMk-rGrvA5lkna40UpZwmzPr_AWC92Bz8pCdEG4C8U9Zfm0DhWrvftoI6N7sW3AkD-IR5oFrmoZo13uE9XoAeSaxwB6DAAT0BakIYLOhsZIdb9Vz"/>
+<span class="font-bold">Elena Rodriguez</span>
+</div>
+</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">+1 (555) 987-6543</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">$5,200.00</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">4 / 12</td>
+<td class="px-4 py-3">
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-error h-full" style="width: 33%"></div>
+</div>
+</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">Sep 28, 2023</td>
+<td class="px-4 py-3">
+<span class="bg-error-container/20 text-error px-2 py-0.5 rounded text-[10px] font-bold border border-error/30 flex items-center gap-1 w-fit uppercase">
+<span class="material-symbols-outlined !text-[12px]">close</span> OVERDUE
+                                </span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="custom-table-row transition-colors cursor-pointer">
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A clean, professional portrait of a tech professional with glasses and a friendly demeanor. He is wearing a dark navy polo shirt. The scene is set in a creative studio with soft ambient light, reflecting a modern, tech-forward aesthetic that fits a SaaS application's high-density data environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB12JgOBZke47fSju34t9CQg6e4zXXJv6s5YyP4zLwYUl7Lg2rZCAcHqb8Su_SwqUZ2ZURTvbDEMiOshl4WvY1XZViaxa0sNNjLeT6_91o4uamNU5gi08W67HWsSf8S4TwNyq0pNXoa75xMWjZ1oSdGWY4jCsoRcgMt1gLRogVt-HzurnY9pL5_eCqoyU3eK5ZY_SWgKmsSfq0Q2z0X1H6osY92v67TcJLjcvdiNVW5DXEnmHjU_G-tOvsZ9Bk4FR7HwSAZH-kmT-Kf"/>
+<span class="font-bold">Marcus Thorne</span>
+</div>
+</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">+1 (555) 234-5678</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">$24,000.00</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">0 / 36</td>
+<td class="px-4 py-3">
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full" style="width: 0%"></div>
+</div>
+</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">Oct 15, 2023</td>
+<td class="px-4 py-3">
+<span class="bg-tertiary-container/20 text-tertiary px-2 py-0.5 rounded text-[10px] font-bold border border-tertiary/30 flex items-center gap-1 w-fit uppercase">
+<span class="material-symbols-outlined !text-[12px]">schedule</span> PENDING
+                                </span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="custom-table-row transition-colors cursor-pointer">
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A sophisticated portrait of a female creative director in a minimalist studio. She is wearing a black silk blouse. The lighting is high-contrast, emphasizing structural shapes and a professional, modern tone. The color palette is strictly deep blacks and soft highlights, perfect for a dark-mode corporate UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtCcaNCM4ImVFnvhnR4yE2mPmllqeHM1mbyGOwPWC_Sv3FVyZ7Vxlrw8j_u_C0-kgcTnQ1W1JPmFtZMlvo1KaknmCcXqrP1u9q47xlE5QyuTCXt12-egj1Kb4icOvGMa6LrluEJjYQvgBmHhc5Sg8sHOEPweK8bHEBP8ok8lzQCW5oCDvKZYNMeJHyVWY_dFgxEQpujWC1V_CbtmmFY8YDU5pFJq_RKVQ3H-RoEcI9pARtaQLtc6Qty91HRxFuRVLMbv1BsJzvmiq2"/>
+<span class="font-bold">Sofia Chen</span>
+</div>
+</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">+1 (555) 345-6789</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">$8,900.00</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">10 / 10</td>
+<td class="px-4 py-3">
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 100%"></div>
+</div>
+</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">Completed</td>
+<td class="px-4 py-3">
+<span class="bg-secondary-container/20 text-secondary px-2 py-0.5 rounded text-[10px] font-bold border border-secondary/30 flex items-center gap-1 w-fit uppercase">
+<span class="material-symbols-outlined !text-[12px]">verified</span> PAID
+                                </span>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="custom-table-row transition-colors cursor-pointer">
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A portrait of a senior consultant with a distinguished look, graying hair and a tailored navy suit. He is in a brightly lit executive boardroom with panoramic city views in the background. The style is crisp, professional, and corporate, emphasizing trust and high-value financial management." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgaIROABC4ahtxSye8jIj7vJrD-FW6nKP57-j6Pq3CrPArfolzeLpr31AECbbpSVUY5q-HV81IJDt_RSY2x4AIbB6mRNxUWpTD8sWH-ZoKhHnpS0-bOnq_LfYndm5LgfbGDy6gNx-CfjeTIkS4VrXAkHk31PgJTCSNSSUiYNytOf4-WYH59ibVrxNpaNNTuT7DiDojr6YtMNGppDB0Bg2sEXbdQQ1YB2m_wpN8BKje0x-kV_1JxAf4--a7K4M31-an4CdzzPitvbcP"/>
+<span class="font-bold">Julian Vane</span>
+</div>
+</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">+1 (555) 456-7890</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">$15,750.00</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">6 / 18</td>
+<td class="px-4 py-3">
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 33%"></div>
+</div>
+</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">Oct 05, 2023</td>
+<td class="px-4 py-3">
+<span class="bg-secondary-container/20 text-secondary px-2 py-0.5 rounded text-[10px] font-bold border border-secondary/30 flex items-center gap-1 w-fit uppercase">
+<span class="material-symbols-outlined !text-[12px]">check</span> ACTIVE
+                                </span>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="custom-table-row transition-colors cursor-pointer">
+<td class="px-4 py-3">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A high-fashion professional portrait of a female entrepreneur in a charcoal blazer. The composition is centered with a focus on her confident facial expression. The lighting is moody and directional, casting subtle shadows that define her features, set against a dark architectural background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9-gwKwbv4oUF-HohTAfw-KWvwuSSylrktZNZTop3BSfeTVB3TWI8KHc8GCxjcZVY9fgc-6dWHueWEl_QKW7-WIl60OL4Rsx7pcNfAsh7yb8BYAhPu3wmPzsPTCk1PH1H05TSKPRjehsrVyoll5xc1vXe162CP-HtIk5FZ99kPrFWkdP4_FLCbF8Vb88bAxCBPihECwrhT8gk-As3C6-daoK4-dsaPoBYrse-iziCHBstRQQqVPJzQ06liCVp2apDGDPsKVpM6_vME"/>
+<span class="font-bold">Amara Okafor</span>
+</div>
+</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">+1 (555) 567-8901</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">$4,300.00</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">11 / 12</td>
+<td class="px-4 py-3">
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 92%"></div>
+</div>
+</td>
+<td class="px-4 py-3 font-data-mono text-data-mono">Nov 01, 2023</td>
+<td class="px-4 py-3">
+<span class="bg-secondary-container/20 text-secondary px-2 py-0.5 rounded text-[10px] font-bold border border-secondary/30 flex items-center gap-1 w-fit uppercase">
+<span class="material-symbols-outlined !text-[12px]">check</span> ACTIVE
+                                </span>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Pagination -->
+<div class="px-4 py-3 bg-surface-container-high flex items-center justify-between border-t border-outline-variant">
+<p class="text-[11px] text-on-surface-variant font-data-mono">Showing 1-6 of 1,240 customers</p>
+<div class="flex gap-2">
+<button class="p-1 rounded hover:bg-surface-variant text-on-surface-variant"><span class="material-symbols-outlined">chevron_left</span></button>
+<button class="px-3 py-1 bg-primary text-on-primary rounded text-[11px] font-bold">1</button>
+<button class="px-3 py-1 hover:bg-surface-variant rounded text-[11px] font-data-mono">2</button>
+<button class="px-3 py-1 hover:bg-surface-variant rounded text-[11px] font-data-mono">3</button>
+<button class="p-1 rounded hover:bg-surface-variant text-on-surface-variant"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Section: CRM Detail Panel (30%) -->
+<aside class="w-[320px] bg-surface-container border-l border-outline-variant p-6 flex flex-col gap-6 overflow-y-auto">
+<div class="flex items-center justify-between">
+<h3 class="font-section-header text-section-header">Customer Detail</h3>
+<button class="text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined">close</span></button>
+</div>
+<!-- Overview Card -->
+<div class="bg-surface-container-high border border-outline-variant rounded-xl p-4">
+<div class="flex flex-col items-center mb-4">
+<img class="w-20 h-20 rounded-full object-cover border-2 border-primary mb-3" data-alt="Close up portrait of Adrian Sterling, an executive in a grey suit. The focus is sharp on his friendly face, set against a dark, out-of-focus city night background. Professional, high-end commercial aesthetic for a corporate management application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAN_oH5B1WHu65kFT-t1u9UIS6acj9ddKYFJ9jkorza49e_8X_gVhRKxKnXDaNRnLfy_edgZSECwgzsMunJkcXxSaHo07aTUUQwT9rfVmfm4j9Wq_C2SGjdi8lO_DyWlxOD_twaVPC-qPIFepRv0fxeFpJbPqFjlAw4iYnSKslF9ma-ScrJtfHXxi3cpfxCXx1QOkj0XIiHXXP6YvWlpk1Msb9C_-0W10xHl4ptmpVUvxyNsrSYXWitE5YyHVaNv7kIXqMmI04LxOBc"/>
+<h4 class="font-title-1 text-title-1">Adrian Sterling</h4>
+<p class="text-on-surface-variant text-[11px]">+1 (555) 012-3456</p>
+<span class="mt-2 bg-secondary-container/20 text-secondary px-2 py-0.5 rounded text-[10px] font-bold border border-secondary/30 flex items-center gap-1 uppercase">
+<span class="material-symbols-outlined !text-[12px]">check</span> ACTIVE
+                    </span>
+</div>
+<div class="grid grid-cols-2 gap-4 mt-6">
+<div class="bg-surface-container rounded p-3 border border-outline-variant">
+<p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Join Date</p>
+<p class="font-data-mono text-[12px]">JAN 2023</p>
+</div>
+<div class="bg-surface-container rounded p-3 border border-outline-variant">
+<p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Tier</p>
+<p class="font-data-mono text-[12px]">PREMIUM</p>
+</div>
+</div>
+</div>
+<!-- Contract Information -->
+<div class="bg-surface-container-high border border-outline-variant rounded-xl p-4">
+<h5 class="text-[11px] font-bold text-on-surface-variant uppercase mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined !text-[14px]">receipt_long</span> Contract Information
+                </h5>
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant text-[12px]">Total Value</span>
+<span class="font-data-mono text-on-surface">$12,400.00</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant text-[12px]">Remaining</span>
+<span class="font-data-mono text-primary font-bold">$3,100.00</span>
+</div>
+<div class="pt-2 border-t border-outline-variant">
+<div class="flex justify-between mb-1">
+<span class="text-[11px] font-bold">PAYMENT PROGRESS</span>
+<span class="text-[11px] font-data-mono">75%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 75%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Activity Timeline -->
+<div class="bg-surface-container-high border border-outline-variant rounded-xl p-4">
+<h5 class="text-[11px] font-bold text-on-surface-variant uppercase mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined !text-[14px]">history</span> Recent Activity
+                </h5>
+<div class="space-y-4 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[1px] before:bg-outline-variant">
+<div class="relative pl-6">
+<div class="absolute left-0 top-1 w-4 h-4 bg-secondary rounded-full flex items-center justify-center border-4 border-surface-container-high"></div>
+<p class="text-[12px] font-bold">Installment Paid</p>
+<p class="text-[10px] text-on-surface-variant">Sept 12, 2023 • $516.00</p>
+</div>
+<div class="relative pl-6">
+<div class="absolute left-0 top-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center border-4 border-surface-container-high"></div>
+<p class="text-[12px] font-bold">Invoice Generated</p>
+<p class="text-[10px] text-on-surface-variant">Sept 05, 2023 • INV-9812</p>
+</div>
+<div class="relative pl-6">
+<div class="absolute left-0 top-1 w-4 h-4 bg-outline rounded-full flex items-center justify-center border-4 border-surface-container-high"></div>
+<p class="text-[12px] font-bold">Support Ticket Closed</p>
+<p class="text-[10px] text-on-surface-variant">Aug 22, 2023 • "Account Update"</p>
+</div>
+</div>
+</div>
+<!-- Quick Actions -->
+<div class="grid grid-cols-1 gap-2 mt-auto">
+<button class="w-full py-2 bg-surface-container-highest border border-outline-variant text-on-surface rounded font-bold text-[12px] flex items-center justify-center gap-2 hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined !text-[16px]">edit</span> Edit Details
+                </button>
+<button class="w-full py-2 bg-surface-container-highest border border-outline-variant text-on-surface rounded font-bold text-[12px] flex items-center justify-center gap-2 hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined !text-[16px]">history</span> View History
+                </button>
+<button class="w-full py-2 bg-primary text-on-primary rounded font-bold text-[12px] flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined !text-[16px]">mail</span> Send Reminder
+                </button>
+</div>
+</aside>
+</main>
+<!-- Floating Action Background Effect (Micro-interaction) -->
+<div class="fixed pointer-events-none opacity-20 transition-transform duration-300" id="glow-effect" style="width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle, #71787D 0%, transparent 70%);"></div>
+<script>
+        // Micro-interaction for subtle glow movement
+        document.addEventListener('mousemove', (e) => {
+            const glow = document.getElementById('glow-effect');
+            const x = e.clientX - 200;
+            const y = e.clientY - 200;
+            glow.style.transform = `translate(${x}px, ${y}px)`;
+        });
+
+        // Simple table row selection logic
+        const rows = document.querySelectorAll('.custom-table-row');
+        rows.forEach(row => {
+            row.addEventListener('click', () => {
+                rows.forEach(r => r.classList.remove('bg-surface-container-highest'));
+                row.classList.add('bg-surface-container-highest');
+            });
+        });
+    </script>
+</body></html>

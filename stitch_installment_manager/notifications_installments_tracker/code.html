@@ -1,0 +1,353 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Notifications - Installments Tracker</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Courier+Prime&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#272a2c",
+                        "surface-container-lowest": "#0b0f10",
+                        "on-secondary-fixed": "#002109",
+                        "surface-tint": "#b4c5ff",
+                        "background": "#101415",
+                        "on-error": "#690005",
+                        "secondary": "#4ae176",
+                        "surface-container-low": "#191c1e",
+                        "on-secondary-container": "#004119",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-variant": "#323537",
+                        "surface-dim": "#101415",
+                        "outline": "#8d90a0",
+                        "primary-fixed": "#dbe1ff",
+                        "inverse-on-surface": "#2d3133",
+                        "inverse-primary": "#0053db",
+                        "on-background": "#e0e3e5",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-secondary-fixed-variant": "#005321",
+                        "surface": "#101415",
+                        "secondary-container": "#00b954",
+                        "primary": "#b4c5ff",
+                        "surface-bright": "#363a3b",
+                        "surface-container-highest": "#323537",
+                        "on-primary-fixed": "#00174b",
+                        "on-secondary": "#003915",
+                        "inverse-surface": "#e0e3e5",
+                        "error": "#ffb4ab",
+                        "primary-container": "#2563eb",
+                        "outline-variant": "#434655",
+                        "on-primary-container": "#eeefff",
+                        "secondary-fixed-dim": "#4ae176",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "on-tertiary-fixed": "#2a1700",
+                        "tertiary": "#ffb95f",
+                        "on-primary": "#002a78",
+                        "tertiary-container": "#996100",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "secondary-fixed": "#6bff8f",
+                        "on-surface": "#e0e3e5",
+                        "on-tertiary": "#472a00",
+                        "on-tertiary-container": "#ffeedd",
+                        "error-container": "#93000a",
+                        "tertiary-fixed": "#ffddb8",
+                        "surface-container": "#1d2022",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#653e00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "component_padding_y": "8px",
+                        "detail_panel_width": "320px",
+                        "margin_page": "24px",
+                        "sidebar_width": "220px",
+                        "component_padding_x": "12px"
+                    },
+                    "fontFamily": {
+                        "section-header": ["Inter"],
+                        "title-1": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-main": ["Inter"],
+                        "data-mono": ["Courier Prime"]
+                    },
+                    "fontSize": {
+                        "section-header": ["14px", { "lineHeight": "20px", "fontWeight": "700" }],
+                        "title-1": ["18px", { "lineHeight": "24px", "fontWeight": "700" }],
+                        "label-caps": ["11px", { "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "body-main": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "data-mono": ["12px", { "lineHeight": "16px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #101415; color: #e0e3e5; }
+        /* Custom scrollbar for dense feeling */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #434655; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #8d90a0; }
+    </style>
+</head>
+<body class="font-body-main text-body-main antialiased h-screen overflow-hidden flex">
+<!-- SideNavBar (from JSON) -->
+<nav class="fixed left-0 top-0 h-full w-sidebar_width flex flex-col py-margin_page bg-surface-container-low dark:bg-surface-container-low border-r border-outline-variant z-20">
+<!-- Brand Header -->
+<div class="px-6 mb-8 flex flex-col gap-1">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary-container text-on-primary-container flex items-center justify-center font-title-1 text-title-1">
+                    T
+                </div>
+<h1 class="font-title-1 text-title-1 text-primary dark:text-primary">Installments Tracker</h1>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant ml-11">v2.0.0</span>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 flex flex-col w-full">
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80 border-l-4 border-transparent flex items-center gap-3 py-3 px-6" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+<span class="">Dashboard</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80 border-l-4 border-transparent flex items-center gap-3 py-3 px-6" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="group">group</span>
+<span class="">Customers</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80 border-l-4 border-transparent flex items-center gap-3 py-3 px-6" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="payments">payments</span>
+<span class="">Installments</span>
+</a>
+<a class="border-l-4 border-primary bg-surface-container-high text-primary font-bold cursor-pointer active:opacity-80 flex items-center gap-3 py-3 px-6" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="notifications" data-weight="fill" style="font-variation-settings: 'FILL' 1;">notifications</span>
+<span class="">Notifications</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80 border-l-4 border-transparent flex items-center gap-3 py-3 px-6" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="analytics">analytics</span>
+<span class="">Reports</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80 border-l-4 border-transparent flex items-center gap-3 py-3 px-6" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+<span class="">Settings</span>
+</a>
+</div>
+<!-- Footer -->
+<div class="mt-auto px-6">
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80 border-l-4 border-transparent flex items-center gap-3 py-3 px-0" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="account_circle">account_circle</span>
+<span class="">User Profile</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="ml-sidebar_width flex-1 h-full overflow-y-auto bg-background p-margin_page flex flex-col gap-gutter">
+<!-- Header -->
+<header class="flex items-center justify-between mb-2">
+<div>
+<h2 class="font-title-1 text-title-1 text-on-surface">Notification Center</h2>
+<p class="font-body-main text-body-main text-on-surface-variant">Send and manage customer alerts</p>
+</div>
+<button class="bg-surface-variant border border-outline-variant hover:bg-surface-bright text-on-surface px-4 py-2 rounded flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+                Sync Status
+            </button>
+</header>
+<!-- Top Grid: 2 Columns -->
+<div class="grid grid-cols-12 gap-gutter flex-shrink-0">
+<!-- LEFT PANEL (55% -> ~7 cols) -->
+<div class="col-span-12 md:col-span-7 flex flex-col gap-gutter">
+<!-- Customer Selector Card -->
+<div class="bg-surface-container-low border border-outline-variant rounded p-4 flex flex-col h-[280px]">
+<div class="flex items-center justify-between mb-3">
+<h3 class="font-section-header text-section-header text-on-surface">Select Target</h3>
+<span class="font-label-caps text-label-caps text-on-surface-variant">14 Overdue Customers</span>
+</div>
+<!-- Search -->
+<div class="relative mb-3">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+<input class="w-full bg-surface-variant border border-outline-variant text-on-surface pl-10 pr-4 py-2 rounded focus:outline-none focus:border-primary font-body-main text-body-main transition-colors" placeholder="Search by name or phone..." type="text">
+</div>
+<!-- Scrollable List -->
+<div class="flex-1 overflow-y-auto flex flex-col gap-1 pr-2">
+<!-- Selected Item -->
+<div class="bg-surface-container-high border border-primary rounded p-3 flex flex-col gap-1 cursor-pointer">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="font-section-header text-section-header text-primary">Ahmed Hassan</span>
+<span class="material-symbols-outlined text-primary text-[16px]" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<span class="bg-error-container text-on-error-container font-label-caps text-label-caps px-2 py-0.5 rounded">2 OVERDUE</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-data-mono text-data-mono">+20 100 123 4567</span>
+<span class="font-data-mono text-data-mono">EGP 2,500 Total</span>
+</div>
+</div>
+<!-- Unselected Items -->
+<div class="border border-transparent hover:bg-surface-variant rounded p-3 flex flex-col gap-1 cursor-pointer transition-colors border-b-outline-variant">
+<div class="flex items-center justify-between">
+<span class="font-section-header text-section-header text-on-surface">Mahmoud Ali</span>
+<span class="text-error font-label-caps text-label-caps">1 OVERDUE</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-data-mono text-data-mono">+20 111 987 6543</span>
+<span class="font-data-mono text-data-mono">EGP 850 Total</span>
+</div>
+</div>
+<div class="border border-transparent hover:bg-surface-variant rounded p-3 flex flex-col gap-1 cursor-pointer transition-colors border-b-outline-variant">
+<div class="flex items-center justify-between">
+<span class="font-section-header text-section-header text-on-surface">Sara Ibrahim</span>
+<span class="text-error font-label-caps text-label-caps">1 OVERDUE</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-data-mono text-data-mono">+20 122 555 7777</span>
+<span class="font-data-mono text-data-mono">EGP 1,200 Total</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Template Selector Card -->
+<div class="bg-surface-container-low border border-outline-variant rounded p-4 flex flex-col">
+<h3 class="font-section-header text-section-header text-on-surface mb-3">Message Template</h3>
+<select class="w-full bg-surface-variant border border-outline-variant text-on-surface px-3 py-2 rounded focus:outline-none focus:border-primary font-body-main text-body-main mb-3 appearance-none">
+<option>Overdue Notice (Standard)</option>
+<option>Final Warning</option>
+<option>Upcoming Installment Reminder</option>
+<option>Custom Message</option>
+</select>
+<textarea class="w-full h-32 bg-surface-variant border border-outline-variant text-on-surface p-3 rounded focus:outline-none focus:border-primary font-body-main text-body-main resize-none mb-3">Dear {name}, this is a gentle reminder that your installment of {amount} was due on {date}. Please arrange payment as soon as possible to avoid late fees.</textarea>
+<div class="flex items-center gap-2 flex-wrap">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-1">VARIABLES:</span>
+<button class="bg-surface-bright border border-outline-variant hover:border-primary hover:text-primary text-on-surface-variant font-data-mono text-data-mono px-2 py-1 rounded transition-colors">{name}</button>
+<button class="bg-surface-bright border border-outline-variant hover:border-primary hover:text-primary text-on-surface-variant font-data-mono text-data-mono px-2 py-1 rounded transition-colors">{amount}</button>
+<button class="bg-surface-bright border border-outline-variant hover:border-primary hover:text-primary text-on-surface-variant font-data-mono text-data-mono px-2 py-1 rounded transition-colors">{date}</button>
+<button class="bg-surface-bright border border-outline-variant hover:border-primary hover:text-primary text-on-surface-variant font-data-mono text-data-mono px-2 py-1 rounded transition-colors">{days_overdue}</button>
+</div>
+</div>
+</div>
+<!-- RIGHT PANEL (45% -> ~5 cols) -->
+<div class="col-span-12 md:col-span-5 flex flex-col gap-gutter">
+<!-- Installment Details Card -->
+<div class="bg-surface-container-low border border-outline-variant rounded p-4 flex flex-col">
+<div class="flex items-center justify-between mb-4 border-b border-outline-variant pb-2">
+<h3 class="font-section-header text-section-header text-on-surface">Target Details</h3>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">info</span>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<span class="text-on-surface-variant font-body-main text-body-main">Customer Name</span>
+<span class="text-on-surface font-body-main text-body-main font-bold">Ahmed Hassan</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-on-surface-variant font-body-main text-body-main">Phone</span>
+<span class="text-on-surface font-data-mono text-data-mono">+20 100 123 4567</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-on-surface-variant font-body-main text-body-main">Target Amount</span>
+<span class="text-on-surface font-data-mono text-data-mono font-bold">EGP 1,250</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-on-surface-variant font-body-main text-body-main">Due Date</span>
+<span class="text-on-surface font-data-mono text-data-mono">15 Oct 2023</span>
+</div>
+<div class="flex items-center justify-between bg-error-container/20 p-2 rounded -mx-2">
+<span class="text-on-surface-variant font-body-main text-body-main">Status</span>
+<div class="flex items-center gap-1 text-error font-data-mono text-data-mono font-bold">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+                                +12 days overdue
+                            </div>
+</div>
+</div>
+</div>
+<!-- Message Preview Card -->
+<div class="bg-surface-container-low border border-outline-variant rounded p-4 flex flex-col">
+<h3 class="font-section-header text-section-header text-on-surface mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                        Preview Message
+                    </h3>
+<textarea class="w-full h-28 bg-surface-container-lowest border border-outline-variant text-on-surface p-3 rounded font-body-main text-body-main resize-none mb-2 focus:outline-none opacity-90 cursor-not-allowed" readonly="">Dear Ahmed Hassan, this is a gentle reminder that your installment of EGP 1,250 was due on 15 Oct 2023. Please arrange payment as soon as possible to avoid late fees.</textarea>
+<div class="text-right">
+<span class="font-data-mono text-data-mono text-on-surface-variant">174 characters</span>
+</div>
+</div>
+<!-- Action Button -->
+<button class="mt-auto bg-secondary-container hover:bg-[#00a34a] text-on-secondary-container font-section-header text-section-header w-full py-4 rounded flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+<svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"></path>
+</svg>
+                    Send via WhatsApp Web
+                </button>
+</div>
+</div>
+<!-- Notification History Table (Full Width Bottom) -->
+<div class="bg-surface-container-low border border-outline-variant rounded flex flex-col flex-1 min-h-[250px]">
+<div class="px-4 py-3 border-b border-outline-variant flex items-center justify-between">
+<h3 class="font-section-header text-section-header text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">history</span>
+                    Recent Activity
+                </h3>
+<button class="text-primary font-body-main text-body-main hover:underline">View All</button>
+</div>
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant">
+<th class="px-4 py-2 font-label-caps text-label-caps text-on-surface-variant">DATE &amp; TIME</th>
+<th class="px-4 py-2 font-label-caps text-label-caps text-on-surface-variant">CUSTOMER</th>
+<th class="px-4 py-2 font-label-caps text-label-caps text-on-surface-variant">MESSAGE PREVIEW</th>
+<th class="px-4 py-2 font-label-caps text-label-caps text-on-surface-variant">STATUS</th>
+<th class="px-4 py-2 font-label-caps text-label-caps text-on-surface-variant">SENT BY</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-outline-variant last:border-0 hover:bg-surface-variant transition-colors h-[40px]">
+<td class="px-4 py-2 font-data-mono text-data-mono text-on-surface">27 Oct, 10:15 AM</td>
+<td class="px-4 py-2 font-body-main text-body-main text-on-surface font-bold">Mahmoud Ali</td>
+<td class="px-4 py-2 font-body-main text-body-main text-on-surface-variant truncate max-w-[300px]">Dear Mahmoud, your payment of EGP 850 is due...</td>
+<td class="px-4 py-2">
+<span class="bg-secondary/20 text-secondary font-label-caps text-label-caps px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+<span class="material-symbols-outlined text-[14px]">done</span> Sent
+                                </span>
+</td>
+<td class="px-4 py-2 font-body-main text-body-main text-on-surface">System Auto</td>
+</tr>
+<tr class="border-b border-outline-variant last:border-0 hover:bg-surface-variant transition-colors h-[40px]">
+<td class="px-4 py-2 font-data-mono text-data-mono text-on-surface">26 Oct, 14:30 PM</td>
+<td class="px-4 py-2 font-body-main text-body-main text-on-surface font-bold">Khaled Sayed</td>
+<td class="px-4 py-2 font-body-main text-body-main text-on-surface-variant truncate max-w-[300px]">Final warning: Legal action may be taken regarding...</td>
+<td class="px-4 py-2">
+<span class="bg-secondary/20 text-secondary font-label-caps text-label-caps px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+<span class="material-symbols-outlined text-[14px]">done_all</span> Read
+                                </span>
+</td>
+<td class="px-4 py-2 font-body-main text-body-main text-on-surface">Admin User</td>
+</tr>
+<tr class="border-b border-outline-variant last:border-0 hover:bg-surface-variant transition-colors h-[40px]">
+<td class="px-4 py-2 font-data-mono text-data-mono text-on-surface">26 Oct, 09:00 AM</td>
+<td class="px-4 py-2 font-body-main text-body-main text-on-surface font-bold">Nourhan Kamal</td>
+<td class="px-4 py-2 font-body-main text-body-main text-on-surface-variant truncate max-w-[300px]">Reminder: Your installment of EGP 2,000 is upcoming...</td>
+<td class="px-4 py-2">
+<span class="bg-error/20 text-error font-label-caps text-label-caps px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+<span class="material-symbols-outlined text-[14px]">close</span> Failed
+                                </span>
+</td>
+<td class="px-4 py-2 font-body-main text-body-main text-on-surface">System Auto</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+
+
+</body></html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Add Customer - Installments Tracker</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime&amp;family=Inter:wght@400;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#272a2c",
+                        "surface-container-lowest": "#0b0f10",
+                        "on-secondary-fixed": "#002109",
+                        "surface-tint": "#b4c5ff",
+                        "background": "#101415",
+                        "on-error": "#690005",
+                        "secondary": "#4ae176",
+                        "surface-container-low": "#191c1e",
+                        "on-secondary-container": "#004119",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-variant": "#323537",
+                        "surface-dim": "#101415",
+                        "outline": "#8d90a0",
+                        "primary-fixed": "#dbe1ff",
+                        "inverse-on-surface": "#2d3133",
+                        "inverse-primary": "#0053db",
+                        "on-background": "#e0e3e5",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-secondary-fixed-variant": "#005321",
+                        "surface": "#101415",
+                        "secondary-container": "#00b954",
+                        "primary": "#b4c5ff",
+                        "surface-bright": "#363a3b",
+                        "surface-container-highest": "#323537",
+                        "on-primary-fixed": "#00174b",
+                        "on-secondary": "#003915",
+                        "inverse-surface": "#e0e3e5",
+                        "error": "#ffb4ab",
+                        "primary-container": "#2563eb",
+                        "outline-variant": "#434655",
+                        "on-primary-container": "#eeefff",
+                        "secondary-fixed-dim": "#4ae176",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "on-tertiary-fixed": "#2a1700",
+                        "tertiary": "#ffb95f",
+                        "on-primary": "#002a78",
+                        "tertiary-container": "#996100",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "secondary-fixed": "#6bff8f",
+                        "on-surface": "#e0e3e5",
+                        "on-tertiary": "#472a00",
+                        "on-tertiary-container": "#ffeedd",
+                        "error-container": "#93000a",
+                        "tertiary-fixed": "#ffddb8",
+                        "surface-container": "#1d2022",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#653e00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "component_padding_y": "8px",
+                        "detail_panel_width": "320px",
+                        "margin_page": "24px",
+                        "sidebar_width": "220px",
+                        "component_padding_x": "12px"
+                    },
+                    "fontFamily": {
+                        "section-header": ["Inter"],
+                        "title-1": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-main": ["Inter"],
+                        "data-mono": ["Courier Prime"]
+                    },
+                    "fontSize": {
+                        "section-header": ["14px", { "lineHeight": "20px", "fontWeight": "700" }],
+                        "title-1": ["18px", { "lineHeight": "24px", "fontWeight": "700" }],
+                        "label-caps": ["11px", { "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "body-main": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "data-mono": ["12px", { "lineHeight": "16px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Flat UI enforcing, removing default browser styles that might add depth */
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            box-shadow: none !important;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-main text-body-main h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-low border-r border-outline-variant fixed left-0 top-0 h-full w-sidebar_width flex flex-col py-margin_page z-20">
+<div class="px-gutter mb-8">
+<h1 class="font-title-1 text-title-1 text-primary">Installments Tracker</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-1">v2.0.0</p>
+</div>
+<div class="flex-1 flex flex-col gap-1 px-2">
+<!-- Dashboard (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="font-section-header text-section-header">Dashboard</span>
+</a>
+<!-- Customers (Active) -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT border-l-4 border-primary bg-surface-container-high text-primary font-bold cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[20px]">group</span>
+<span class="font-section-header text-section-header">Customers</span>
+</a>
+<!-- Installments (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[20px]">payments</span>
+<span class="font-section-header text-section-header">Installments</span>
+</a>
+<!-- Notifications (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="font-section-header text-section-header">Notifications</span>
+</a>
+<!-- Reports (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[20px]">analytics</span>
+<span class="font-section-header text-section-header">Reports</span>
+</a>
+<!-- Settings (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="font-section-header text-section-header">Settings</span>
+</a>
+</div>
+<div class="px-2 mt-auto">
+<a class="flex items-center gap-3 px-3 py-2 rounded-DEFAULT text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80 border-t border-outline-variant pt-4 mt-4" href="#">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+<span class="font-section-header text-section-header">User Profile</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col ml-sidebar_width h-full bg-surface">
+<!-- Custom Header -->
+<header class="bg-surface-dim border-b border-outline-variant h-[52px] flex items-center justify-between px-gutter shrink-0">
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors font-section-header text-section-header">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                    Back
+                </button>
+<div class="h-4 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-2 font-body-main text-body-main">
+<span class="text-on-surface-variant cursor-pointer hover:text-on-surface">Customers</span>
+<span class="text-outline-variant material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="text-on-surface font-bold">Add New Customer</span>
+</div>
+</div>
+</header>
+<!-- Scrollable Content Canvas -->
+<div class="flex-1 overflow-y-auto p-margin_page flex flex-col gap-6">
+<!-- Step Indicator -->
+<div class="w-full max-w-2xl mx-auto flex items-center justify-between relative mb-4">
+<!-- Connecting Line -->
+<div class="absolute top-1/2 left-0 w-full h-[2px] bg-surface-variant -z-10 -translate-y-1/2"></div>
+<!-- Step 1 (Active) -->
+<div class="flex flex-col items-center gap-2 bg-surface px-2">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-section-header text-section-header border-2 border-surface">
+                        1
+                    </div>
+<span class="font-label-caps text-label-caps text-primary">Customer Info</span>
+</div>
+<!-- Step 2 (Inactive) -->
+<div class="flex flex-col items-center gap-2 bg-surface px-2">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center font-section-header text-section-header border-2 border-surface">
+                        2
+                    </div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Contract</span>
+</div>
+<!-- Step 3 (Inactive) -->
+<div class="flex flex-col items-center gap-2 bg-surface px-2">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center font-section-header text-section-header border-2 border-surface">
+                        3
+                    </div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Installment Plan</span>
+</div>
+</div>
+<!-- Validation Warning (Simulating display for inactive tabs logic, visible at top of form area) -->
+<div class="flex items-center gap-2 text-tertiary bg-surface-container-low border border-outline-variant p-2 rounded-DEFAULT w-fit">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span class="font-label-caps text-label-caps uppercase">Please complete Customer Info first</span>
+</div>
+<!-- Form Container (Level 1 Surface) -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg p-6 flex flex-col flex-1">
+<h2 class="font-section-header text-section-header text-on-surface border-b border-outline-variant pb-3 mb-6">Customer Information</h2>
+<!-- 2-Column Form Grid -->
+<form class="grid grid-cols-2 gap-x-gutter gap-y-6">
+<!-- Left Column -->
+<div class="flex flex-col gap-5">
+<!-- Full Name -->
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-on-surface uppercase flex items-center gap-1">
+                                Full Name <span class="text-primary text-[8px]">●</span>
+</label>
+<input class="h-9 bg-surface-container-high border border-outline-variant rounded-DEFAULT px-3 font-body-main text-body-main text-on-surface focus:border-primary transition-colors" type="text" value="Ahmed Mohamed Hassan / أحمد محمد حسن">
+</div>
+<!-- National ID (Error State) -->
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-error uppercase flex items-center gap-1">
+                                National ID <span class="text-primary text-[8px]">●</span>
+</label>
+<input class="h-9 bg-surface-container-high border border-error rounded-DEFAULT px-3 font-data-mono text-data-mono text-on-surface focus:border-error transition-colors" placeholder="Enter 14-digit ID" type="text">
+<span class="font-label-caps text-label-caps text-error mt-1">This field is required</span>
+</div>
+<!-- Phone -->
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-on-surface uppercase flex items-center gap-1">
+                                Phone <span class="text-primary text-[8px]">●</span>
+</label>
+<input class="h-9 bg-surface-container-high border border-outline-variant rounded-DEFAULT px-3 font-data-mono text-data-mono text-on-surface focus:border-primary transition-colors" type="text" value="01001234567">
+</div>
+<!-- Secondary Phone -->
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-on-surface uppercase">Secondary Phone</label>
+<input class="h-9 bg-surface-container-high border border-outline-variant rounded-DEFAULT px-3 font-data-mono text-data-mono text-on-surface focus:border-primary transition-colors" placeholder="Optional" type="text">
+</div>
+</div>
+<!-- Right Column -->
+<div class="flex flex-col gap-5">
+<!-- Email -->
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-on-surface uppercase">Email Address</label>
+<input class="h-9 bg-surface-container-high border border-outline-variant rounded-DEFAULT px-3 font-body-main text-body-main text-on-surface focus:border-primary transition-colors" placeholder="customer@example.com" type="email">
+</div>
+<!-- Address -->
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-on-surface uppercase flex items-center gap-1">
+                                Address <span class="text-primary text-[8px]">●</span>
+</label>
+<input class="h-9 bg-surface-container-high border border-outline-variant rounded-DEFAULT px-3 font-body-main text-body-main text-on-surface focus:border-primary transition-colors" placeholder="Street Address, Area" type="text">
+</div>
+<!-- City -->
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-on-surface uppercase flex items-center gap-1">
+                                City <span class="text-primary text-[8px]">●</span>
+</label>
+<div class="relative">
+<select class="w-full h-9 bg-surface-container-high border border-outline-variant rounded-DEFAULT px-3 appearance-none font-body-main text-body-main text-on-surface focus:border-primary transition-colors">
+<option selected="" value="cairo">Cairo</option>
+<option value="alex">Alexandria</option>
+<option value="giza">Giza</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">arrow_drop_down</span>
+</div>
+</div>
+<!-- Notes -->
+<div class="flex flex-col gap-1 flex-1">
+<label class="font-label-caps text-label-caps text-on-surface uppercase">Administrative Notes</label>
+<textarea class="flex-1 min-h-[80px] bg-surface-container-high border border-outline-variant rounded-DEFAULT p-3 font-body-main text-body-main text-on-surface focus:border-primary transition-colors resize-none" placeholder="Enter any additional details here..."></textarea>
+</div>
+</div>
+</form>
+</div>
+<!-- Bottom Action Bar -->
+<div class="flex items-center justify-end gap-3 mt-auto pt-4">
+<button class="h-9 px-6 rounded-DEFAULT border border-outline-variant bg-transparent text-on-surface font-section-header text-section-header hover:bg-surface-variant transition-colors" type="button">
+                    Cancel
+                </button>
+<button class="h-9 px-8 rounded-DEFAULT bg-surface-variant text-on-surface-variant font-section-header text-section-header cursor-not-allowed border border-outline-variant opacity-70" disabled="" type="button">
+                    Save
+                </button>
+</div>
+</div>
+</main>
+
+
+</body></html>

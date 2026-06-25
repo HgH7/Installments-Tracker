@@ -8,27 +8,19 @@ import pywhatkit as kit
 
 def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, app):
     frame = frames["send_notification"]
+    frame.configure(fg_color=StyleManager.COLORS["background"])
     frame.grid_columnconfigure(0, weight=1)
+    frame.grid_rowconfigure(1, weight=1)
 
-    header_frame = StyleManager.create_frame(frame)
-    header_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 40))
-    header_frame.grid_columnconfigure(0, weight=1)
-
-    StyleManager.create_label(
-        header_frame,
-        text="إرسال إشعارات الواتساب",
-        font_style="heading"
-    ).grid(row=0, column=0, pady=(20, 10))
-
-    StyleManager.create_label(
-        header_frame,
-        text="إرسال تذكيرات الأقساط للعملاء عبر الواتساب",
-        font_style="body",
-        text_color=StyleManager.COLORS["text_secondary"]
-    ).grid(row=1, column=0, pady=(0, 20))
+    header_frame = StyleManager.create_section_header(
+        frame,
+        "Notifications",
+        "Send installment reminders to customers through WhatsApp.",
+    )
+    header_frame.grid(row=0, column=0, sticky="ew", padx=30, pady=(28, 16))
 
     table_frame = StyleManager.create_frame(frame)
-    table_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=20)
+    table_frame.grid(row=1, column=0, sticky="nsew", padx=30, pady=(0, 16))
     table_frame.grid_columnconfigure(0, weight=1)
     table_frame.grid_rowconfigure(0, weight=1)
 
@@ -48,10 +40,10 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
     }
 
     column_headers = {
-        "Name": "اسم العميل",
-        "Phone": "رقم الهاتف",
-        "Installment Date": "تاريخ القسط",
-        "Installment Value": "قيمة القسط"
+        "Name": "Customer Name",
+        "Phone": "Phone",
+        "Installment Date": "Installment Date",
+        "Installment Value": "Installment Value"
     }
 
     for col in columns:
@@ -93,7 +85,7 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
     load_data()
 
     buttons_frame = StyleManager.create_frame(frame)
-    buttons_frame.grid(row=2, column=0, sticky="ew", padx=20, pady=20)
+    buttons_frame.grid(row=2, column=0, sticky="ew", padx=30, pady=(0, 30))
     buttons_frame.grid_columnconfigure(0, weight=1)
     buttons_frame.grid_columnconfigure(1, weight=1)
     buttons_frame.grid_columnconfigure(2, weight=1)
@@ -101,7 +93,7 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
     def send_whatsapp_notification():
         selected_item = tree.selection()
         if not selected_item:
-            messagebox.showerror("خطأ", "يرجى تحديد عميل لإرسال الإشعار.")
+            messagebox.showerror("Error", "Select a customer to send a notification.")
             return
 
         item = tree.item(selected_item[0])
@@ -116,18 +108,18 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
 
         preview_window = CTkToplevel(app)
         preview_window.geometry("500x550")
-        preview_window.title("معاينة الرسالة")
+        preview_window.title("Message Preview")
 
         StyleManager.create_label(
             preview_window,
-            text="معاينة رسالة الواتساب",
+            text="WhatsApp Message Preview",
             font_style="heading"
         ).pack(pady=(20, 10))
 
         default_message = (
-            f"مرحبًا {name},\n"
-            f"تذكير بدفع قسط بقيمة {installment_value} ريال في تاريخ {installment_date}.\n"
-            f"شكرًا لتعاملك معنا!"
+            f"Hello {name},\n"
+            f"This is a reminder for an installment payment of {installment_value} SAR due on {installment_date}.\n"
+            f"Thank you for your business."
         )
 
         customization_frame = StyleManager.create_frame(preview_window)
@@ -135,7 +127,7 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
 
         StyleManager.create_label(
             customization_frame,
-            text="نص الرسالة:",
+            text="Message Text:",
             font_style="body_bold"
         ).pack(anchor="w", pady=(5, 0))
 
@@ -153,13 +145,13 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
 
         StyleManager.create_label(
             template_info,
-            text="يمكنك استخدام المتغيرات التالية في الرسالة:",
+            text="You can use these variables in the message:",
             font_style="small"
         ).pack(anchor="w")
 
         StyleManager.create_label(
             template_info,
-            text="{name} - اسم العميل\n{date} - تاريخ القسط\n{value} - قيمة القسط",
+            text="{name} - Customer Name\n{date} - Installment Date\n{value} - Installment Value",
             font_style="small",
             text_color=StyleManager.COLORS["text_secondary"]
         ).pack(anchor="w")
@@ -170,7 +162,7 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
         retry_var = BooleanVar(value=True)
         retry_check = CTkCheckBox(
             options_frame,
-            text="محاولة الإرسال مرة أخرى في حالة الفشل",
+            text="Retry if sending fails",
             variable=retry_var
         )
         retry_check.pack(anchor="w", pady=5)
@@ -180,7 +172,7 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
 
         StyleManager.create_label(
             retry_count_frame,
-            text="عدد المحاولات:",
+            text="Attempts:",
             font_style="body"
         ).pack(side="left", padx=(0, 10))
 
@@ -230,7 +222,7 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
                     attempts += 1
                     try:
                         if window_exists:
-                            status_label.configure(text=f"جاري إرسال الرسالة... المحاولة {attempts}/{max_retries}")
+                            status_label.configure(text=f"Sending message... attempt {attempts}/{max_retries}")
                             preview_window.update()
 
                         try:
@@ -242,7 +234,7 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
                                 close_time=10
                             )
                         except Exception as e:
-                            raise Exception(f"فشل في إرسال الرسالة: {str(e)}")
+                            raise Exception(f"Failed to send message: {str(e)}")
 
                         data = csv_manager.read_data()
                         updated = False
@@ -255,14 +247,14 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
                         if updated and csv_manager.save_data(data):
                             success = True
                             if window_exists:
-                                status_label.configure(text="تم الإرسال بنجاح!")
-                                messagebox.showinfo("نجاح", f"تم إرسال الإشعار إلى {name} بنجاح.")
+                                status_label.configure(text="Sent successfully.")
+                                messagebox.showinfo("Success", f"Notification sent to {name} successfully.")
                                 preview_window.destroy()
                                 window_exists = False
                             load_data()
                             logging.info(f"Manual notification sent to {name} at {phone}")
                         else:
-                            errors.append("فشل في تحديث حالة الإشعار")
+                            errors.append("Failed to update notification status.")
                     except Exception as e:
                         errors.append(str(e))
                         logging.error(f"Error in send_message attempt {attempts}: {str(e)}")
@@ -271,9 +263,9 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
 
                 if not success:
                     error_message = "\n".join(errors)
-                    messagebox.showerror("خطأ", f"فشل في إرسال الإشعار:\n{error_message}")
+                    messagebox.showerror("Error", f"Failed to send notification:\n{error_message}")
             except Exception as e:
-                messagebox.showerror("خطأ", f"حدث خطأ غير متوقع: {str(e)}")
+                messagebox.showerror("Error", f"An unexpected error occurred: {str(e)}")
                 logging.error(f"Unexpected error in send_message: {str(e)}")
                 try:
                     for widget in button_frame.winfo_children():
@@ -283,14 +275,14 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
 
         StyleManager.create_button(
             button_frame,
-            text="إرسال",
+            text="Send",
             width=200,
             command=send_message
         ).grid(row=0, column=0, padx=10)
 
         StyleManager.create_button(
             button_frame,
-            text="إلغاء",
+            text="Cancel",
             style="secondary",
             width=200,
             command=preview_window.destroy
@@ -298,21 +290,21 @@ def setup_send_notification_page(frames, StyleManager, csv_manager, show_frame, 
 
     StyleManager.create_button(
         buttons_frame,
-        text="تحديث البيانات",
+        text="Refresh Data",
         width=200,
         command=load_data
     ).grid(row=0, column=0, padx=10, pady=10)
 
     StyleManager.create_button(
         buttons_frame,
-        text="إرسال إشعار",
+        text="Send Notification",
         width=200,
         command=send_whatsapp_notification
     ).grid(row=0, column=1, padx=10, pady=10)
 
     StyleManager.create_button(
         buttons_frame,
-        text="العودة",
+        text="Back",
         style="secondary",
         width=200,
         command=lambda: show_frame(frames["home"])

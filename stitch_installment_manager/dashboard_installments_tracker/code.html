@@ -1,0 +1,407 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Installments Tracker - Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=Courier+Prime:wght@400;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-high": "#272a2c",
+                      "surface-container-lowest": "#0b0f10",
+                      "on-secondary-fixed": "#002109",
+                      "surface-tint": "#b4c5ff",
+                      "background": "#101415",
+                      "on-error": "#690005",
+                      "secondary": "#4ae176",
+                      "surface-container-low": "#191c1e",
+                      "on-secondary-container": "#004119",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface-variant": "#323537",
+                      "surface-dim": "#101415",
+                      "outline": "#8d90a0",
+                      "primary-fixed": "#dbe1ff",
+                      "inverse-on-surface": "#2d3133",
+                      "inverse-primary": "#0053db",
+                      "on-background": "#e0e3e5",
+                      "on-surface-variant": "#c3c6d7",
+                      "on-secondary-fixed-variant": "#005321",
+                      "surface": "#101415",
+                      "secondary-container": "#00b954",
+                      "primary": "#b4c5ff",
+                      "surface-bright": "#363a3b",
+                      "surface-container-highest": "#323537",
+                      "on-primary-fixed": "#00174b",
+                      "on-secondary": "#003915",
+                      "inverse-surface": "#e0e3e5",
+                      "error": "#ffb4ab",
+                      "primary-container": "#2563eb",
+                      "outline-variant": "#434655",
+                      "on-primary-container": "#eeefff",
+                      "secondary-fixed-dim": "#4ae176",
+                      "tertiary-fixed-dim": "#ffb95f",
+                      "on-tertiary-fixed": "#2a1700",
+                      "tertiary": "#ffb95f",
+                      "on-primary": "#002a78",
+                      "tertiary-container": "#996100",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "secondary-fixed": "#6bff8f",
+                      "on-surface": "#e0e3e5",
+                      "on-tertiary": "#472a00",
+                      "on-tertiary-container": "#ffeedd",
+                      "error-container": "#93000a",
+                      "tertiary-fixed": "#ffddb8",
+                      "surface-container": "#1d2022",
+                      "on-error-container": "#ffdad6",
+                      "on-tertiary-fixed-variant": "#653e00"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "component_padding_y": "8px",
+                      "detail_panel_width": "320px",
+                      "margin_page": "24px",
+                      "sidebar_width": "220px",
+                      "component_padding_x": "12px"
+              },
+              "fontFamily": {
+                      "section-header": ["Inter"],
+                      "title-1": ["Inter"],
+                      "label-caps": ["Inter"],
+                      "body-main": ["Inter"],
+                      "data-mono": ["Courier Prime"]
+              },
+              "fontSize": {
+                      "section-header": ["14px", { "lineHeight": "20px", "fontWeight": "700" }],
+                      "title-1": ["18px", { "lineHeight": "24px", "fontWeight": "700" }],
+                      "label-caps": ["11px", { "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                      "body-main": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                      "data-mono": ["12px", { "lineHeight": "16px", "fontWeight": "400" }]
+              }
+      },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background antialiased selection:bg-primary-container selection:text-on-primary-container overflow-x-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-sidebar_width bg-surface-container-low border-r border-outline-variant flex flex-col py-margin_page z-20">
+<!-- Brand / Header -->
+<div class="px-margin_page mb-8">
+<h1 class="font-title-1 text-title-1 text-primary">Installments Tracker</h1>
+<p class="font-data-mono text-data-mono text-on-surface-variant">v2.0.0</p>
+</div>
+<!-- Navigation Links -->
+<nav class="flex-1 flex flex-col gap-1 px-2">
+<!-- Active: Dashboard -->
+<a class="flex items-center gap-3 px-3 py-2 border-l-4 border-primary bg-surface-container-high text-primary font-bold cursor-pointer transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-body-main text-body-main">Dashboard</span>
+</a>
+<!-- Inactive Links -->
+<a class="flex items-center gap-3 px-3 py-2 border-l-4 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-body-main text-body-main">Customers</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 border-l-4 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-body-main text-body-main">Installments</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 border-l-4 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-body-main text-body-main">Notifications</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 border-l-4 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-main text-body-main">Reports</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 border-l-4 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-main text-body-main">Settings</span>
+</a>
+</nav>
+<!-- Footer -->
+<div class="px-2 mt-auto">
+<a class="flex items-center gap-3 px-3 py-2 border-l-4 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="font-body-main text-body-main">User Profile</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 h-[52px] z-10 w-[calc(100%-220px)] bg-surface-dim border-b border-outline-variant flex items-center justify-between px-gutter">
+<!-- Navigation Links (Top Row text links, typically suppressed if Sidebar is present, but explicitly requested in JSON) -->
+<nav class="flex items-center gap-6 h-full pt-1">
+<a class="h-full flex items-center text-primary border-b-2 border-primary pb-1 font-section-header text-section-header scale-95 active:scale-90 transition-all" href="#">Dashboard</a>
+<a class="h-full flex items-center text-on-surface-variant hover:text-primary font-section-header text-section-header scale-95 active:scale-90 transition-all" href="#">Customers</a>
+<a class="h-full flex items-center text-on-surface-variant hover:text-primary font-section-header text-section-header scale-95 active:scale-90 transition-all" href="#">Installments</a>
+</nav>
+<div class="flex items-center gap-4">
+<!-- Search Bar Area -->
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+<input class="w-full bg-surface-variant border border-outline-variant rounded DEFAULT text-on-surface font-body-main text-body-main py-1 pl-8 pr-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors h-8" placeholder="Search..." type="text">
+</div>
+<!-- Trailing Action -->
+<button class="bg-primary text-on-primary font-section-header text-section-header px-4 h-8 rounded DEFAULT hover:bg-primary-fixed transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">add</span>
+                New Customer
+            </button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-sidebar_width mt-[52px] p-margin_page min-h-[calc(100vh-52px)] flex flex-col gap-gutter">
+<!-- Row 1: KPI Strip -->
+<section class="grid grid-cols-5 gap-gutter">
+<!-- Card 1 -->
+<div class="bg-surface-container-low border border-outline-variant p-component_padding_x flex flex-col gap-2 rounded DEFAULT">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Total Customers</span>
+<span class="font-data-mono text-data-mono text-on-surface text-lg font-bold">124</span>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-low border border-outline-variant p-component_padding_x flex flex-col gap-2 rounded DEFAULT">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Active Contracts</span>
+<span class="font-data-mono text-data-mono text-on-surface text-lg font-bold">98</span>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-low border border-outline-variant p-component_padding_x flex flex-col gap-2 rounded DEFAULT">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Outstanding</span>
+<span class="font-data-mono text-data-mono text-on-surface text-lg font-bold">245,800 <span class="text-xs">EGP</span></span>
+</div>
+<!-- Card 4 (Red) -->
+<div class="bg-surface-container-low border border-error p-component_padding_x flex flex-col gap-2 rounded DEFAULT bg-error-container/10">
+<span class="font-label-caps text-label-caps text-error uppercase tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">warning</span> Overdue
+                </span>
+<span class="font-data-mono text-data-mono text-error text-lg font-bold">17</span>
+</div>
+<!-- Card 5 -->
+<div class="bg-surface-container-low border border-outline-variant p-component_padding_x flex flex-col gap-2 rounded DEFAULT">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Collected</span>
+<span class="font-data-mono text-data-mono text-secondary text-lg font-bold">38,400 <span class="text-xs">EGP</span></span>
+</div>
+</section>
+<!-- Row 2: Main Area (60/40 Split) -->
+<section class="flex gap-gutter h-[340px]">
+<!-- Left (60%): Upcoming Due Installments -->
+<div class="w-[60%] bg-surface-container-low border border-outline-variant flex flex-col rounded DEFAULT overflow-hidden">
+<div class="px-component_padding_x py-component_padding_y border-b border-outline-variant bg-surface-container flex justify-between items-center">
+<h2 class="font-title-1 text-title-1 text-on-surface">Upcoming Due Installments</h2>
+<button class="text-primary font-section-header text-section-header hover:underline">View All</button>
+</div>
+<div class="flex-1 overflow-auto">
+<table class="w-full text-left border-collapse">
+<thead class="sticky top-0 bg-surface-container-highest z-10 border-b border-outline-variant">
+<tr class="h-[32px]">
+<th class="px-3 font-section-header text-section-header text-on-surface-variant font-normal">Customer</th>
+<th class="px-3 font-section-header text-section-header text-on-surface-variant font-normal text-right">Amount</th>
+<th class="px-3 font-section-header text-section-header text-on-surface-variant font-normal text-right">Due Date</th>
+<th class="px-3 font-section-header text-section-header text-on-surface-variant font-normal text-center">Status</th>
+<th class="px-3 font-section-header text-section-header text-on-surface-variant font-normal w-16"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/50">
+<!-- Row 1 -->
+<tr class="h-[32px] hover:bg-surface-variant/50 transition-colors">
+<td class="px-3 font-body-main text-body-main text-on-surface whitespace-nowrap">Ahmed Hassan</td>
+<td class="px-3 font-data-mono text-data-mono text-on-surface text-right">1,200 <span class="text-on-surface-variant text-[10px]">EGP</span></td>
+<td class="px-3 font-data-mono text-data-mono text-on-surface text-right">2023-10-25</td>
+<td class="px-3 flex justify-center items-center h-[32px]">
+<div class="flex items-center gap-1 border border-tertiary/50 bg-tertiary-container/20 px-1.5 py-0.5 rounded DEFAULT text-tertiary">
+<span class="material-symbols-outlined text-[12px]">schedule</span>
+<span class="font-label-caps text-label-caps uppercase text-[9px]">Due Soon</span>
+</div>
+</td>
+<td class="px-3 text-right">
+<button class="bg-secondary/10 border border-secondary/30 text-secondary hover:bg-secondary hover:text-on-secondary px-2 py-0.5 rounded DEFAULT font-section-header text-[11px] transition-colors">Pay</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="h-[32px] hover:bg-surface-variant/50 transition-colors">
+<td class="px-3 font-body-main text-body-main text-on-surface whitespace-nowrap">Sarah Ali (سارة علي)</td>
+<td class="px-3 font-data-mono text-data-mono text-on-surface text-right">850 <span class="text-on-surface-variant text-[10px]">EGP</span></td>
+<td class="px-3 font-data-mono text-data-mono text-on-surface text-right">2023-10-26</td>
+<td class="px-3 flex justify-center items-center h-[32px]">
+<div class="flex items-center gap-1 border border-outline-variant bg-surface-variant px-1.5 py-0.5 rounded DEFAULT text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px]">calendar_month</span>
+<span class="font-label-caps text-label-caps uppercase text-[9px]">Upcoming</span>
+</div>
+</td>
+<td class="px-3 text-right">
+<button class="bg-secondary/10 border border-secondary/30 text-secondary hover:bg-secondary hover:text-on-secondary px-2 py-0.5 rounded DEFAULT font-section-header text-[11px] transition-colors">Pay</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="h-[32px] hover:bg-surface-variant/50 transition-colors">
+<td class="px-3 font-body-main text-body-main text-on-surface whitespace-nowrap">Mahmoud Youssef</td>
+<td class="px-3 font-data-mono text-data-mono text-on-surface text-right">2,500 <span class="text-on-surface-variant text-[10px]">EGP</span></td>
+<td class="px-3 font-data-mono text-data-mono text-on-surface text-right">2023-10-26</td>
+<td class="px-3 flex justify-center items-center h-[32px]">
+<div class="flex items-center gap-1 border border-outline-variant bg-surface-variant px-1.5 py-0.5 rounded DEFAULT text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px]">calendar_month</span>
+<span class="font-label-caps text-label-caps uppercase text-[9px]">Upcoming</span>
+</div>
+</td>
+<td class="px-3 text-right">
+<button class="bg-secondary/10 border border-secondary/30 text-secondary hover:bg-secondary hover:text-on-secondary px-2 py-0.5 rounded DEFAULT font-section-header text-[11px] transition-colors">Pay</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="h-[32px] hover:bg-surface-variant/50 transition-colors">
+<td class="px-3 font-body-main text-body-main text-on-surface whitespace-nowrap">Nour El Din</td>
+<td class="px-3 font-data-mono text-data-mono text-on-surface text-right">600 <span class="text-on-surface-variant text-[10px]">EGP</span></td>
+<td class="px-3 font-data-mono text-data-mono text-on-surface text-right">2023-10-28</td>
+<td class="px-3 flex justify-center items-center h-[32px]">
+<div class="flex items-center gap-1 border border-outline-variant bg-surface-variant px-1.5 py-0.5 rounded DEFAULT text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px]">calendar_month</span>
+<span class="font-label-caps text-label-caps uppercase text-[9px]">Upcoming</span>
+</div>
+</td>
+<td class="px-3 text-right">
+<button class="bg-secondary/10 border border-secondary/30 text-secondary hover:bg-secondary hover:text-on-secondary px-2 py-0.5 rounded DEFAULT font-section-header text-[11px] transition-colors">Pay</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="h-[32px] hover:bg-surface-variant/50 transition-colors">
+<td class="px-3 font-body-main text-body-main text-on-surface whitespace-nowrap">Laila Mostafa</td>
+<td class="px-3 font-data-mono text-data-mono text-on-surface text-right">1,850 <span class="text-on-surface-variant text-[10px]">EGP</span></td>
+<td class="px-3 font-data-mono text-data-mono text-on-surface text-right">2023-10-29</td>
+<td class="px-3 flex justify-center items-center h-[32px]">
+<div class="flex items-center gap-1 border border-outline-variant bg-surface-variant px-1.5 py-0.5 rounded DEFAULT text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px]">calendar_month</span>
+<span class="font-label-caps text-label-caps uppercase text-[9px]">Upcoming</span>
+</div>
+</td>
+<td class="px-3 text-right">
+<button class="bg-secondary/10 border border-secondary/30 text-secondary hover:bg-secondary hover:text-on-secondary px-2 py-0.5 rounded DEFAULT font-section-header text-[11px] transition-colors">Pay</button>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="h-[32px] hover:bg-surface-variant/50 transition-colors">
+<td class="px-3 font-body-main text-body-main text-on-surface whitespace-nowrap">Omar Tarek</td>
+<td class="px-3 font-data-mono text-data-mono text-on-surface text-right">450 <span class="text-on-surface-variant text-[10px]">EGP</span></td>
+<td class="px-3 font-data-mono text-data-mono text-on-surface text-right">2023-10-31</td>
+<td class="px-3 flex justify-center items-center h-[32px]">
+<div class="flex items-center gap-1 border border-outline-variant bg-surface-variant px-1.5 py-0.5 rounded DEFAULT text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px]">calendar_month</span>
+<span class="font-label-caps text-label-caps uppercase text-[9px]">Upcoming</span>
+</div>
+</td>
+<td class="px-3 text-right">
+<button class="bg-secondary/10 border border-secondary/30 text-secondary hover:bg-secondary hover:text-on-secondary px-2 py-0.5 rounded DEFAULT font-section-header text-[11px] transition-colors">Pay</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Right (40%): Quick Actions & Progress -->
+<div class="w-[40%] flex flex-col gap-gutter">
+<!-- Quick Actions Stack -->
+<div class="bg-surface-container-low border border-outline-variant rounded DEFAULT p-component_padding_x flex flex-col gap-2 flex-1">
+<h3 class="font-section-header text-section-header text-on-surface mb-1">Quick Actions</h3>
+<button class="w-full flex items-center justify-between px-3 py-2 bg-surface-variant border border-outline-variant rounded DEFAULT text-on-surface hover:bg-surface-bright transition-colors group">
+<span class="font-body-main text-body-main group-hover:text-primary transition-colors">New Customer</span>
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-primary transition-colors">person_add</span>
+</button>
+<button class="w-full flex items-center justify-between px-3 py-2 bg-surface-variant border border-outline-variant rounded DEFAULT text-on-surface hover:bg-surface-bright transition-colors group">
+<span class="font-body-main text-body-main group-hover:text-primary transition-colors">Record Payment</span>
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-primary transition-colors">point_of_sale</span>
+</button>
+<button class="w-full flex items-center justify-between px-3 py-2 bg-surface-variant border border-outline-variant rounded DEFAULT text-on-surface hover:bg-surface-bright transition-colors group">
+<span class="font-body-main text-body-main group-hover:text-primary transition-colors">Send Reminder</span>
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-primary transition-colors">send</span>
+</button>
+<button class="w-full flex items-center justify-between px-3 py-2 bg-surface-variant border border-outline-variant rounded DEFAULT text-on-surface hover:bg-surface-bright transition-colors group">
+<span class="font-body-main text-body-main group-hover:text-primary transition-colors">Export Report</span>
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-primary transition-colors">download</span>
+</button>
+</div>
+<!-- Collection Progress -->
+<div class="bg-surface-container-low border border-outline-variant rounded DEFAULT p-component_padding_x h-24 flex flex-col justify-center">
+<div class="flex justify-between items-end mb-2">
+<h3 class="font-section-header text-section-header text-on-surface">Monthly Collection Target</h3>
+<span class="font-data-mono text-data-mono text-primary font-bold">64%</span>
+</div>
+<div class="w-full h-2 bg-surface-variant rounded-full overflow-hidden border border-outline-variant/30">
+<div class="h-full bg-primary" style="width: 64%;"></div>
+</div>
+<div class="flex justify-between mt-1">
+<span class="font-data-mono text-[10px] text-on-surface-variant">38,400 EGP</span>
+<span class="font-data-mono text-[10px] text-on-surface-variant">60,000 EGP Target</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Row 3: Recent Activity Feed -->
+<section class="bg-surface-container-low border border-outline-variant rounded DEFAULT overflow-hidden">
+<div class="px-component_padding_x py-component_padding_y border-b border-outline-variant bg-surface-container">
+<h2 class="font-title-1 text-title-1 text-on-surface">Recent Activity</h2>
+</div>
+<div class="flex flex-col">
+<!-- Activity 1 -->
+<div class="flex items-center gap-4 px-4 py-3 border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
+<div class="w-6 h-6 rounded-full bg-secondary-container/20 border border-secondary/30 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<div class="flex-1">
+<p class="font-body-main text-body-main text-on-surface">Payment of <span class="font-data-mono text-data-mono text-secondary">1,200 EGP</span> received from <span class="font-bold">Ahmed Hassan</span>.</p>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface-variant text-[11px]">10:42 AM</span>
+</div>
+<!-- Activity 2 -->
+<div class="flex items-center gap-4 px-4 py-3 border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
+<div class="w-6 h-6 rounded-full bg-error-container/20 border border-error/30 flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</div>
+<div class="flex-1">
+<p class="font-body-main text-body-main text-on-surface">Contract generation failed for <span class="font-bold">Khaled Mansour</span>. Missing signature document.</p>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface-variant text-[11px]">09:15 AM</span>
+</div>
+<!-- Activity 3 -->
+<div class="flex items-center gap-4 px-4 py-3 border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
+<div class="w-6 h-6 rounded-full bg-tertiary-container/20 border border-tertiary/30 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+</div>
+<div class="flex-1">
+<p class="font-body-main text-body-main text-on-surface">Installment overdue by 3 days for <span class="font-bold">Yasmine Fouad</span>. Automated reminder sent.</p>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface-variant text-[11px]">Yesterday</span>
+</div>
+<!-- Activity 4 -->
+<div class="flex items-center gap-4 px-4 py-3 border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
+<div class="w-6 h-6 rounded-full bg-primary-container/20 border border-primary/30 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[14px]">add</span>
+</div>
+<div class="flex-1">
+<p class="font-body-main text-body-main text-on-surface">New customer profile created: <span class="font-bold">Tarek Ziad</span>.</p>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface-variant text-[11px]">Yesterday</span>
+</div>
+<!-- Activity 5 -->
+<div class="flex items-center gap-4 px-4 py-3 hover:bg-surface-variant/30 transition-colors">
+<div class="w-6 h-6 rounded-full bg-secondary-container/20 border border-secondary/30 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<div class="flex-1">
+<p class="font-body-main text-body-main text-on-surface">Contract <span class="font-data-mono text-data-mono">#CTR-8992</span> marked as fully paid and closed.</p>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface-variant text-[11px]">Oct 21</span>
+</div>
+</div>
+</section>
+</main>
+
+
+</body></html>

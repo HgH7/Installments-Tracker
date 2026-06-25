@@ -5,35 +5,26 @@ from customtkinter import CTkTextbox
 
 def setup_add_page(frames, StyleManager, app, validate_and_save, DatePicker, show_frame):
     frame = frames["add"]
+    frame.configure(fg_color=StyleManager.COLORS["background"])
     frame.grid_columnconfigure(0, weight=1)
 
-    header_frame = StyleManager.create_frame(frame)
-    header_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 40))
-    header_frame.grid_columnconfigure(0, weight=1)
-
-    StyleManager.create_label(
-        header_frame,
-        text="إضافة عميل جديد",
-        font_style="heading"
-    ).grid(row=0, column=0, pady=(20, 10))
-
-    StyleManager.create_label(
-        header_frame,
-        text="أدخل بيانات العميل وتفاصيل الأقساط",
-        font_style="body",
-        text_color=StyleManager.COLORS["text_secondary"]
-    ).grid(row=1, column=0, pady=(0, 20))
+    header_frame = StyleManager.create_section_header(
+        frame,
+        "Add Customer",
+        "Enter customer information and installment details",
+    )
+    header_frame.grid(row=0, column=0, sticky="ew", padx=30, pady=(28, 16))
 
     form_frame = StyleManager.create_frame(frame)
-    form_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=20)
+    form_frame.grid(row=1, column=0, sticky="nsew", padx=30, pady=(0, 16))
     form_frame.grid_columnconfigure(0, weight=1)
     form_frame.grid_columnconfigure(1, weight=2)
 
     fields = [
-        {"label": "اسم العميل:", "type": "text"},
-        {"label": "رقم الهاتف:", "type": "phone"},
-        {"label": "المبلغ:", "type": "number"},
-        {"label": "عدد الأقساط:", "type": "number"}
+        {"label": "Customer Name:", "type": "text"},
+        {"label": "Phone:", "type": "phone"},
+        {"label": "Amount:", "type": "number"},
+        {"label": "Installments:", "type": "number"}
     ]
 
     entries = []
@@ -62,7 +53,7 @@ def setup_add_page(frames, StyleManager, app, validate_and_save, DatePicker, sho
 
     StyleManager.create_label(
         date_frame,
-        text="تاريخ بدء الأقساط:",
+        text="Installment Start Date:",
         font_style="body_bold"
     ).grid(row=0, column=0, padx=10, pady=5, sticky="w")
 
@@ -71,20 +62,20 @@ def setup_add_page(frames, StyleManager, app, validate_and_save, DatePicker, sho
 
     date_picker_btn = StyleManager.create_button(
         date_frame,
-        text="📅 اختر التاريخ",
+        text="Select Date",
         style="secondary",
         command=lambda: DatePicker(app, start_date_entry)
     )
     date_picker_btn.grid(row=0, column=2, padx=10, pady=5)
 
     buttons_frame = StyleManager.create_frame(frame)
-    buttons_frame.grid(row=2, column=0, sticky="ew", padx=20, pady=20)
+    buttons_frame.grid(row=2, column=0, sticky="ew", padx=30, pady=(0, 30))
     buttons_frame.grid_columnconfigure(0, weight=1)
     buttons_frame.grid_columnconfigure(1, weight=1)
 
     save_btn = StyleManager.create_button(
         buttons_frame,
-        text="حفظ العميل",
+        text="Save Customer",
         width=200,
         command=lambda: validate_and_save(*entries, start_date_entry)
     )
@@ -92,7 +83,7 @@ def setup_add_page(frames, StyleManager, app, validate_and_save, DatePicker, sho
 
     back_btn = StyleManager.create_button(
         buttons_frame,
-        text="رجوع",
+        text="Back",
         style="secondary",
         width=200,
         command=lambda: show_frame(frames["home"])
@@ -100,12 +91,12 @@ def setup_add_page(frames, StyleManager, app, validate_and_save, DatePicker, sho
     back_btn.grid(row=0, column=1, padx=10, pady=10)
 
     file_frame = StyleManager.create_frame(form_frame, fg_color="transparent")
-    file_frame.grid(row=len(fields)*2+1, column=0, sticky="ew", pady=(20, 0))
+    file_frame.grid(row=len(fields)*2+1, column=0, columnspan=2, sticky="ew", padx=10, pady=(20, 0))
     file_frame.grid_columnconfigure(1, weight=1)
 
     StyleManager.create_label(
         file_frame,
-        text="📁 ملفات العميل",
+        text="Customer Files",
         font_style="body_bold"
     ).grid(row=0, column=0, sticky="w", padx=(0, 10))
 
@@ -135,7 +126,7 @@ def setup_add_page(frames, StyleManager, app, validate_and_save, DatePicker, sho
 
     def add_files():
         files = filedialog.askopenfilenames(
-            title="اختر ملفات العميل",
+            title="Select customer files",
             filetypes=[
                 ("All files", "*.*"),
                 ("PDF files", "*.pdf"),
@@ -153,7 +144,7 @@ def setup_add_page(frames, StyleManager, app, validate_and_save, DatePicker, sho
 
     def clear_files():
         if file_list.files:
-            if messagebox.askyesno("تأكيد", "هل أنت متأكد من حذف جميع الملفات المحددة؟"):
+            if messagebox.askyesno("Confirm", "Are you sure you want to remove all selected files?"):
                 file_list.files = []
                 file_list.configure(state="normal")
                 file_list.delete("1.0", "end")
@@ -161,14 +152,14 @@ def setup_add_page(frames, StyleManager, app, validate_and_save, DatePicker, sho
 
     StyleManager.create_button(
         file_buttons_frame,
-        text="إضافة ملفات",
+        text="Add Files",
         width=120,
         command=add_files
     ).pack(side="left", padx=(0, 5))
 
     StyleManager.create_button(
         file_buttons_frame,
-        text="مسح الملفات",
+        text="Clear Files",
         style="secondary",
         width=120,
         command=clear_files

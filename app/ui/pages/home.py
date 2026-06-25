@@ -1,94 +1,126 @@
 import os
-from customtkinter import CTkFrame, CTkButton
 
 
 def setup_home_page(frames, StyleManager, show_frame, app):
     frame = frames["home"]
+    frame.configure(fg_color=StyleManager.COLORS["background"])
     frame.grid_columnconfigure(0, weight=1)
-    frame.grid_columnconfigure(1, weight=1)
-    frame.grid_rowconfigure(0, weight=0)
     frame.grid_rowconfigure(1, weight=1)
-    frame.grid_rowconfigure(2, weight=1)
-    frame.grid_rowconfigure(3, weight=1)
 
-    header_frame = StyleManager.create_frame(frame)
-    header_frame.grid(row=0, column=0, columnspan=2, sticky="ew", padx=20, pady=(20, 40))
+    header_frame = StyleManager.create_frame(
+        frame,
+        fg_color="transparent",
+        border_width=0,
+    )
+    header_frame.grid(row=0, column=0, sticky="ew", padx=24, pady=(22, 14))
     header_frame.grid_columnconfigure(0, weight=1)
 
     StyleManager.create_label(
         header_frame,
-        text="نظام إدارة الأقساط",
-        font=("Arial", 42, "bold"),
-        text_color="#ffffff"
-    ).grid(row=0, column=0, pady=(20, 20))
+        text="Installment Tracker",
+        font_style="heading",
+        anchor="w",
+    ).grid(row=0, column=0, sticky="w")
+    StyleManager.create_label(
+        header_frame,
+        text="Manage customers, installments, backups, and reminders from one local workspace.",
+        font_style="small",
+        text_color=StyleManager.COLORS["text_muted"],
+        anchor="w",
+    ).grid(row=1, column=0, sticky="w", pady=(3, 0))
 
-    menu_items = [
+    content = StyleManager.create_frame(
+        frame,
+        fg_color=StyleManager.COLORS["background"],
+        border_width=0,
+    )
+    content.grid(row=1, column=0, sticky="nsew", padx=24, pady=(0, 24))
+    for column in range(3):
+        content.grid_columnconfigure(column, weight=1, uniform="home_cards")
+    for row in range(2):
+        content.grid_rowconfigure(row, weight=1, uniform="home_cards")
+
+    cards = [
         {
-            "text": "إضافة عميل",
+            "title": "Add Customer",
+            "label": "Create a new installment customer record",
+            "metric": "NEW",
             "command": lambda: show_frame(frames["add"]),
-            "icon": "👤",
-            "color": "#4CAF50"
         },
         {
-            "text": "عرض العملاء",
+            "title": "Customers",
+            "label": "Search, edit, export, and review customer data",
+            "metric": "TABLE",
             "command": lambda: show_frame(frames["view"]),
-            "icon": "📋",
-            "color": "#2196F3"
         },
         {
-            "text": "إدارة الأقساط",
+            "title": "Installments",
+            "label": "Review payment schedules and update installment status",
+            "metric": "PAY",
             "command": lambda: show_frame(frames["manage"]),
-            "icon": "💰",
-            "color": "#9C27B0"
         },
         {
-            "text": "النسخ الاحتياطية",
+            "title": "Backup & Restore",
+            "label": "Create backups and restore previous CSV snapshots",
+            "metric": "CSV",
             "command": lambda: show_frame(frames["backup_restore"]),
-            "icon": "🔒",
-            "color": "#FF9800"
         },
         {
-            "text": "إرسال إشعارات",
+            "title": "Notifications",
+            "label": "Select due installments and prepare WhatsApp reminders",
+            "metric": "MSG",
             "command": lambda: show_frame(frames["send_notification"]),
-            "icon": "📨",
-            "color": "#E91E63"
         },
         {
-            "text": "ملفات العملاء",
+            "title": "Customer Files",
+            "label": "Open the local folder for customer attachments",
+            "metric": "FILES",
             "command": lambda: os.startfile("customer_files"),
-            "icon": "📁",
-            "color": "#607D8B"
-        }
+        },
     ]
 
-    for i, item in enumerate(menu_items):
-        row, col = divmod(i, 2)
-        button_container = CTkFrame(
-            frame,
-            fg_color="transparent"
+    for index, card in enumerate(cards):
+        row, column = divmod(index, 3)
+        card_frame = StyleManager.create_frame(
+            content,
+            fg_color=StyleManager.COLORS["surface"],
+            border_color=StyleManager.COLORS["border"],
+            corner_radius=8,
         )
-        button_container.grid(row=row+1, column=col, padx=30, pady=25, sticky="nsew")
+        card_frame.grid(row=row, column=column, sticky="nsew", padx=8, pady=8)
+        card_frame.grid_columnconfigure(0, weight=1)
+        card_frame.grid_rowconfigure(1, weight=1)
 
-        button = CTkButton(
-            button_container,
-            text=f"{item['icon']}  {item['text']}",
-            command=item["command"],
-            width=500,
-            height=80,
-            corner_radius=15,
-            fg_color=item["color"],
-            hover_color=item["color"],
-            text_color="#ffffff",
-            font=("Arial", 24, "bold"),
-            anchor="center"
-        )
-        button.pack(expand=True, fill="both")
+        top = StyleManager.create_frame(card_frame, fg_color="transparent", border_width=0)
+        top.grid(row=0, column=0, sticky="ew", padx=16, pady=(16, 8))
+        top.grid_columnconfigure(0, weight=1)
 
-        def on_enter(e, button=button):
-            button.configure(border_width=2, border_color="#ffffff")
+        StyleManager.create_label(
+            top,
+            text=card["title"],
+            font_style="subheading",
+            anchor="w",
+        ).grid(row=0, column=0, sticky="w")
+        StyleManager.create_badge(
+            top,
+            text=card["metric"],
+            tone="neutral",
+        ).grid(row=0, column=1, sticky="e")
 
-        def on_leave(e, button=button):
-            button.configure(border_width=0)
+        StyleManager.create_label(
+            card_frame,
+            text=card["label"],
+            font_style="body",
+            text_color=StyleManager.COLORS["text_secondary"],
+            anchor="nw",
+            justify="left",
+            wraplength=260,
+        ).grid(row=1, column=0, sticky="new", padx=16, pady=(0, 14))
 
-        button.bind("<Enter>", on_enter)
-        button.bind("<Leave>", on_leave)
+        StyleManager.create_button(
+            card_frame,
+            text="Open",
+            style="secondary",
+            command=card["command"],
+            width=96,
+        ).grid(row=2, column=0, sticky="w", padx=16, pady=(0, 16))

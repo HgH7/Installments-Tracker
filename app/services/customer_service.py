@@ -19,26 +19,26 @@ class CustomerService:
         missing_fields = [field for field in self.repository.columns if field not in customer_data]
         if missing_fields:
             logging.error(f"Missing required fields: {missing_fields}")
-            messagebox.showerror("خطأ", f"الحقول التالية مطلوبة: {', '.join(missing_fields)}")
+            messagebox.showerror("Error", f"The following fields are required: {', '.join(missing_fields)}")
             return False
 
         try:
             if not self.repository.create_backup():
                 logging.error("Failed to create backup before appending customer")
-                messagebox.showerror("خطأ", "فشل في إنشاء نسخة احتياطية")
+                messagebox.showerror("Error", "Failed to create backup.")
                 return False
 
             if self.repository.append_record(customer_data):
                 return True
             logging.error("Failed to append customer record")
-            messagebox.showerror("خطأ", "حدث خطأ أثناء حفظ البيانات")
+            messagebox.showerror("Error", "An error occurred while saving data")
             return False
         except PermissionError:
-            messagebox.showerror("خطأ", "لا يوجد صلاحية للوصول إلى ملف البيانات")
+            messagebox.showerror("Error", "Permission denied while accessing the data file.")
             return False
         except Exception as e:
             logging.error(f"Error appending customer: {str(e)}")
-            messagebox.showerror("خطأ", f"حدث خطأ أثناء حفظ البيانات: {str(e)}")
+            messagebox.showerror("Error", f"An error occurred while saving data: {str(e)}")
             return False
 
     def update_customer(self, name: str, updated_data: Dict) -> bool:

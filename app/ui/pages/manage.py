@@ -19,30 +19,21 @@ def setup_manage_installments_page(
     refresh_payment_history_views,
 ):
     frame = frames["manage"]
+    frame.configure(fg_color=StyleManager.COLORS["background"])
     frame.grid_columnconfigure(0, weight=1)
     frame.grid_rowconfigure(0, weight=0)
     frame.grid_rowconfigure(1, weight=1)
     frame.grid_rowconfigure(2, weight=0)
 
-    header_frame = StyleManager.create_frame(frame)
-    header_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 20))
-    header_frame.grid_columnconfigure(0, weight=1)
-
-    StyleManager.create_label(
-        header_frame,
-        text="إدارة الأقساط",
-        font_style="heading"
-    ).grid(row=0, column=0, pady=(0, 10), sticky="w")
-
-    StyleManager.create_label(
-        header_frame,
-        text="عرض الأقساط الحالية وإدارتها بسهولة",
-        font_style="body",
-        text_color=StyleManager.COLORS["text_secondary"]
-    ).grid(row=1, column=0, pady=(0, 20), sticky="w")
+    header_frame = StyleManager.create_section_header(
+        frame,
+        "Installments",
+        "Review and manage current installments.",
+    )
+    header_frame.grid(row=0, column=0, sticky="ew", padx=30, pady=(28, 16))
 
     table_frame = StyleManager.create_frame(frame)
-    table_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=20)
+    table_frame.grid(row=1, column=0, sticky="nsew", padx=30, pady=(0, 16))
     table_frame.grid_columnconfigure(0, weight=1)
     table_frame.grid_rowconfigure(0, weight=1)
 
@@ -55,13 +46,13 @@ def setup_manage_installments_page(
     )
 
     header_labels = {
-        "Name": "اسم العميل",
-        "Phone": "رقم الهاتف",
-        "Amount": "المبلغ",
-        "Installments": "عدد الأقساط",
-        "Installment Value": "قيمة القسط",
-        "Next Due": "القسط التالي",
-        "Paid": "مدفوع"
+        "Name": "Customer Name",
+        "Phone": "Phone",
+        "Amount": "Amount",
+        "Installments": "Installments",
+        "Installment Value": "Installment Value",
+        "Next Due": "Next Due",
+        "Paid": "Paid"
     }
 
     for col in columns:
@@ -101,7 +92,7 @@ def setup_manage_installments_page(
                     except ValueError:
                         continue
 
-                is_paid = "نعم" if len(paid_installments) == total_installments and total_installments > 0 else "لا"
+                is_paid = "Yes" if len(paid_installments) == total_installments and total_installments > 0 else "No"
                 item = tree.insert("", "end", values=(
                     customer.get("Name", ""),
                     customer.get("Phone", ""),
@@ -112,7 +103,7 @@ def setup_manage_installments_page(
                     is_paid
                 ))
 
-                if is_paid == "نعم":
+                if is_paid == "Yes":
                     tree.item(item, tags=("paid",))
                 else:
                     tree.item(item, tags=("unpaid",))
@@ -121,24 +112,22 @@ def setup_manage_installments_page(
             tree.tag_configure("unpaid", foreground=StyleManager.COLORS["danger"])
         except Exception as e:
             logging.error(f"Error loading installments data: {str(e)}")
-            messagebox.showerror("خطأ", "حدث خطأ أثناء تحميل البيانات.")
+            messagebox.showerror("Error", "An error occurred while loading data.")
 
     load_data()
 
     buttons_frame = StyleManager.create_frame(frame)
-    buttons_frame.grid(row=2, column=0, sticky="ew", padx=20, pady=20)
-    buttons_frame.grid_columnconfigure(0, weight=1)
-    buttons_frame.grid_columnconfigure(1, weight=1)
-    buttons_frame.grid_columnconfigure(2, weight=1)
-    buttons_frame.grid_columnconfigure(3, weight=1)
+    buttons_frame.grid(row=2, column=0, sticky="ew", padx=30, pady=(0, 30))
+    for column in range(5):
+        buttons_frame.grid_columnconfigure(column, weight=1)
 
     def refresh_installments():
         load_data()
-        messagebox.showinfo("نجاح", "تم تحديث البيانات بنجاح.")
+        messagebox.showinfo("Success", "Data refreshed successfully.")
 
     StyleManager.create_button(
         buttons_frame,
-        text="تحديث البيانات",
+        text="Refresh Data",
         width=200,
         command=refresh_installments
     ).grid(row=0, column=0, padx=10, pady=10)
@@ -146,7 +135,7 @@ def setup_manage_installments_page(
     def mark_as_paid():
         selected_items = tree.selection()
         if not selected_items:
-            messagebox.showerror("خطأ", "يرجى تحديد قسط لتمييزه كمُدفوع.")
+            messagebox.showerror("Error", "Select an installment to mark as paid.")
             return
 
         try:
@@ -155,28 +144,27 @@ def setup_manage_installments_page(
                     continue
 
                 values = tree.item(item)["values"]
-                parent = tree.parent(item)
-                customer_name = tree.item(parent)["values"][0].replace("▼ ", "").replace("▶ ", "")
+                customer_name = values[0]
                 installment_date = values[5]
 
                 if customer_service.mark_installment_as_paid(customer_name, installment_date):
-                    tree.set(item, "Paid", "نعم")
+                    tree.set(item, "Paid", "Yes")
                     tree.item(item, tags=("paid",))
                 else:
-                    messagebox.showerror("خطأ", f"فشل في تمييز القسط كمدفوع للعميل {customer_name}")
+                    messagebox.showerror("Error", f"Failed to mark installment as paid for customer {customer_name}")
                     return
 
-            messagebox.showinfo("نجاح", "تم تمييز الأقساط المحددة كمُدفوعة.")
+            messagebox.showinfo("Success", "Selected installments marked as paid.")
             load_data()
             if "view" in frames:
                 refresh_treeview(frames["view"].tree)
         except Exception as e:
             logging.error(f"Error marking installments as paid: {str(e)}")
-            messagebox.showerror("خطأ", "حدث خطأ أثناء تمييز الأقساط كمدفوعة.")
+            messagebox.showerror("Error", "An error occurred while marking installments as paid.")
 
     StyleManager.create_button(
         buttons_frame,
-        text="تمييز كمُدفوع",
+        text="Mark as Paid",
         width=200,
         command=mark_as_paid
     ).grid(row=0, column=1, padx=10, pady=10)
@@ -184,30 +172,29 @@ def setup_manage_installments_page(
     def edit_installment():
         selected_items = tree.selection()
         if not selected_items:
-            messagebox.showerror("خطأ", "يرجى تحديد قسط للتعديل.")
+            messagebox.showerror("Error", "Select an installment to edit.")
             return
 
         if len(selected_items) > 1:
-            messagebox.showerror("خطأ", "يرجى تحديد قسط واحد فقط للتعديل.")
+            messagebox.showerror("Error", "Select only one installment to edit.")
             return
 
         try:
             item = selected_items[0]
             if "header" in tree.item(item)["tags"]:
-                messagebox.showerror("خطأ", "يرجى تحديد قسط للتعديل.")
+                messagebox.showerror("Error", "Select an installment to edit.")
                 return
 
             values = tree.item(item)["values"]
-            parent = tree.parent(item)
-            customer_name = tree.item(parent)["values"][0].replace("▼ ", "").replace("▶ ", "")
-            customer_phone = tree.item(parent)["values"][1]
+            customer_name = values[0]
+            customer_phone = values[1]
             installment_date = values[5]
             installment_value = values[4]
-            is_paid = values[6] == "نعم"
+            is_paid = values[6] == "Yes"
 
             edit_window = CTkToplevel(app)
             edit_window.geometry("500x450")
-            edit_window.title("تعديل القسط")
+            edit_window.title("Edit Installment")
             edit_window.transient(app)
             edit_window.grab_set()
 
@@ -216,7 +203,7 @@ def setup_manage_installments_page(
 
             StyleManager.create_label(
                 main_frame,
-                text="تعديل بيانات القسط",
+                text="Edit Installment Details",
                 font_style="subheading"
             ).pack(pady=(0, 20))
 
@@ -225,13 +212,13 @@ def setup_manage_installments_page(
 
             StyleManager.create_label(
                 info_frame,
-                text=f"العميل: {customer_name}",
+                text=f"Customer: {customer_name}",
                 font_style="body_bold"
             ).pack(anchor="w")
 
             StyleManager.create_label(
                 info_frame,
-                text=f"رقم الهاتف: {customer_phone}",
+                text=f"Phone: {customer_phone}",
                 font_style="body"
             ).pack(anchor="w")
 
@@ -243,7 +230,7 @@ def setup_manage_installments_page(
 
             StyleManager.create_label(
                 date_frame,
-                text="تاريخ القسط:",
+                text="Installment Date:",
                 font_style="body"
             ).pack(side="left", padx=(0, 10))
 
@@ -256,7 +243,7 @@ def setup_manage_installments_page(
 
             date_picker_btn = StyleManager.create_button(
                 date_frame,
-                text="📅",
+                text="Date",
                 width=40,
                 command=open_date_picker
             )
@@ -267,7 +254,7 @@ def setup_manage_installments_page(
 
             StyleManager.create_label(
                 amount_frame,
-                text="قيمة القسط:",
+                text="Installment Value:",
                 font_style="body"
             ).pack(side="left", padx=(0, 10))
 
@@ -281,7 +268,7 @@ def setup_manage_installments_page(
             paid_status = tk.BooleanVar(value=is_paid)
             paid_checkbox = CTkCheckBox(
                 paid_frame,
-                text="مدفوع",
+                text="Paid",
                 variable=paid_status,
                 onvalue=True,
                 offvalue=False,
@@ -309,11 +296,11 @@ def setup_manage_installments_page(
                     try:
                         datetime.strptime(new_date, "%Y-%m-%d")
                     except ValueError:
-                        messagebox.showerror("خطأ", "تنسيق التاريخ غير صحيح. يجب أن يكون بهذا الشكل: YYYY-MM-DD")
+                        messagebox.showerror("Error", "Invalid date format. Use YYYY-MM-DD.")
                         return
 
                     if not re.match(r"^\d+(\.\d{1,2})?$", new_value_str):
-                        messagebox.showerror("خطأ", "قيمة القسط يجب أن تكون رقمًا صالحًا.")
+                        messagebox.showerror("Error", "Installment value must be a valid number.")
                         return
 
                     new_value = float(new_value_str)
@@ -324,37 +311,37 @@ def setup_manage_installments_page(
                                 customer_service.mark_installment_as_paid(customer_name, new_date)
                             else:
                                 customer_service.unmark_installment_as_paid(customer_name, new_date)
-                        messagebox.showinfo("نجاح", "تم تحديث بيانات القسط بنجاح.")
+                        messagebox.showinfo("Success", "Installment updated successfully.")
                         edit_window.destroy()
                         load_data()
                         refresh_payment_history_views()
                     else:
-                        messagebox.showerror("خطأ", "فشل في تحديث بيانات القسط.")
+                        messagebox.showerror("Error", "Failed to update installment.")
                 except Exception as e:
                     logging.error(f"Error saving installment changes: {str(e)}")
-                    messagebox.showerror("خطأ", f"حدث خطأ أثناء حفظ التغييرات: {str(e)}")
+                    messagebox.showerror("Error", f"An error occurred while saving changes: {str(e)}")
 
             StyleManager.create_button(
                 buttons_frame,
-                text="حفظ التغييرات",
+                text="Save Changes",
                 width=200,
                 command=save_changes
             ).grid(row=0, column=0, padx=5, pady=5)
 
             StyleManager.create_button(
                 buttons_frame,
-                text="إلغاء",
+                text="Cancel",
                 width=200,
                 style="secondary",
                 command=edit_window.destroy
             ).grid(row=0, column=1, padx=5, pady=5)
         except Exception as e:
             logging.error(f"Error opening edit installment window: {str(e)}")
-            messagebox.showerror("خطأ", f"حدث خطأ أثناء فتح نافذة التعديل: {str(e)}")
+            messagebox.showerror("Error", f"An error occurred while opening the edit window: {str(e)}")
 
     StyleManager.create_button(
         buttons_frame,
-        text="تعديل القسط",
+        text="Edit Installment",
         width=200,
         command=edit_installment
     ).grid(row=0, column=2, padx=10, pady=10)
@@ -362,23 +349,23 @@ def setup_manage_installments_page(
     def delete_customer():
         selected_items = tree.selection()
         if not selected_items:
-            messagebox.showerror("خطأ", "يرجى تحديد عميل للحذف.")
+            messagebox.showerror("Error", "Select a customer to delete.")
             return
 
         item = tree.item(selected_items[0])
         values = item["values"]
         customer_name = values[0]
 
-        if messagebox.askyesno("تأكيد الحذف", f"هل أنت متأكد من حذف العميل {customer_name}?\nلا يمكن التراجع عن هذه العملية."):
+        if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete customer {customer_name}\nThis action cannot be undone."):
             if customer_service.delete_customer(customer_name):
-                messagebox.showinfo("نجاح", f"تم حذف العميل {customer_name} بنجاح.")
+                messagebox.showinfo("Success", f"Deleted customer {customer_name} successfully.")
                 refresh_treeview(tree)
             else:
-                messagebox.showerror("خطأ", "فشل في حذف العميل.")
+                messagebox.showerror("Error", "Failed to delete customer.")
 
     StyleManager.create_button(
         buttons_frame,
-        text="حذف العميل",
+        text="Delete Customer",
         style="danger",
         width=200,
         command=delete_customer
@@ -386,7 +373,7 @@ def setup_manage_installments_page(
 
     StyleManager.create_button(
         buttons_frame,
-        text="العودة",
+        text="Back",
         style="secondary",
         width=200,
         command=lambda: show_frame(frames["home"])

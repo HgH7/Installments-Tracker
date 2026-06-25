@@ -6,51 +6,43 @@ from customtkinter import CTkToplevel, CTkFrame, CTkRadioButton
 
 def setup_backup_restore_page(frames, StyleManager, csv_repository, show_frame, app):
     frame = frames["backup_restore"]
+    frame.configure(fg_color=StyleManager.COLORS["background"])
     frame.grid_columnconfigure(0, weight=1)
 
-    header_frame = StyleManager.create_frame(frame)
-    header_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 40))
-    header_frame.grid_columnconfigure(0, weight=1)
-
-    StyleManager.create_label(
-        header_frame,
-        text="النسخ الاحتياطي واستعادة البيانات",
-        font_style="heading"
-    ).grid(row=0, column=0, pady=(20, 10))
-
-    StyleManager.create_label(
-        header_frame,
-        text="إدارة النسخ الاحتياطية واستعادة البيانات",
-        font_style="body",
-        text_color=StyleManager.COLORS["text_secondary"]
-    ).grid(row=1, column=0, pady=(0, 20))
+    header_frame = StyleManager.create_section_header(
+        frame,
+        "Backup & Restore",
+        "Manage backups and restore data.",
+    )
+    header_frame.grid(row=0, column=0, sticky="ew", padx=30, pady=(28, 16))
 
     content_frame = StyleManager.create_frame(frame)
-    content_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=20)
+    content_frame.grid(row=1, column=0, sticky="nsew", padx=30, pady=(0, 16))
     content_frame.grid_columnconfigure(0, weight=1)
 
     backup_section = StyleManager.create_frame(content_frame)
     backup_section.grid(row=0, column=0, sticky="ew", pady=(0, 20))
     backup_section.grid_columnconfigure(1, weight=1)
 
-    StyleManager.create_label(
+    StyleManager.create_badge(
         backup_section,
-        text="💾",
-        font=("Arial", 36)
-    ).grid(row=0, column=0, padx=(20, 10), pady=20)
+        text="BACKUP",
+        tone="neutral",
+        width=88,
+    ).grid(row=0, column=0, padx=(20, 14), pady=20)
 
     backup_title_frame = CTkFrame(backup_section, fg_color="transparent")
     backup_title_frame.grid(row=0, column=1, sticky="nsew", pady=20)
 
     StyleManager.create_label(
         backup_title_frame,
-        text="إنشاء نسخة احتياطية",
+        text="Create Backup",
         font_style="subheading"
     ).grid(row=0, column=0, sticky="w")
 
     StyleManager.create_label(
         backup_title_frame,
-        text="حفظ نسخة من البيانات الحالية",
+        text="Save a copy of the current data",
         font_style="body",
         text_color=StyleManager.COLORS["text_secondary"]
     ).grid(row=1, column=0, sticky="w")
@@ -59,16 +51,16 @@ def setup_backup_restore_page(frames, StyleManager, csv_repository, show_frame, 
         try:
             backup_file = csv_repository.create_backup()
             if backup_file:
-                messagebox.showinfo("نجاح", f"تم إنشاء نسخة احتياطية في: {backup_file}")
+                messagebox.showinfo("Success", f"Backup created at: {backup_file}")
             else:
-                messagebox.showerror("خطأ", "فشل إنشاء النسخة الاحتياطية.")
+                messagebox.showerror("Error", "Failed to create backup.")
         except Exception as e:
             logging.error(f"Error creating backup: {str(e)}")
-            messagebox.showerror("خطأ", "حدث خطأ أثناء إنشاء النسخة الاحتياطية.")
+            messagebox.showerror("Error", "An error occurred while creating backup.")
 
     StyleManager.create_button(
         backup_section,
-        text="إنشاء نسخة احتياطية",
+        text="Create Backup",
         width=200,
         command=create_backup
     ).grid(row=0, column=2, padx=20)
@@ -77,24 +69,25 @@ def setup_backup_restore_page(frames, StyleManager, csv_repository, show_frame, 
     restore_section.grid(row=1, column=0, sticky="ew")
     restore_section.grid_columnconfigure(1, weight=1)
 
-    StyleManager.create_label(
+    StyleManager.create_badge(
         restore_section,
-        text="🔄",
-        font=("Arial", 36)
-    ).grid(row=0, column=0, padx=(20, 10), pady=20)
+        text="RESTORE",
+        tone="neutral",
+        width=88,
+    ).grid(row=0, column=0, padx=(20, 14), pady=20)
 
     restore_title_frame = CTkFrame(restore_section, fg_color="transparent")
     restore_title_frame.grid(row=0, column=1, sticky="nsew", pady=20)
 
     StyleManager.create_label(
         restore_title_frame,
-        text="استعادة نسخة احتياطية",
+        text="Restore Backup",
         font_style="subheading"
     ).grid(row=0, column=0, sticky="w")
 
     StyleManager.create_label(
         restore_title_frame,
-        text="استعادة البيانات من نسخة احتياطية سابقة",
+        text="Restore data from an earlier backup",
         font_style="body",
         text_color=StyleManager.COLORS["text_secondary"]
     ).grid(row=1, column=0, sticky="w")
@@ -103,24 +96,24 @@ def setup_backup_restore_page(frames, StyleManager, csv_repository, show_frame, 
         try:
             backup_files = csv_repository.get_backup_files()
             if not backup_files:
-                messagebox.showerror("خطأ", "لا توجد نسخ احتياطية متاحة.")
+                messagebox.showerror("Error", "No backups are available.")
                 return
 
             restore_window = CTkToplevel(app)
             restore_window.geometry("600x400")
-            restore_window.title("استعادة نسخة احتياطية")
+            restore_window.title("Restore Backup")
             restore_window.transient(app)
             restore_window.grab_set()
 
             StyleManager.create_label(
                 restore_window,
-                text="اختر النسخة الاحتياطية للاستعادة",
+                text="Select a backup to restore",
                 font_style="heading"
             ).pack(pady=(20, 10))
 
             StyleManager.create_label(
                 restore_window,
-                text="سيتم استبدال البيانات الحالية بالنسخة المحددة",
+                text="Current data will be replaced by the selected backup",
                 font_style="body",
                 text_color=StyleManager.COLORS["text_secondary"]
             ).pack(pady=(0, 20))
@@ -142,7 +135,7 @@ def setup_backup_restore_page(frames, StyleManager, csv_repository, show_frame, 
 
                 radio = CTkRadioButton(
                     backup_list,
-                    text=f"نسخة {formatted_date}",
+                    text=f"Backup {formatted_date}",
                     variable=selected_backup,
                     value=backup,
                     font=StyleManager.FONTS["body"]
@@ -161,29 +154,29 @@ def setup_backup_restore_page(frames, StyleManager, csv_repository, show_frame, 
                 try:
                     selected = selected_backup.get()
                     if not selected:
-                        messagebox.showerror("خطأ", "يرجى اختيار نسخة احتياطية.")
+                        messagebox.showerror("Error", "Select a backup.")
                         return
 
-                    if messagebox.askyesno("تأكيد", "هل أنت متأكد من استعادة هذه النسخة؟ سيتم استبدال البيانات الحالية."):
+                    if messagebox.askyesno("Confirm", "Are you sure you want to restore this backup? Current data will be replaced."):
                         if csv_repository.restore_backup(selected):
-                            messagebox.showinfo("نجاح", "تم استعادة النسخة الاحتياطية بنجاح.")
+                            messagebox.showinfo("Success", "Backup restored successfully.")
                             restore_window.destroy()
                         else:
-                            messagebox.showerror("خطأ", "فشل استعادة النسخة الاحتياطية.")
+                            messagebox.showerror("Error", "Failed to restore backup.")
                 except Exception as e:
                     logging.error(f"Error restoring backup: {str(e)}")
-                    messagebox.showerror("خطأ", "حدث خطأ أثناء استعادة النسخة الاحتياطية.")
+                    messagebox.showerror("Error", "An error occurred while restoring backup.")
 
             StyleManager.create_button(
                 buttons_frame,
-                text="استعادة",
+                text="Restore",
                 width=200,
                 command=confirm_restore
             ).grid(row=0, column=0, padx=10)
 
             StyleManager.create_button(
                 buttons_frame,
-                text="إلغاء",
+                text="Cancel",
                 style="secondary",
                 width=200,
                 command=restore_window.destroy
@@ -191,22 +184,22 @@ def setup_backup_restore_page(frames, StyleManager, csv_repository, show_frame, 
 
         except Exception as e:
             logging.error(f"Error in restore backup window: {str(e)}")
-            messagebox.showerror("خطأ", "حدث خطأ أثناء فتح نافذة الاستعادة.")
+            messagebox.showerror("Error", "An error occurred while opening the restore window.")
 
     StyleManager.create_button(
         restore_section,
-        text="استعادة نسخة احتياطية",
+        text="Restore Backup",
         width=200,
         command=restore_backup
     ).grid(row=0, column=2, padx=20)
 
     back_frame = StyleManager.create_frame(frame)
-    back_frame.grid(row=2, column=0, sticky="ew", padx=20, pady=20)
+    back_frame.grid(row=2, column=0, sticky="ew", padx=30, pady=(0, 30))
     back_frame.grid_columnconfigure(0, weight=1)
 
     StyleManager.create_button(
         back_frame,
-        text="العودة",
+        text="Back",
         style="secondary",
         width=200,
         command=lambda: show_frame(frames["home"])

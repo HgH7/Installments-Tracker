@@ -51,6 +51,7 @@ logging.getLogger().addHandler(console_handler)
 
 # Global variables
 frames = {}
+nav_buttons = {}
 
 
 # Initialize file manager
@@ -67,7 +68,7 @@ def initialize_app():
             raise Exception("Failed to create main window")
             
         app_window.geometry("1280x800")
-        app_window.title("نظام إدارة الأقساط")
+        app_window.title("Installment Tracker")
         
         # Try setting appearance mode
         try:
@@ -92,7 +93,7 @@ def initialize_app():
         return app_window
     except Exception as e:
         logging.critical(f"Failed to initialize application: {str(e)}\n{traceback.format_exc()}")
-        messagebox.showerror("خطأ حرج", "فشل في بدء التطبيق. يرجى مراجعة ملف السجل للتفاصيل.")
+        messagebox.showerror("Critical Error", "Failed to start the application. Please review the log file for details.")
         sys.exit(1)
 
 def main(app_window):
@@ -102,7 +103,7 @@ def main(app_window):
         app_window.mainloop()
     except Exception as e:
         logging.critical(f"Critical error in main: {str(e)}\n{traceback.format_exc()}")
-        messagebox.showerror("خطأ حرج", f"حدث خطأ غير متوقع: {str(e)}\nيرجى مراجعة ملف السجل للتفاصيل.")
+        messagebox.showerror("Critical Error", f"An unexpected error occurred: {str(e)}\nPlease review the log file for details.")
         sys.exit(1)
 
 def show_frame(frame):
@@ -111,6 +112,118 @@ def show_frame(frame):
         if hasattr(child, "grid_remove"):
             child.grid_remove()
     frame.grid()
+    active_page = getattr(frame, "page_name", None)
+    for page_name, button in nav_buttons.items():
+        if page_name == active_page:
+            button.configure(
+                fg_color=StyleManager.COLORS["surface_high"],
+                text_color=StyleManager.COLORS["primary"],
+            )
+        else:
+            button.configure(
+                fg_color="transparent",
+                text_color=StyleManager.COLORS["text_secondary"],
+            )
+
+
+def create_app_shell(app):
+    """Create the fixed sidebar and page canvas."""
+    shell = StyleManager.create_frame(
+        app,
+        fg_color=StyleManager.COLORS["background"],
+        border_width=0,
+        corner_radius=0,
+    )
+    shell.pack(fill="both", expand=True)
+    shell.grid_columnconfigure(0, weight=0, minsize=220)
+    shell.grid_columnconfigure(1, weight=1)
+    shell.grid_rowconfigure(0, weight=1)
+
+    sidebar = StyleManager.create_frame(
+        shell,
+        fg_color=StyleManager.COLORS["surface_low"],
+        border_width=0,
+        corner_radius=0,
+    )
+    sidebar.grid(row=0, column=0, sticky="nsew")
+    sidebar.grid_rowconfigure(1, weight=1)
+
+    brand_frame = StyleManager.create_frame(sidebar, fg_color="transparent", border_width=0)
+    brand_frame.grid(row=0, column=0, sticky="ew", padx=16, pady=(24, 28))
+    StyleManager.create_label(
+        brand_frame,
+        text="Installments Tracker",
+        font_style="heading",
+        text_color=StyleManager.COLORS["primary"],
+        anchor="w",
+    ).pack(anchor="w")
+    StyleManager.create_label(
+        brand_frame,
+        text="Desktop Management",
+        font_style="small",
+        text_color=StyleManager.COLORS["text_muted"],
+        anchor="w",
+    ).pack(anchor="w", pady=(2, 0))
+
+    nav_frame = StyleManager.create_frame(sidebar, fg_color="transparent", border_width=0)
+    nav_frame.grid(row=1, column=0, sticky="new", padx=8)
+    nav_frame.grid_columnconfigure(0, weight=1)
+
+    nav_items = [
+        ("home", "Home", "", lambda: show_frame(frames["home"])),
+        ("add", "Add Customer", "+", lambda: show_frame(frames["add"])),
+        ("view", "Customers", "", lambda: show_frame(frames["view"])),
+        ("manage", "Installments", "$", lambda: show_frame(frames["manage"])),
+        ("backup_restore", "Backup & Restore", "", lambda: show_frame(frames["backup_restore"])),
+        ("send_notification", "Notifications", "!", lambda: show_frame(frames["send_notification"])),
+    ]
+
+    nav_buttons.clear()
+    for index, (page_name, label, icon, command) in enumerate(nav_items):
+        button = StyleManager.create_button(
+            nav_frame,
+            text=label,
+            style="secondary",
+            command=command,
+            anchor="w",
+            width=196,
+            height=38,
+            fg_color="transparent",
+            hover_color=StyleManager.COLORS["surface_high"],
+            text_color=StyleManager.COLORS["text_secondary"],
+            border_width=0,
+            corner_radius=4,
+        )
+        button.grid(row=index, column=0, sticky="ew", pady=2)
+        nav_buttons[page_name] = button
+
+    footer = StyleManager.create_frame(sidebar, fg_color="transparent", border_width=0)
+    footer.grid(row=2, column=0, sticky="ew", padx=16, pady=20)
+    StyleManager.create_label(
+        footer,
+        text="Local CSV Workspace",
+        font_style="label",
+        text_color=StyleManager.COLORS["text_secondary"],
+        anchor="w",
+    ).pack(anchor="w")
+    StyleManager.create_label(
+        footer,
+        text="Production refactor",
+        font_style="small",
+        text_color=StyleManager.COLORS["text_muted"],
+        anchor="w",
+    ).pack(anchor="w", pady=(2, 0))
+
+    content = StyleManager.create_frame(
+        shell,
+        fg_color=StyleManager.COLORS["background"],
+        border_width=0,
+        corner_radius=0,
+    )
+    content.grid(row=0, column=1, sticky="nsew")
+    content.grid_columnconfigure(0, weight=1)
+    content.grid_rowconfigure(0, weight=1)
+    return content
 
 def refresh_treeview(tree, data=None):
     """Refresh the treeview with data."""
@@ -135,7 +248,7 @@ def refresh_treeview(tree, data=None):
                 first_date = installment_dates[0] if installment_dates else ""
                 paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
                 is_paid = first_date in paid_installments
-                values.append("نعم" if is_paid else "لا")
+                values.append("Yes" if is_paid else "No")
             else:
                 values.append(customer.get(col, ""))
         
@@ -143,7 +256,7 @@ def refresh_treeview(tree, data=None):
         
         # Add color coding for paid status if applicable
         if "Paid" in columns:
-            if values[columns.index("Paid")] == "نعم":
+            if values[columns.index("Paid")] == "Yes":
                 tree.item(item, tags=("paid",))
             else:
                 tree.item(item, tags=("unpaid",))
@@ -172,29 +285,29 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
 
         # Validate all fields are filled
         if not all([name, phone, amount, installments, start_date]):
-            messagebox.showerror("خطأ", "جميع الحقول مطلوبة.")
+            messagebox.showerror("Error", "All fields are required.")
             return False
 
         # Validate phone number
         if not re.match(r"^\+?\d{10,15}$", phone):
-            messagebox.showerror("خطأ", "رقم الهاتف غير صالح.")
+            messagebox.showerror("Error", "Invalid phone number.")
             return False
 
         # Validate amount
         if not re.match(r"^\d+(\.\d{1,2})?$", amount):
-            messagebox.showerror("خطأ", "المبلغ يجب أن يكون رقمًا صالحًا.")
+            messagebox.showerror("Error", "Amount must be a valid number.")
             return False
 
         # Validate installments
         if not installments.isdigit() or int(installments) <= 0:
-            messagebox.showerror("خطأ", "عدد الأقساط يجب أن يكون رقمًا صحيحًا أكبر من صفر.")
+            messagebox.showerror("Error", "Installments must be a whole number greater than zero.")
             return False
 
         # Validate date format
         try:
             datetime.strptime(start_date, "%Y-%m-%d")
         except ValueError:
-            messagebox.showerror("خطأ", "تنسيق التاريخ غير صحيح. يجب أن يكون بهذا الشكل: YYYY-MM-DD")
+            messagebox.showerror("Error", "Invalid date format. Use YYYY-MM-DD.")
             return False
 
         customer_data = customer_service.build_customer_record(
@@ -214,7 +327,7 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
                     logging.info(f"Successfully saved files for customer {name}")
                 else:
                     logging.error(f"Failed to save files for customer {name}")
-                    messagebox.showwarning("تحذير", "تم حفظ بيانات العميل ولكن فشل حفظ الملفات المرفقة")
+                    messagebox.showwarning("Warning", "Customer data was saved, but attached files could not be saved.")
             
             # Clear all entry fields
             name_entry.delete(0, "end")
@@ -230,14 +343,14 @@ def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry,
                 file_list.delete("1.0", "end")
                 file_list.configure(state="disabled")
             
-            messagebox.showinfo("نجاح", "تم إضافة العميل بنجاح.")
+            messagebox.showinfo("Success", "Customer added successfully.")
             return True
         else:
             return False
             
     except Exception as e:
         logging.error(f"Error saving customer data: {str(e)}")
-        messagebox.showerror("خطأ", f"حدث خطأ أثناء حفظ البيانات: {str(e)}")
+        messagebox.showerror("Error", f"An error occurred while saving data: {str(e)}")
         return False
 
 class DatePicker(CTkToplevel):
@@ -246,7 +359,7 @@ class DatePicker(CTkToplevel):
         super().__init__(parent)
         self.entry_widget = entry_widget
         self.geometry("400x450")
-        self.title("اختر التاريخ")
+        self.title("Select Date")
         
         # Create main frame
         main_frame = StyleManager.create_frame(self)
@@ -255,7 +368,7 @@ class DatePicker(CTkToplevel):
         # Add title
         StyleManager.create_label(
             main_frame,
-            text="اختر تاريخ بدء الأقساط",
+            text="Select installment start date",
             font_style="subheading"
         ).pack(pady=(0, 20))
         
@@ -288,7 +401,7 @@ class DatePicker(CTkToplevel):
         # Select button
         StyleManager.create_button(
             buttons_frame,
-            text="تحديد",
+            text="Select",
             width=150,
             command=self.select_date
         ).grid(row=0, column=0, padx=5)
@@ -296,7 +409,7 @@ class DatePicker(CTkToplevel):
         # Cancel button
         StyleManager.create_button(
             buttons_frame,
-            text="إلغاء",
+            text="Cancel",
             style="secondary",
             width=150,
             command=self.destroy
@@ -323,17 +436,17 @@ def show_payment_history():
             break
             
     if not current_frame or not hasattr(current_frame, 'tree'):
-        messagebox.showerror("خطأ", "لم يتم العثور على قائمة العملاء.")
+        messagebox.showerror("Error", "Customer list was not found.")
         return
         
     tree = current_frame.tree
     selected_items = tree.selection()
     if not selected_items:
-        messagebox.showerror("خطأ", "يرجى تحديد عميل لعرض سجل المدفوعات.")
+        messagebox.showerror("Error", "Select a customer to view payment history.")
         return
         
     if len(selected_items) > 1:
-        messagebox.showerror("خطأ", "يرجى تحديد عميل واحد فقط.")
+        messagebox.showerror("Error", "Select only one customer.")
         return
         
     try:
@@ -349,13 +462,13 @@ def show_payment_history():
                 break
                 
         if not customer_data:
-            messagebox.showerror("خطأ", "لم يتم العثور على بيانات العميل.")
+            messagebox.showerror("Error", "Customer data was not found.")
             return
             
         # Create payment history window
         history_window = CTkToplevel(app)
         history_window.geometry("800x760")
-        history_window.title(f"سجل المدفوعات - {customer_name}")
+        history_window.title(f"Payment History - {customer_name}")
         
         # Make window modal
         history_window.transient(app)
@@ -368,7 +481,7 @@ def show_payment_history():
         # Add title
         StyleManager.create_label(
             main_frame,
-            text=f"سجل المدفوعات - {customer_name}",
+            text=f"Payment History - {customer_name}",
             font_style="subheading"
         ).pack(pady=(0, 20))
         
@@ -394,10 +507,10 @@ def show_payment_history():
         }
         
         column_headers = {
-            "Date": "تاريخ القسط",
-            "Value": "قيمة القسط",
-            "Status": "الحالة",
-            "Action": "إجراء"
+            "Date": "Installment Date",
+            "Value": "Installment Value",
+            "Status": "Status",
+            "Action": "Action"
         }
         
         for col in columns:
@@ -421,7 +534,7 @@ def show_payment_history():
             
             for date in installment_dates:
                 is_paid = date in paid_installments
-                status = "مدفوع" if is_paid else "غير مدفوع"
+                status = "Paid" if is_paid else "Unpaid"
                 status_tags = ("paid",) if is_paid else ("unpaid",)
                 
                 # Get the installment value, using the specific value if it exists
@@ -431,7 +544,7 @@ def show_payment_history():
                 is_future = date > today
                 
                 # For unpaid installments, add a "Mark as Paid" button, unless it's in the future
-                action = "" if is_paid else "تسجيل كمدفوع" if not is_future else "موعد مستقبلي"
+                action = "" if is_paid else "Mark as Paid" if not is_future else "Future Due Date"
                 
                 # Insert row and store the row ID
                 row_id = tree.insert("", "end", values=(date, f"{value:.2f}", status, action), tags=status_tags)
@@ -458,17 +571,17 @@ def show_payment_history():
                 values = tree.item(item)["values"]
                 date = values[0]
                 
-                if values[3] == "تسجيل كمدفوع":  # Only if action is "Mark as Paid"
+                if values[3] == "Mark as Paid":  # Only if action is "Mark as Paid"
                     if customer_service.mark_installment_as_paid(customer_name, date):
                         # Update the row
-                        tree.item(item, values=(date, values[1], "مدفوع", ""), tags=("paid",))
-                        messagebox.showinfo("نجاح", "تم تسجيل القسط كمدفوع بنجاح.")
+                        tree.item(item, values=(date, values[1], "Paid", ""), tags=("paid",))
+                        messagebox.showinfo("Success", "Installment marked as paid successfully.")
                     else:
-                        messagebox.showerror("خطأ", "فشل في تسجيل القسط كمدفوع.")
+                        messagebox.showerror("Error", "Failed to mark installment as paid.")
                         
             except Exception as e:
                 logging.error(f"Error marking installment as paid: {str(e)}")
-                messagebox.showerror("خطأ", f"حدث خطأ أثناء تسجيل القسط: {str(e)}")
+                messagebox.showerror("Error", f"An error occurred while marking the installment: {str(e)}")
                 
         # Function to edit installment
         def edit_installment(event):
@@ -480,12 +593,12 @@ def show_payment_history():
                 values = tree.item(item)["values"]
                 date = values[0]
                 value = values[1]
-                is_paid = values[2] == "مدفوع"
+                is_paid = values[2] == "Paid"
                 
                 # Create edit installment window
                 edit_window = CTkToplevel(history_window)
                 edit_window.geometry("500x450")
-                edit_window.title("تعديل القسط")
+                edit_window.title("Edit Installment")
                 
                 # Make window modal
                 edit_window.transient(history_window)
@@ -498,7 +611,7 @@ def show_payment_history():
                 # Add title
                 StyleManager.create_label(
                     main_frame,
-                    text="تعديل بيانات القسط",
+                    text="Edit Installment Details",
                     font_style="subheading"
                 ).pack(pady=(0, 20))
                 
@@ -508,7 +621,7 @@ def show_payment_history():
                 
                 StyleManager.create_label(
                     info_frame,
-                    text=f"العميل: {customer_name}",
+                    text=f"Customer: {customer_name}",
                     font_style="body_bold"
                 ).pack(anchor="w")
                 
@@ -522,7 +635,7 @@ def show_payment_history():
                 
                 StyleManager.create_label(
                     date_frame,
-                    text="تاريخ القسط:",
+                    text="Installment Date:",
                     font_style="body"
                 ).pack(side="left", padx=(0, 10))
                 
@@ -536,7 +649,7 @@ def show_payment_history():
                     
                 date_picker_btn = StyleManager.create_button(
                     date_frame,
-                    text="📅",
+                    text="Date",
                     width=40,
                     command=open_date_picker
                 )
@@ -548,7 +661,7 @@ def show_payment_history():
                 
                 StyleManager.create_label(
                     amount_frame,
-                    text="قيمة القسط:",
+                    text="Installment Value:",
                     font_style="body"
                 ).pack(side="left", padx=(0, 10))
                 
@@ -564,7 +677,7 @@ def show_payment_history():
                 
                 paid_checkbox = CTkCheckBox(
                     paid_frame,
-                    text="مدفوع",
+                    text="Paid",
                     variable=paid_status,
                     onvalue=True,
                     offvalue=False,
@@ -595,12 +708,12 @@ def show_payment_history():
                         try:
                             datetime.strptime(new_date, "%Y-%m-%d")
                         except ValueError:
-                            messagebox.showerror("خطأ", "تنسيق التاريخ غير صحيح. يجب أن يكون بهذا الشكل: YYYY-MM-DD")
+                            messagebox.showerror("Error", "Invalid date format. Use YYYY-MM-DD.")
                             return
                         
                         # Validate amount
                         if not re.match(r"^\d+(\.\d{1,2})?$", new_value_str):
-                            messagebox.showerror("خطأ", "قيمة القسط يجب أن تكون رقمًا صالحًا.")
+                            messagebox.showerror("Error", "Installment value must be a valid number.")
                             return
                             
                         new_value = float(new_value_str)
@@ -614,21 +727,21 @@ def show_payment_history():
                                 else:
                                     customer_service.unmark_installment_as_paid(customer_name, new_date)
                                 
-                            messagebox.showinfo("نجاح", "تم تحديث بيانات القسط بنجاح.")
+                            messagebox.showinfo("Success", "Installment updated successfully.")
                             edit_window.destroy()
                             # Refresh the payment history view
                             history_window.destroy()
                             show_payment_history()
                         else:
-                            messagebox.showerror("خطأ", "فشل في تحديث بيانات القسط.")
+                            messagebox.showerror("Error", "Failed to update installment.")
                             
                     except Exception as e:
                         logging.error(f"Error saving installment changes: {str(e)}")
-                        messagebox.showerror("خطأ", f"حدث خطأ أثناء حفظ التغييرات: {str(e)}")
+                        messagebox.showerror("Error", f"An error occurred while saving changes: {str(e)}")
                     
                 StyleManager.create_button(
                     buttons_frame,
-                    text="حفظ التغييرات",
+                    text="Save Changes",
                     width=200,
                     command=save_changes
                 ).grid(row=0, column=0, padx=5, pady=5)
@@ -636,7 +749,7 @@ def show_payment_history():
                 # Cancel button
                 StyleManager.create_button(
                     buttons_frame,
-                    text="إلغاء",
+                    text="Cancel",
                     width=200,
                     style="secondary",
                     command=edit_window.destroy
@@ -644,7 +757,7 @@ def show_payment_history():
                 
             except Exception as e:
                 logging.error(f"Error opening edit installment window: {str(e)}")
-                messagebox.showerror("خطأ", f"حدث خطأ أثناء فتح نافذة التعديل: {str(e)}")
+                messagebox.showerror("Error", f"An error occurred while opening the edit window: {str(e)}")
         
         # Bind double-click event for marking as paid
         tree.bind("<Double-1>", mark_as_paid)
@@ -670,26 +783,26 @@ def show_payment_history():
             # Add summary information
             StyleManager.create_label(
                 summary_frame,
-                text=f"عدد الأقساط المدفوعة: {paid_count} من {total_installments}",
+                text=f"Paid installments: {paid_count} of {total_installments}",
                 font_style="body_bold"
             ).pack(pady=5)
             
             StyleManager.create_label(
                 summary_frame,
-                text=f"المبلغ المدفوع: {paid_amount:.2f} من {total_amount:.2f} ({round(paid_amount/total_amount*100, 1)}%)",
+                text=f"Paid amount: {paid_amount:.2f} of {total_amount:.2f} ({round(paid_amount/total_amount*100, 1)}%)",
                 font_style="body_bold"
             ).pack(pady=5)
             
             StyleManager.create_label(
                 summary_frame,
-                text=f"المبلغ المتبقي: {remaining_amount:.2f}",
+                text=f"Remaining amount: {remaining_amount:.2f}",
                 font_style="body_bold"
             ).pack(pady=5)
         
         # Close button
         StyleManager.create_button(
             main_frame,
-            text="إغلاق",
+            text="Close",
             style="secondary",
             width=200,
             command=history_window.destroy
@@ -697,14 +810,14 @@ def show_payment_history():
         
     except Exception as e:
         logging.error(f"Error showing payment history: {str(e)}")
-        messagebox.showerror("خطأ", f"حدث خطأ أثناء عرض سجل المدفوعات: {str(e)}")
+        messagebox.showerror("Error", f"An error occurred while showing payment history: {str(e)}")
 
 def export_to_excel():
     """Export customer data to Excel file with enhanced formatting."""
     try:
         data = csv_repository.read_data()
         if not data:
-            messagebox.showerror("خطأ", "لا توجد بيانات للتصدير.")
+            messagebox.showerror("Error", "There is no data to export.")
             return
             
         # Create timestamp for filename
@@ -713,14 +826,14 @@ def export_to_excel():
         
         # Convert data to DataFrame with Arabic column names
         arabic_columns = {
-            "Name": "اسم العميل",
-            "Phone": "رقم الهاتف",
-            "Amount": "المبلغ الإجمالي",
-            "Installments": "عدد الأقساط",
-            "Installment Value": "قيمة القسط",
-            "Start Date": "تاريخ البدء",
-            "Installment Dates": "تواريخ الأقساط",
-            "Notification Sent": "تم الإرسال"
+            "Name": "Customer Name",
+            "Phone": "Phone",
+            "Amount": "Total Amount",
+            "Installments": "Installments",
+            "Installment Value": "Installment Value",
+            "Start Date": "Start Date",
+            "Installment Dates": "Installment Dates",
+            "Notification Sent": "Sent"
         }
         
         # Clean and prepare data
@@ -728,7 +841,7 @@ def export_to_excel():
         for row in data:
             cleaned_row = row.copy()
             # Convert boolean to Arabic text
-            cleaned_row["Notification Sent"] = "نعم" if row["Notification Sent"] else "لا"
+            cleaned_row["Notification Sent"] = "Yes" if row["Notification Sent"] else "No"
             # Ensure numeric values are properly formatted
             try:
                 cleaned_row["Amount"] = float(row["Amount"])
@@ -743,11 +856,11 @@ def export_to_excel():
         
         # Create Excel writer with xlsxwriter engine
         with pd.ExcelWriter(excel_filename, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='بيانات العملاء', index=False)
+            df.to_excel(writer, sheet_name='Customer Data', index=False)
             
             # Get workbook and worksheet objects
             workbook = writer.book
-            worksheet = writer.sheets['بيانات العملاء']
+            worksheet = writer.sheets['Customer Data']
             
             # Define formats
             header_format = workbook.add_format({
@@ -775,14 +888,14 @@ def export_to_excel():
             
             # Predefined column widths for specific columns
             column_widths = {
-                "اسم العميل": 25,
-                "رقم الهاتف": 20,
-                "المبلغ الإجمالي": 20,
-                "عدد الأقساط": 15,
-                "قيمة القسط": 20,
-                "تاريخ البدء": 20,
-                "تواريخ الأقساط": 40,
-                "تم الإرسال": 15
+                "Customer Name": 25,
+                "Phone": 20,
+                "Total Amount": 20,
+                "Installments": 15,
+                "Installment Value": 20,
+                "Start Date": 20,
+                "Installment Dates": 40,
+                "Sent": 15
             }
             
             # Set column widths and apply formats
@@ -831,17 +944,17 @@ def export_to_excel():
             worksheet.right_to_left()
         
         # Show success message
-        messagebox.showinfo("نجاح", f"تم تصدير البيانات إلى ملف Excel: {excel_filename}")
+        messagebox.showinfo("Success", f"Data exported to Excel file: {excel_filename}")
         
         # Open the Excel file automatically
         os.startfile(os.path.abspath(excel_filename))
         
     except ImportError:
-        messagebox.showerror("خطأ", "الرجاء التأكد من تثبيت حزمة xlsxwriter")
+        messagebox.showerror("Error", "Please make sure the xlsxwriter package is installed.")
         logging.error("xlsxwriter package not installed")
     except Exception as e:
         logging.error(f"Error exporting to Excel: {str(e)}")
-        messagebox.showerror("خطأ", "حدث خطأ أثناء تصدير البيانات.")
+        messagebox.showerror("Error", "An error occurred while exporting data.")
 
     frame = frames["view"]
     frame.grid_columnconfigure(0, weight=1)
@@ -857,7 +970,7 @@ def export_to_excel():
     
     StyleManager.create_label(
         header_frame,
-        text="عرض العملاء",
+        text="Customers",
         font_style="heading"
     ).grid(row=0, column=0, pady=(5, 5), sticky="w")
     
@@ -869,7 +982,7 @@ def export_to_excel():
     # Simple search label
     StyleManager.create_label(
         search_frame,
-        text="بحث:",
+        text="Search:",
         font_style="body_bold"
     ).grid(row=0, column=0, padx=(0, 10), pady=5, sticky="w")
     
@@ -879,7 +992,7 @@ def export_to_excel():
         width=400,
         font=("Arial", 14),
         height=35,
-        placeholder_text="أدخل اسم العميل أو رقم الهاتف..."
+        placeholder_text="Enter customer name or phone number..."
     )
     search_entry.grid(row=0, column=1, padx=(0, 10), pady=5, sticky="ew")
     
@@ -890,14 +1003,14 @@ def export_to_excel():
         
         # Update status message with search results
         result_count = len(results)
-        status_label.configure(text=f"العملاء: {result_count}")
+        status_label.configure(text=f"Customers: {result_count}")
     
     # Add keyboard binding for Enter key
     search_entry.bind("<Return>", lambda event: perform_search())
     
     search_button = StyleManager.create_button(
         search_frame,
-        text="بحث",
+        text="Search",
         width=100,
         height=35,
         command=perform_search
@@ -943,12 +1056,12 @@ def export_to_excel():
     
     # Define column headers mapping - simplified
     column_headers = {
-        "Name": "اسم العميل",
-        "Phone": "رقم الهاتف",
-        "Amount": "المبلغ",
-        "Installments": "عدد الأقساط",
-        "Installment Value": "قيمة القسط",
-        "Start Date": "تاريخ البدء"
+        "Name": "Customer Name",
+        "Phone": "Phone",
+        "Amount": "Amount",
+        "Installments": "Installments",
+        "Installment Value": "Installment Value",
+        "Start Date": "Start Date"
     }
     
     # Create Treeview with responsive columns
@@ -994,13 +1107,13 @@ def export_to_excel():
     
     # Update status label with initial count
     data = csv_repository.read_data()
-    status_label.configure(text=f"العملاء: {len(data)}")
+    status_label.configure(text=f"Customers: {len(data)}")
     
     # Edit customer function - keeping functionality intact
     def edit_customer():
         selected_items = tree.selection()
         if not selected_items:
-            messagebox.showerror("خطأ", "يرجى تحديد عميل للتعديل.")
+            messagebox.showerror("Error", "Select a customer to edit.")
             return
             
         # Get selected customer data
@@ -1013,18 +1126,18 @@ def export_to_excel():
         customer = next((c for c in data if c["Name"] == customer_name), None)
         
         if not customer:
-            messagebox.showerror("خطأ", "لم يتم العثور على بيانات العميل.")
+            messagebox.showerror("Error", "Customer data was not found.")
             return
         
         # Create edit window
         edit_window = CTkToplevel(app)
         edit_window.geometry("800x600")
-        edit_window.title(f"تعديل بيانات العميل: {customer_name}")
+        edit_window.title(f"Edit Customer Details: {customer_name}")
         
         # Add header
         StyleManager.create_label(
             edit_window,
-            text=f"تعديل بيانات العميل: {customer_name}",
+            text=f"Edit Customer Details: {customer_name}",
             font_style="heading"
         ).pack(pady=(20, 10))
         
@@ -1034,10 +1147,10 @@ def export_to_excel():
         
         # Form fields with current values
         fields = [
-            {"label": "اسم العميل:", "key": "Name", "type": "text"},
-            {"label": "رقم الهاتف:", "key": "Phone", "type": "phone"},
-            {"label": "المبلغ:", "key": "Amount", "type": "number"},
-            {"label": "عدد الأقساط:", "key": "Installments", "type": "number"}
+            {"label": "Customer Name:", "key": "Name", "type": "text"},
+            {"label": "Phone:", "key": "Phone", "type": "phone"},
+            {"label": "Amount:", "key": "Amount", "type": "number"},
+            {"label": "Installments:", "key": "Installments", "type": "number"}
         ]
         
         entries = {}
@@ -1071,7 +1184,7 @@ def export_to_excel():
         
         StyleManager.create_label(
             date_frame,
-            text="تاريخ بدء الأقساط:",
+            text="Installment Start Date:",
             font_style="body_bold"
         ).grid(row=0, column=0, padx=10, pady=5, sticky="w")
         
@@ -1082,7 +1195,7 @@ def export_to_excel():
         
         date_picker_btn = StyleManager.create_button(
             date_frame,
-            text="اختر التاريخ",
+            text="Select Date",
             style="secondary",
             command=lambda: DatePicker(edit_window, start_date_entry)
         )
@@ -1096,7 +1209,7 @@ def export_to_excel():
         
         def save_changes():
             # Validation patterns
-            name_pattern = r"^[A-Za-z؀-ۿ\s]+$"
+            name_pattern = r"^[A-Za-z\u0600-\u06FF\s]+$"
             phone_pattern = r"^\+?\d{10,15}$"
             amount_pattern = r"^\d+(\.\d{1,2})?$"
             installments_pattern = r"^\d+$"
@@ -1110,25 +1223,25 @@ def export_to_excel():
             
             # Validate inputs
             if not re.fullmatch(name_pattern, name):
-                messagebox.showerror("خطأ", "الاسم يجب أن يحتوي فقط على أحرف ومسافات.")
+                messagebox.showerror("Error", "Name can contain only letters and spaces.")
                 return
                 
             if not re.fullmatch(phone_pattern, phone):
-                messagebox.showerror("خطأ", "رقم الهاتف يجب أن يحتوي على أرقام فقط ويبدأ بـ +.")
+                messagebox.showerror("Error", "Phone number must contain digits only and may start with +.")
                 return
                 
             if not re.fullmatch(amount_pattern, amount):
-                messagebox.showerror("خطأ", "المبلغ يجب أن يكون رقمًا صالحًا.")
+                messagebox.showerror("Error", "Amount must be a valid number.")
                 return
                 
             if not re.fullmatch(installments_pattern, installments):
-                messagebox.showerror("خطأ", "عدد الأقساط يجب أن يكون رقمًا صحيحًا.")
+                messagebox.showerror("Error", "Installments must be a whole number.")
                 return
             
             try:
                 datetime.strptime(start_date, "%Y-%m-%d")
             except ValueError:
-                messagebox.showerror("خطأ", "تنسيق التاريخ غير صحيح. يجب أن يكون بهذا الشكل: YYYY-MM-DD")
+                messagebox.showerror("Error", "Invalid date format. Use YYYY-MM-DD.")
                 return
             
             try:
@@ -1151,31 +1264,31 @@ def export_to_excel():
                         "Notified_Installments": customer.get("Notified_Installments", "[]"),
                         "Installment_Values": customer.get("Installment_Values", "{}"),
                     }):
-                        messagebox.showinfo("نجاح", "تم تحديث بيانات العميل بنجاح!")
+                        messagebox.showinfo("Success", "Customer updated successfully.")
                         edit_window.destroy()
                         refresh_treeview(tree)
                         refresh_payment_history_views()  # Refresh payment history views
                     else:
-                        messagebox.showerror("خطأ", "فشل في تحديث بيانات العميل.")
+                        messagebox.showerror("Error", "Failed to update customer.")
                 else:
                     # Update existing record
                     if customer_service.update_customer(customer_name, updated_data):
-                        messagebox.showinfo("نجاح", "تم تحديث بيانات العميل بنجاح!")
+                        messagebox.showinfo("Success", "Customer updated successfully.")
                         edit_window.destroy()
                         refresh_treeview(tree)
                         refresh_payment_history_views()  # Refresh payment history views
                     else:
-                        messagebox.showerror("خطأ", "فشل في تحديث بيانات العميل.")
+                        messagebox.showerror("Error", "Failed to update customer.")
                 
             except ValueError as e:
-                messagebox.showerror("خطأ", f"خطأ في البيانات المدخلة: {str(e)}")
+                messagebox.showerror("Error", f"Invalid input data: {str(e)}")
             except Exception as e:
-                messagebox.showerror("خطأ", f"حدث خطأ غير متوقع: {str(e)}")
+                messagebox.showerror("Error", f"An unexpected error occurred: {str(e)}")
             
         # Save Button
         StyleManager.create_button(
             buttons_frame,
-            text="حفظ التغييرات",
+            text="Save Changes",
             width=200,
             command=save_changes
         ).grid(row=0, column=0, padx=10, pady=10)
@@ -1183,7 +1296,7 @@ def export_to_excel():
         # Cancel Button
         StyleManager.create_button(
             buttons_frame,
-            text="إلغاء",
+            text="Cancel",
             style="secondary",
             width=200,
             command=edit_window.destroy
@@ -1198,7 +1311,7 @@ def export_to_excel():
     def delete_customer():
         selected_items = tree.selection()
         if not selected_items:
-            messagebox.showerror("خطأ", "يرجى تحديد عميل للحذف.")
+            messagebox.showerror("Error", "Select a customer to delete.")
             return
             
         # Get selected customer data
@@ -1207,12 +1320,12 @@ def export_to_excel():
         customer_name = values[0]
         
         # Confirm deletion
-        if messagebox.askyesno("تأكيد الحذف", f"هل أنت متأكد من حذف العميل {customer_name}؟\nلا يمكن التراجع عن هذه العملية."):
+        if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete customer {customer_name}?\nThis action cannot be undone."):
             if customer_service.delete_customer(customer_name):
-                messagebox.showinfo("نجاح", f"تم حذف العميل {customer_name} بنجاح.")
+                messagebox.showinfo("Success", f"Deleted customer {customer_name} successfully.")
                 refresh_treeview(tree)
             else:
-                messagebox.showerror("خطأ", "فشل في حذف العميل.")
+                messagebox.showerror("Error", "Failed to delete customer.")
     
     # Action buttons with simplified design
     buttons_frame = StyleManager.create_frame(frame)
@@ -1233,7 +1346,7 @@ def export_to_excel():
     # Left side buttons - operations
     refresh_btn = StyleManager.create_button(
         left_buttons,
-        text="تحديث",
+        text="Refresh",
         width=120,
         command=lambda: refresh_treeview(tree)
     )
@@ -1241,7 +1354,7 @@ def export_to_excel():
     
     history_btn = StyleManager.create_button(
         left_buttons,
-        text="سجل الدفع",
+        text="Payment History",
         width=120,
         command=show_payment_history
     )
@@ -1249,7 +1362,7 @@ def export_to_excel():
 
     export_btn = StyleManager.create_button(
         left_buttons,
-        text="تصدير Excel",
+        text="Export Excel",
         width=120,
         command=export_to_excel
     )
@@ -1258,7 +1371,7 @@ def export_to_excel():
     # Right side buttons - customer management
     back_btn = StyleManager.create_button(
         right_buttons,
-        text="العودة",
+        text="Back",
         style="secondary",
         width=120,
         command=lambda: show_frame(frames["home"])
@@ -1267,7 +1380,7 @@ def export_to_excel():
     
     delete_btn = StyleManager.create_button(
         right_buttons,
-        text="حذف العميل",
+        text="Delete Customer",
         style="danger",
         width=120,
         command=delete_customer
@@ -1276,7 +1389,7 @@ def export_to_excel():
     
     edit_btn = StyleManager.create_button(
         right_buttons,
-        text="تعديل العميل",
+        text="Edit Customer",
         width=120,
         command=edit_customer
     )
@@ -1344,10 +1457,10 @@ def check_due_installments():
                                 logging.info(f"Found upcoming payment for {customer['Name']} due in {days_until_due} days")
                                 
                                 message = (
-                                    f"مرحبًا {customer['Name']},\n"
-                                    f"تذكير بدفع قسط بقيمة {customer['Installment Value']} ريال "
-                                    f"في تاريخ {date_str}.\n"
-                                    f"شكرًا لتعاملك معنا!"
+                                    f"Hello {customer['Name']},\n"
+                                    f"This is a reminder for an installment payment of {customer['Installment Value']} SAR "
+                                    f"due on {date_str}.\n"
+                                    f"Thank you for your business."
                                 )
                                 
                                 # Prepare phone number
@@ -1426,7 +1539,7 @@ def start_notification_thread():
 def refresh_payment_history_views():
     """Refresh all open payment history windows."""
     for widget in app.winfo_children():
-        if isinstance(widget, CTkToplevel) and "سجل المدفوعات" in widget.title():
+        if isinstance(widget, CTkToplevel) and "Payment History" in widget.title():
             widget.destroy()
 
 def load_installments_data():
@@ -1486,7 +1599,7 @@ def load_installments_data():
                 
     except Exception as e:
         logging.error(f"Error loading installments data: {str(e)}")
-        messagebox.showerror("خطأ", "حدث خطأ أثناء تحميل البيانات")
+        messagebox.showerror("Error", "An error occurred while loading data.")
 
 def show_installment_details(event):
     """Show details of a selected installment"""
@@ -1507,12 +1620,12 @@ def show_installment_details(event):
         data = csv_repository.read_data()
         customer = next((c for c in data if c["Name"] == customer_name and c["Phone"] == phone), None)
         if not customer:
-            messagebox.showerror("خطأ", "لم يتم العثور على بيانات العميل")
+            messagebox.showerror("Error", "Customer data was not found.")
             return
             
         # Create details window
         details_window = CTkToplevel(app)
-        details_window.title(f"تفاصيل الأقساط - {customer_name}")
+        details_window.title(f"Installment Details - {customer_name}")
         details_window.geometry("600x400")
         details_window.resizable(False, False)
         
@@ -1526,7 +1639,7 @@ def show_installment_details(event):
         
         StyleManager.create_label(
             header_frame,
-            text=f"تفاصيل أقساط العميل: {customer_name}",
+            text=f"Customer Installment Details: {customer_name}",
             font_style="subheading"
         ).pack()
         
@@ -1548,9 +1661,9 @@ def show_installment_details(event):
         )
         
         # Configure columns
-        tree.heading("date", text="تاريخ القسط")
-        tree.heading("amount", text="المبلغ")
-        tree.heading("status", text="الحالة")
+        tree.heading("date", text="Installment Date")
+        tree.heading("amount", text="Amount")
+        tree.heading("status", text="Status")
         
         tree.column("date", width=150, anchor="center")
         tree.column("amount", width=150, anchor="center")
@@ -1574,7 +1687,7 @@ def show_installment_details(event):
         # Add installments to tree
         for date in installment_dates:
             if date:
-                status = "مدفوع" if date in paid_installments else "غير مدفوع"
+                status = "Paid" if date in paid_installments else "Unpaid"
                 tree.insert("", "end", values=(
                     date,
                     f"{installment_amount:.2f}",
@@ -1593,7 +1706,7 @@ def show_installment_details(event):
         def mark_as_paid():
             selection = tree.selection()
             if not selection:
-                messagebox.showwarning("تنبيه", "الرجاء اختيار قسط")
+                messagebox.showwarning("Notice", "Please select an installment.")
                 return
                 
             item = selection[0]
@@ -1601,19 +1714,19 @@ def show_installment_details(event):
             date = values[0]
             
             if date in paid_installments:
-                messagebox.showinfo("معلومات", "هذا القسط مدفوع بالفعل")
+                messagebox.showinfo("Information", "This installment is already paid.")
                 return
                 
             if customer_service.mark_installment_as_paid(customer_name, date):
-                tree.item(item, values=(date, values[1], "مدفوع"), tags=("paid",))
-                messagebox.showinfo("نجاح", "تم تسجيل القسط كمدفوع")
+                tree.item(item, values=(date, values[1], "Paid"), tags=("paid",))
+                messagebox.showinfo("Success", "Installment marked as paid.")
                 load_installments_data()  # Refresh main view
             else:
-                messagebox.showerror("خطأ", "فشل في تسجيل القسط كمدفوع")
+                messagebox.showerror("Error", "Failed to mark installment as paid.")
         
         StyleManager.create_button(
             buttons_frame,
-            text="تسجيل كمدفوع",
+            text="Mark as Paid",
             command=mark_as_paid
         ).pack(side="right", padx=5)
         
@@ -1621,7 +1734,7 @@ def show_installment_details(event):
         def unmark_as_paid():
             selection = tree.selection()
             if not selection:
-                messagebox.showwarning("تنبيه", "الرجاء اختيار قسط")
+                messagebox.showwarning("Notice", "Please select an installment.")
                 return
                 
             item = selection[0]
@@ -1629,32 +1742,32 @@ def show_installment_details(event):
             date = values[0]
             
             if date not in paid_installments:
-                messagebox.showinfo("معلومات", "هذا القسط غير مدفوع")
+                messagebox.showinfo("Information", "This installment is not paid.")
                 return
                 
             if customer_service.unmark_installment_as_paid(customer_name, date):
-                tree.item(item, values=(date, values[1], "غير مدفوع"), tags=("unpaid",))
-                messagebox.showinfo("نجاح", "تم إلغاء تسجيل القسط كمدفوع")
+                tree.item(item, values=(date, values[1], "Unpaid"), tags=("unpaid",))
+                messagebox.showinfo("Success", "Installment payment mark removed.")
                 load_installments_data()  # Refresh main view
             else:
-                messagebox.showerror("خطأ", "فشل في إلغاء تسجيل القسط كمدفوع")
+                messagebox.showerror("Error", "Failed to unmark installment as paid.")
         
         StyleManager.create_button(
             buttons_frame,
-            text="إلغاء تسجيل الدفع",
+            text="Unmark Payment",
             command=unmark_as_paid
         ).pack(side="right", padx=5)
         
         # Add close button
         StyleManager.create_button(
             buttons_frame,
-            text="إغلاق",
+            text="Close",
             command=details_window.destroy
         ).pack(side="left")
         
     except Exception as e:
         logging.error(f"Error showing installment details: {str(e)}")
-        messagebox.showerror("خطأ", "حدث خطأ أثناء عرض تفاصيل الأقساط")
+        messagebox.showerror("Error", "An error occurred while showing installment details.")
 
 def perform_installment_search():
     """Search for installments based on the search query"""
@@ -1718,7 +1831,7 @@ def perform_installment_search():
                 
     except Exception as e:
         logging.error(f"Error performing installment search: {str(e)}")
-        messagebox.showerror("خطأ", "حدث خطأ أثناء البحث")
+        messagebox.showerror("Error", "An error occurred while searching.")
 
 # Initialize the application and create frames
 if __name__ == "__main__":
@@ -1734,15 +1847,10 @@ if __name__ == "__main__":
             logging.info("Theme setup completed")
         except Exception as e:
             logging.error(f"Theme setup failed: {str(e)}")
-            messagebox.showwarning("تحذير", "فشل في تحميل النمط. سيتم استخدام النمط الافتراضي.")
+            messagebox.showwarning("Warning", "Failed to load the custom style. The default style will be used.")
         
-        # Create main container with padding
-        container = StyleManager.create_frame(app)
-        container.pack(fill="both", expand=True, padx=20, pady=20)
-        
-        # Configure container grid
-        container.grid_columnconfigure(0, weight=1)
-        container.grid_rowconfigure(0, weight=1)
+        # Create fixed sidebar shell and content canvas
+        container = create_app_shell(app)
         
         # Create frames
         page_names = ["home", "add", "view", "manage", "backup_restore", "send_notification"]  # Removed manage_installments, using manage instead
@@ -1751,6 +1859,7 @@ if __name__ == "__main__":
             try:
                 frame = StyleManager.create_frame(container)
                 frame.grid(row=0, column=0, sticky="nsew")
+                frame.page_name = name
                 frames[name] = frame
                 frame.grid_columnconfigure(0, weight=1)
                 frame.grid_rowconfigure(0, weight=1)
@@ -1813,5 +1922,5 @@ if __name__ == "__main__":
         main(app)
     except Exception as e:
         logging.critical(f"Application failed to start: {str(e)}\n{traceback.format_exc()}")
-        messagebox.showerror("خطأ حرج", "فشل في بدء التطبيق. يرجى التأكد من تثبيت جميع المكتبات المطلوبة.")
+        messagebox.showerror("Critical Error", "Failed to start the application. Please make sure all required libraries are installed.")
         sys.exit(1)

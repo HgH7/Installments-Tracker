@@ -7,55 +7,68 @@ class StyleManager:
     """Manages application-wide styling"""
 
     COLORS = {
-        "primary": "#2B7DE9",
-        "secondary": "#23B0FF",
-        "success": "#28a745",
-        "warning": "#ffc107",
-        "danger": "#dc3545",
-        "background": "#1a1a1a",
-        "surface": "#2d2d2d",
-        "text": "#ffffff",
-        "text_secondary": "#b3b3b3",
-        "border": "#404040",
+        "primary": "#b4c5ff",
+        "primary_action": "#2563eb",
+        "primary_hover": "#1d4ed8",
+        "success": "#4ae176",
+        "warning": "#ffb95f",
+        "danger": "#ffb4ab",
+        "background": "#101415",
+        "surface": "#1d2022",
+        "surface_low": "#191c1e",
+        "surface_high": "#272a2c",
+        "surface_highest": "#323537",
+        "text": "#e0e3e5",
+        "text_secondary": "#c3c6d7",
+        "text_muted": "#94a3b8",
+        "border": "#434655",
+        "border_soft": "#323537",
+        "on_primary": "#eeefff",
+        "error_container": "#3a1719",
+        "success_container": "#12351f",
+        "warning_container": "#3d2a0b",
     }
 
     FONTS = {
-        "heading": ("Arial", 24, "bold"),
-        "subheading": ("Arial", 18, "bold"),
-        "body": ("Arial", 14),
-        "body_bold": ("Arial", 14, "bold"),
-        "small": ("Arial", 12),
-        "button": ("Arial", 16, "bold"),
+        "heading": ("Segoe UI", 20, "bold"),
+        "subheading": ("Segoe UI", 15, "bold"),
+        "section": ("Segoe UI", 14, "bold"),
+        "body": ("Segoe UI", 13),
+        "body_bold": ("Segoe UI", 13, "bold"),
+        "small": ("Segoe UI", 11),
+        "label": ("Segoe UI", 11, "bold"),
+        "data": ("Courier New", 12),
+        "button": ("Segoe UI", 13, "bold"),
     }
 
     BUTTON_STYLES = {
         "primary": {
-            "fg_color": COLORS["primary"],
-            "hover_color": COLORS["secondary"],
-            "text_color": COLORS["text"],
-            "font": ("Arial", 18, "bold"),
-            "corner_radius": 12,
+            "fg_color": COLORS["primary_action"],
+            "hover_color": COLORS["primary_hover"],
+            "text_color": COLORS["on_primary"],
+            "font": FONTS["button"],
+            "corner_radius": 6,
             "border_width": 0,
-            "height": 45,
+            "height": 36,
         },
         "secondary": {
-            "fg_color": "transparent",
-            "hover_color": COLORS["surface"],
+            "fg_color": COLORS["surface_high"],
+            "hover_color": COLORS["surface_highest"],
             "text_color": COLORS["text"],
-            "font": ("Arial", 18, "bold"),
-            "corner_radius": 12,
-            "border_width": 2,
-            "border_color": COLORS["primary"],
-            "height": 45,
+            "font": FONTS["button"],
+            "corner_radius": 6,
+            "border_width": 1,
+            "border_color": COLORS["border"],
+            "height": 36,
         },
         "danger": {
-            "fg_color": COLORS["danger"],
-            "hover_color": "#c82333",
-            "text_color": COLORS["text"],
-            "font": ("Arial", 18, "bold"),
-            "corner_radius": 12,
+            "fg_color": COLORS["error_container"],
+            "hover_color": "#512124",
+            "text_color": COLORS["danger"],
+            "font": FONTS["button"],
+            "corner_radius": 6,
             "border_width": 0,
-            "height": 45,
+            "height": 36,
         },
     }
 
@@ -72,19 +85,24 @@ class StyleManager:
                 background=cls.COLORS["surface"],
                 foreground=cls.COLORS["text"],
                 fieldbackground=cls.COLORS["surface"],
-                font=cls.FONTS["body"],
+                borderwidth=0,
+                rowheight=32,
+                font=cls.FONTS["data"],
             )
             style.map(
                 "Treeview",
-                background=[("selected", cls.COLORS["primary"])],
+                background=[("selected", cls.COLORS["surface_highest"])],
                 foreground=[("selected", cls.COLORS["text"])],
             )
             style.configure(
                 "Treeview.Heading",
-                background=cls.COLORS["primary"],
-                foreground=cls.COLORS["text"],
-                font=cls.FONTS["body_bold"],
+                background=cls.COLORS["surface_high"],
+                foreground=cls.COLORS["text_secondary"],
+                borderwidth=0,
+                relief="flat",
+                font=cls.FONTS["section"],
             )
+            style.layout("Treeview", [("Treeview.treearea", {"sticky": "nswe"})])
             logging.info("Theme setup completed successfully")
         except Exception as e:
             logging.error(f"Error setting up theme: {str(e)}")
@@ -94,7 +112,11 @@ class StyleManager:
     def create_frame(cls, master, **kwargs):
         """Create a styled frame"""
         try:
-            frame_config = {"corner_radius": 15, "border_width": 0}
+            frame_config = {
+                "corner_radius": 8,
+                "border_width": 1,
+                "border_color": cls.COLORS["border"],
+            }
             if "fg_color" not in kwargs:
                 frame_config["fg_color"] = cls.COLORS["surface"]
             frame_config.update(kwargs)
@@ -132,14 +154,51 @@ class StyleManager:
         """Create a styled entry"""
         try:
             entry_config = {
-                "fg_color": cls.COLORS["background"],
+                "fg_color": cls.COLORS["surface_high"],
                 "text_color": cls.COLORS["text"],
-                "border_color": cls.COLORS["primary"],
-                "corner_radius": 8,
+                "border_color": cls.COLORS["border"],
+                "corner_radius": 4,
+                "border_width": 1,
                 "font": cls.FONTS["body"],
+                "height": 34,
             }
             entry_config.update(kwargs)
             return customtkinter.CTkEntry(master, **entry_config)
         except Exception as e:
             logging.error(f"Error creating entry: {str(e)}")
             raise
+
+    @classmethod
+    def create_section_header(cls, master, title: str, subtitle: str = "", **kwargs):
+        frame = cls.create_frame(master, fg_color="transparent", border_width=0, **kwargs)
+        frame.grid_columnconfigure(0, weight=1)
+        cls.create_label(frame, text=title, font_style="heading").grid(row=0, column=0, sticky="w")
+        if subtitle:
+            cls.create_label(
+                frame,
+                text=subtitle,
+                font_style="small",
+                text_color=cls.COLORS["text_muted"],
+            ).grid(row=1, column=0, sticky="w", pady=(2, 0))
+        return frame
+
+    @classmethod
+    def create_badge(cls, master, text: str, tone: str = "neutral", **kwargs):
+        tone_styles = {
+            "success": (cls.COLORS["success_container"], cls.COLORS["success"]),
+            "warning": (cls.COLORS["warning_container"], cls.COLORS["warning"]),
+            "danger": (cls.COLORS["error_container"], cls.COLORS["danger"]),
+            "neutral": (cls.COLORS["surface_high"], cls.COLORS["text_secondary"]),
+        }
+        fg_color, text_color = tone_styles.get(tone, tone_styles["neutral"])
+        badge_config = {
+            "text": text,
+            "fg_color": fg_color,
+            "text_color": text_color,
+            "corner_radius": 2,
+            "font": cls.FONTS["label"],
+            "width": 72,
+            "height": 24,
+        }
+        badge_config.update(kwargs)
+        return customtkinter.CTkLabel(master, **badge_config)
