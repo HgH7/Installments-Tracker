@@ -5,7 +5,7 @@ from tkinter import messagebox, ttk
 from customtkinter import CTkToplevel
 
 from app.services.notification_service import NotificationService
-from app.settings import settings
+from app.core.settings import settings
 
 
 def setup_send_notification_page(frames, StyleManager, csv_repository, show_frame, app, reminder_service, activity_service):

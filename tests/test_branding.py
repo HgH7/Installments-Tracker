@@ -1,4 +1,4 @@
-from app.branding import APP_NAME, generate_logo, get_logo_path
+from app.core.branding import APP_NAME, generate_logo, get_logo_path
 
 
 class TestBranding:

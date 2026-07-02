@@ -8,8 +8,8 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from app.database.database import DatabaseManager
-from app.logging.logger import logger
-from app.settings import settings
+from app.core.logging.logger import logger
+from app.core.settings import settings
 from app.utils.serialization import dict_factory, dump_json, load_json_dict, load_json_list
 
 BACKUP_MAX_COUNT_DEFAULT = 50

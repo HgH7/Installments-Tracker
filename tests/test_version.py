@@ -1,6 +1,6 @@
 import re
 
-from app.version import (
+from app.core.version import (
     APP_NAME,
     COPYRIGHT,
     VERSION_PARTS,

@@ -7,7 +7,7 @@ import tempfile
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from app.logging.logger import logger
+from app.core.logging.logger import logger
 
 
 class ExportService:
@@ -45,7 +45,7 @@ class ExportService:
     @staticmethod
     def export_excel(data: List[Dict], filepath: str) -> bool:
         try:
-            from app.export import write_excel
+            from app.utils.export import write_excel
             return write_excel(data, filepath)
         except Exception as e:
             logger.error(f"Excel export failed: {e}", component="export")
@@ -54,7 +54,7 @@ class ExportService:
     @staticmethod
     def export_pdf(data: List[Dict], filepath: str) -> bool:
         try:
-            from app.export import write_pdf
+            from app.utils.export import write_pdf
             return write_pdf(data, filepath)
         except Exception as e:
             logger.error(f"PDF export failed: {e}", component="export")

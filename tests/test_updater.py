@@ -1,4 +1,4 @@
-from app.updater import UpdateChecker, UpdateInfo
+from app.core.updater import UpdateChecker, UpdateInfo
 
 
 class TestUpdateChecker:

@@ -3,7 +3,7 @@ import tempfile
 
 import pytest
 
-from app.settings import Settings
+from app.core.settings import Settings
 
 
 class TestSettings:

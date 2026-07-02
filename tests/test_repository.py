@@ -126,7 +126,7 @@ class TestSQLiteRepository:
         repo.save_data([SAMPLE_CUSTOMER])
         for _ in range(5):
             repo.create_backup()
-        from app.settings import settings
+        from app.core.settings import settings
         settings.set("backup_max_count", 3)
         repo.create_backup()
         files = repo.get_backup_files()

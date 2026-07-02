@@ -1,5 +1,5 @@
 
-from app.validation import ValidationService
+from app.core.validation import ValidationService
 
 
 class TestValidationService:

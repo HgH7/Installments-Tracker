@@ -1,6 +1,6 @@
 import os
 
-from app.crash_recovery import (
+from app.core.crash_recovery import (
     SESSION_FILE,
     clear_session,
     install_global_exception_handler,
@@ -14,11 +14,11 @@ class TestCrashRecovery:
     def _swap_session(self, tmp_path):
         """Redirect SESSION_FILE to a temp path for isolation."""
         self._orig = SESSION_FILE
-        import app.crash_recovery as cr
+        import app.core.crash_recovery as cr
         cr.SESSION_FILE = os.path.join(str(tmp_path), "session.json")
 
     def _restore_session(self):
-        import app.crash_recovery as cr
+        import app.core.crash_recovery as cr
         cr.SESSION_FILE = self._orig
 
     def test_save_and_load_session(self, tmp_path):

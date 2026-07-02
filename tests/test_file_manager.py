@@ -3,7 +3,7 @@ import tempfile
 
 import pytest
 
-from app.ui.file_manager import FileManager
+from app.core.file_manager import FileManager
 
 
 @pytest.fixture

@@ -30,7 +30,7 @@ def setup_add_page(frames, StyleManager, app, validate_and_save, DatePicker, sho
     error_labels = []
 
     def get_validate_fn(field_type):
-        from app.validation import ValidationService as V
+        from app.core.validation import ValidationService as V
         if field_type == "phone":
             return lambda v: V.validate_phone(v)
         elif field_type == "number":

@@ -3,7 +3,7 @@ import tempfile
 
 import pytest
 
-from app.recovery import (
+from app.core.recovery import (
     check_database_integrity,
     check_migration_state,
     check_required_tables,

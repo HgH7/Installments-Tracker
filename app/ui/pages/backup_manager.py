@@ -5,7 +5,7 @@ from tkinter import messagebox, ttk
 
 import customtkinter
 
-from app.settings import settings
+from app.core.settings import settings
 
 
 def setup_backup_manager_page(frames, StyleManager, csv_repository, show_frame, app, activity_service=None):

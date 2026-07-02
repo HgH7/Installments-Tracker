@@ -4,7 +4,7 @@ import csv
 import logging
 from typing import Dict, List
 
-from app.validation import ValidationService
+from app.core.validation import ValidationService
 
 logger = logging.getLogger(__name__)
 

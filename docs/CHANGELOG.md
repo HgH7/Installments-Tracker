@@ -1,51 +1,50 @@
 # Changelog
 
-## [4.0.0] — 2026-06-27
+## v2.0.0 (2026-06-27)
 
 ### Added
-- Structured logging system (app/logging/) with rotating handlers for app, errors, migrations, and backups
-- Settings system (settings.db) with persistent user preferences (theme, window size, backup config)
-- ValidationService (app/validation.py) — centralized input validation with specific error messages
-- Startup recovery checks (app/recovery.py) — database integrity, missing tables, migration state
-- Backup rotation (keep latest N, configurable via settings)
-- Backup compression (gzip) with metadata JSON files
-- Backup verification method
-- 61 automated tests across validation, serialization, installments, database, repository, settings, and recovery
-- Documentation (docs/ARCHITECTURE.md, DATABASE.md, CHANGELOG.md, ROADMAP.md, CONTRIBUTING.md)
+- Version system with `app/version.py` — single source of truth for version metadata
+- Branding module with splash screen, about dialog, and consistent app naming
+- Global crash recovery with exception hooks, session save/restore, and crash logging
+- Auto-update mechanism via GitHub releases (check, download, apply, rollback)
+- Application settings with persistent JSON config and UI editor
+- Payment history dialog with per-customer installment timeline
+- Backup manager with scheduled and on-demand backups, restore, and cleanup
+- Activity log with search, date range filtering, and CSV export
+- Import/export (CSV/Excel) with field mapping and validation
+- Send notification page with reminder management and force-check
+- Date picker widget for easier date input
+- File manager for attaching files to customers
+- Excel export with styled sheets
+- Responsive layout with scrollable frames throughout all pages
+- Keyboard shortcuts: Ctrl+N (new customer), Ctrl+F (search), Ctrl+Q (quit)
+- Sidebar navigation with active state highlighting
 
 ### Changed
-- The-Project.py reduced from ~1028 to ~190 lines
-- Extracted DatePicker → app/ui/date_picker.py
-- Extracted export_to_excel → app/export.py
-- Extracted refresh_treeview → app/ui/treeview_helpers.py
-- Extracted show_frame, keyboard shortcuts, nav button → app/ui/window_helpers.py
-- Extracted show_payment_history → app/ui/payment_history.py
-- Extracted EditInstallmentDialog, RestoreBackupDialog → app/ui/dialogs.py
-- SQLiteRepository: transactional safety, specific exception handling, backup improvements
-- CustomerService: uses ValidationService through validate_and_save
+- Complete UI overhaul using customtkinter with dark/light theme support
+- Replaced file-based CSV storage with SQLite for customers, activities, reminders
+- Enhanced validation service returning structured `ValidationResult` objects
+- Unified style system via `StyleManager` class with color palette
+- Consolidated backup system — old `backup_restore.py` superseded by `backup_manager.py`
+- Modular page architecture — each page is a self-contained `setup_*` function
+- Improved error handling and logging throughout
 
 ### Fixed
-- append_record now reads data before transaction (was reading after delete)
-- SQLiteRepository uses specific exceptions (sqlite3.Error, OSError, csv.Error)
-- Phone normalization centralized in ValidationService
+- Treeview refresh on data changes across all pages
+- Date parsing robustness with multiple format fallbacks
+- Window centering on multi-monitor setups
+- Graceful handling of missing data directories
 
-## [3.0.0] — 2026-06-27
+### Removed
+- Legacy CSV-based repository (replaced by SQLite + CSV export)
+- `ui/tabs.py` — functionality moved into page modules
+- Individual `*.csv` customer files (consolidated into SQLite)
+
+## v1.0.0 (2026-01-15)
 
 ### Added
-- SQLite migration phase: schema redesign, SQLiteRepository, DatabaseManager
-- app/repositories/sqlite_repository.py with full CRUD
-- Normalized database schema with migrations
-
-## [2.0.0] — 2026-06-25
-
-### Added
-- Architecture refactor: service layer, repository layer, UI modernization
-- Phase 1 critical safety fixes: rename data loss, auto-WhatsApp, wildcard imports, bare excepts
-- Phase 2 SQLite database design (pre-migration)
-
-## [1.0.0] — 2026-06-20
-
-### Initial
-- Tkinter-based installment tracking desktop application
-- CSV file storage
-- WhatsApp notification integration
+- Initial release with basic customer management
+- CSV-based storage for customers and installments
+- Simple UI with Tkinter
+- Add, view, and manage installment records
+- Basic backup and restore functionality

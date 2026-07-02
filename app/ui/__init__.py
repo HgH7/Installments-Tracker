@@ -1,3 +1,1 @@
-"""UI helpers package."""
-from .file_manager import FileManager
-from .style import StyleManager
+"""UI pages and components package."""

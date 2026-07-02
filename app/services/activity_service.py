@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from app.database.database import DatabaseManager
-from app.logging.logger import logger
+from app.core.logging.logger import logger
 from app.utils.serialization import dict_factory
 
 ACTIONS = {

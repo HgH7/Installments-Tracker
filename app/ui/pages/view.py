@@ -6,7 +6,7 @@ from tkinter import messagebox, ttk
 import customtkinter
 from customtkinter import CTkToplevel
 
-from app.ui.customer_timeline import show_customer_timeline
+from app.ui.widgets.customer_timeline import show_customer_timeline
 from app.utils.serialization import load_json_list
 
 

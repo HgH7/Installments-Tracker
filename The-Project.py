@@ -6,7 +6,7 @@ from tkinter import messagebox
 
 from customtkinter import CTk
 
-from app.version import APP_NAME, VERSION_STRING, COPYRIGHT
+from app.core.version import APP_NAME, VERSION_STRING, COPYRIGHT
 from app.repositories.sqlite_repository import SQLiteRepository
 from app.services.customer_service import CustomerService
 from app.services.activity_service import ActivityService
@@ -18,11 +18,11 @@ from app.services.customer_notes_service import CustomerNotesService, CustomerTa
 from app.services.task_service import TaskService
 from app.services.document_service import DocumentService
 from app.database.database import DatabaseManager, DEFAULT_DB_PATH
-from app.ui.style import StyleManager
-from app.ui.file_manager import FileManager
-from app.ui.date_picker import DatePicker
-from app.ui.treeview_helpers import refresh_treeview
-from app.ui.window_helpers import show_frame, setup_keyboard_shortcuts, nav_buttons
+from app.ui.styles.style import StyleManager
+from app.core.file_manager import FileManager
+from app.ui.widgets.date_picker import DatePicker
+from app.ui.helpers.treeview_helpers import refresh_treeview
+from app.ui.helpers.window_helpers import show_frame, setup_keyboard_shortcuts, nav_buttons
 from app.ui.pages.home import setup_home_page
 from app.ui.pages.add import setup_add_page
 from app.ui.pages.view import setup_view_page
@@ -37,8 +37,8 @@ from app.ui.pages.expenses import setup_expenses_page
 from app.ui.pages.contracts import setup_contracts_page
 from app.ui.pages.tasks_page import setup_tasks_page
 from app.ui.pages.documents_page import setup_documents_page
-from app.crash_recovery import install_global_exception_handler, load_session, clear_session
-from app.recovery import run_startup_checks
+from app.core.crash_recovery import install_global_exception_handler, load_session, clear_session
+from app.core.recovery import run_startup_checks
 
 install_global_exception_handler()
 
@@ -116,7 +116,7 @@ def create_app_shell(app):
     ]
 
     for page_name, label in nav_items:
-        from app.ui.window_helpers import create_nav_button
+        from app.ui.helpers.window_helpers import create_nav_button
         btn = create_nav_button(nav_frame, label, lambda p=page_name: show_frame(frames[p]))
         btn.grid(row=len(nav_buttons), column=0, sticky="ew", pady=3)
         nav_buttons[page_name] = btn
@@ -149,15 +149,15 @@ task_service = TaskService(db)
 document_service = DocumentService(db)
 
 # ── Phase 8: Extensibility & Enterprise Platform ──────────────────────
-from app.plugins.plugin_manager import PluginManager
-from app.automation.rule_engine import RuleEngine
-from app.automation.workflow_engine import WorkflowEngine
-from app.events import dispatcher
-from app.themes.theme_engine import ThemeEngine
-from app.telemetry import telemetry
-from app.integrations.integration_manager import IntegrationManager
-from app.integrations.excel_integration import ExcelIntegration
-from app.devtools.console import DeveloperConsole
+from app.extensions.plugins.plugin_manager import PluginManager
+from app.extensions.automation.rule_engine import RuleEngine
+from app.extensions.automation.workflow_engine import WorkflowEngine
+from app.extensions.events import dispatcher
+from app.extensions.themes.theme_engine import ThemeEngine
+from app.extensions.telemetry import telemetry
+from app.extensions.integrations.integration_manager import IntegrationManager
+from app.extensions.integrations.excel_integration import ExcelIntegration
+from app.extensions.devtools.console import DeveloperConsole
 from app.database.performance import PerformanceOptimizer
 
 plugin_manager = PluginManager()
@@ -202,7 +202,7 @@ dev_console.set_context(services=_services)
 
 
 def validate_and_save(name_entry, phone_entry, amount_entry, installments_entry, start_date_entry, file_list=None):
-    from app.validation import ValidationService
+    from app.core.validation import ValidationService
     name = name_entry.get().strip()
     phone = phone_entry.get().strip()
     amount = amount_entry.get().strip()
@@ -246,7 +246,7 @@ if __name__ == "__main__":
     try:
         app = initialize_app()
 
-        from app.branding import show_splash_screen
+        from app.core.branding import show_splash_screen
         splash = show_splash_screen(app, StyleManager, duration_ms=2000)
 
         StyleManager.setup_theme()
@@ -280,8 +280,8 @@ if __name__ == "__main__":
         from app.ui.pages.contracts import setup_contracts_page as _contracts
         from app.ui.pages.tasks_page import setup_tasks_page as _tasks
         from app.ui.pages.documents_page import setup_documents_page as _docs
-        from app.export import export_to_excel
-        from app.ui.payment_history import show_payment_history, refresh_payment_history_views
+        from app.utils.export import export_to_excel
+        from app.ui.widgets.payment_history import show_payment_history, refresh_payment_history_views
 
         _home(frames, StyleManager, show_frame, app, customer_service, csv_repository, activity_service, analytics_service)
         _add(frames, StyleManager, app, lambda *a: validate_and_save(*a) and show_frame(frames["manage"]), DatePicker, show_frame, csv_repository=csv_repository)
@@ -306,7 +306,7 @@ if __name__ == "__main__":
 
         # ── Phase 8: Start optional API server ──────────────────────
         try:
-            from app.api import start_api_server
+            from app.extensions.api import start_api_server
             api_server = start_api_server(db, _services)
         except Exception as e:
             logging.warning("API server not started: %s", e)
