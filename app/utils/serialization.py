@@ -40,3 +40,7 @@ def load_json_dict(value: Any) -> Dict:
 
 def dump_json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False)
+
+
+def dict_factory(cursor, row) -> Dict:
+    return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}

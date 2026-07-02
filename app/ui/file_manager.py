@@ -1,6 +1,6 @@
+import logging
 import os
 import shutil
-import logging
 from typing import List
 
 
@@ -14,23 +14,35 @@ class FileManager:
     def _ensure_base_directory(self):
         """Ensure the base directory exists."""
         try:
-            if not os.path.exists(self.base_dir):
-                os.makedirs(self.base_dir)
-                logging.info(f"Created base directory: {self.base_dir}")
-        except Exception as e:
+            os.makedirs(self.base_dir, exist_ok=True)
+        except OSError as e:
             logging.error(f"Error creating base directory: {str(e)}")
             raise
 
+    def _safe_name(self, name: str) -> str:
+        """Sanitize a name to prevent path traversal and illegal characters."""
+        safe = "".join(c for c in name if c.isalnum() or c in (' ', '-', '_', '.')).strip()
+        if not safe or safe in (".", ".."):
+            return "_"
+        return safe
+
     def _get_customer_dir(self, customer_name: str) -> str:
         """Get the directory path for a customer's files."""
-        safe_name = "".join(c for c in customer_name if c.isalnum() or c in (' ', '-', '_')).strip()
+        safe_name = self._safe_name(customer_name)
         customer_dir = os.path.join(self.base_dir, safe_name)
 
-        if not os.path.exists(customer_dir):
-            os.makedirs(customer_dir)
-            logging.info(f"Created customer directory: {customer_dir}")
+        resolved = os.path.realpath(customer_dir)
+        if not resolved.startswith(os.path.realpath(self.base_dir) + os.sep) and resolved != os.path.realpath(self.base_dir):
+            logging.error(f"Path traversal detected for customer: {customer_name}")
+            raise ValueError(f"Invalid customer name: {customer_name}")
 
-        return customer_dir
+        try:
+            os.makedirs(resolved, exist_ok=True)
+        except OSError as e:
+            logging.error(f"Error creating customer directory: {str(e)}")
+            raise
+
+        return resolved
 
     def add_files(self, customer_name: str, files: List[str]) -> bool:
         """Add files for a customer."""
@@ -41,7 +53,7 @@ class FileManager:
             for file_path in files:
                 try:
                     file_name = os.path.basename(file_path)
-                    safe_name = "".join(c for c in file_name if c.isalnum() or c in ('.', '-', '_')).strip()
+                    safe_name = self._safe_name(file_name)
                     base, ext = os.path.splitext(safe_name)
                     counter = 1
 
@@ -61,54 +73,4 @@ class FileManager:
             logging.error(f"Error in add_files for customer {customer_name}: {str(e)}")
             return False
 
-    def get_files(self, customer_name: str) -> List[str]:
-        """Get list of files for a customer."""
-        try:
-            customer_dir = self._get_customer_dir(customer_name)
-            if not os.path.exists(customer_dir):
-                return []
-            return [f for f in os.listdir(customer_dir) if os.path.isfile(os.path.join(customer_dir, f))]
-        except Exception as e:
-            logging.error(f"Error getting files for customer {customer_name}: {str(e)}")
-            return []
 
-    def delete_file(self, customer_name: str, file_name: str) -> bool:
-        """Delete a specific file for a customer."""
-        try:
-            customer_dir = self._get_customer_dir(customer_name)
-            file_path = os.path.join(customer_dir, file_name)
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                logging.info(f"Deleted file {file_name} for customer {customer_name}")
-                return True
-            return False
-        except Exception as e:
-            logging.error(f"Error deleting file {file_name} for customer {customer_name}: {str(e)}")
-            return False
-
-    def delete_customer_files(self, customer_name: str) -> bool:
-        """Delete all files for a customer."""
-        try:
-            customer_dir = self._get_customer_dir(customer_name)
-            if os.path.exists(customer_dir):
-                shutil.rmtree(customer_dir)
-                logging.info(f"Deleted all files for customer {customer_name}")
-                return True
-            return False
-        except Exception as e:
-            logging.error(f"Error deleting files for customer {customer_name}: {str(e)}")
-            return False
-
-    def open_file(self, customer_name: str, file_name: str) -> bool:
-        """Open a file using the system's default application."""
-        try:
-            customer_dir = self._get_customer_dir(customer_name)
-            file_path = os.path.join(customer_dir, file_name)
-            if os.path.exists(file_path):
-                os.startfile(file_path)
-                logging.info(f"Opened file {file_name} for customer {customer_name}")
-                return True
-            return False
-        except Exception as e:
-            logging.error(f"Error opening file {file_name} for customer {customer_name}: {str(e)}")
-            return False

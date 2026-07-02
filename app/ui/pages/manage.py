@@ -3,7 +3,8 @@ import re
 import tkinter as tk
 from datetime import datetime
 from tkinter import messagebox, ttk
-from customtkinter import CTkToplevel, CTkButton
+
+from customtkinter import CTkToplevel
 
 from app.utils.serialization import load_json_list
 
@@ -17,6 +18,8 @@ def setup_manage_installments_page(
     app,
     DatePicker,
     refresh_payment_history_views,
+    activity_service=None,
+    csv_repository=None,
 ):
     frame = frames["manage"]
     frame.configure(fg_color=StyleManager.COLORS["background"])
@@ -124,6 +127,7 @@ def setup_manage_installments_page(
             messagebox.showerror("Error", "An error occurred while loading data.")
 
     load_data()
+    frame.page_on_show = load_data
 
     buttons_frame = StyleManager.create_frame(frame)
     buttons_frame.grid(row=2, column=0, sticky="ew", padx=24, pady=(0, 24))
@@ -160,6 +164,10 @@ def setup_manage_installments_page(
 
                 values = tree.item(item)["values"]
                 customer_name = values[0]
+
+                if customer_name == "—":
+                    continue
+
                 installment_date = values[5]
                 progress_parts = values[6].split("/")
                 paid_so_far = int(progress_parts[0]) if len(progress_parts) == 2 else 0
@@ -171,6 +179,9 @@ def setup_manage_installments_page(
                     tree.set(item, "Progress", new_progress)
                     tag = "paid" if new_paid == total_inst else "partial"
                     tree.item(item, tags=(tag,))
+                    if activity_service:
+                        cid = csv_repository.get_customer_id_by_name(customer_name) if csv_repository else None
+                        activity_service.log("Installment paid", customer_id=cid, detail=f"{customer_name} — {installment_date}")
                 else:
                     messagebox.showerror("Error", f"Failed to mark installment as paid for customer {customer_name}")
                     return
@@ -208,6 +219,11 @@ def setup_manage_installments_page(
 
             values = tree.item(item)["values"]
             customer_name = values[0]
+
+            if customer_name == "—":
+                messagebox.showerror("Error", "Select a valid installment to edit.")
+                return
+
             customer_phone = values[1]
             installment_date = values[5]
             installment_value = values[4]
@@ -319,8 +335,14 @@ def setup_manage_installments_page(
                         if is_paid != new_paid_status:
                             if new_paid_status:
                                 customer_service.mark_installment_as_paid(customer_name, new_date)
+                                if activity_service:
+                                    cid = csv_repository.get_customer_id_by_name(customer_name) if csv_repository else None
+                                    activity_service.log("Installment paid", customer_id=cid, detail=f"{customer_name} — {new_date}")
                             else:
                                 customer_service.unmark_installment_as_paid(customer_name, new_date)
+                        if activity_service:
+                            cid = csv_repository.get_customer_id_by_name(customer_name) if csv_repository else None
+                            activity_service.log("Installment edited", customer_id=cid, detail=f"{customer_name} — {installment_date} → {new_date}")
                         messagebox.showinfo("Success", "Installment updated successfully.")
                         edit_window.destroy()
                         load_data()
@@ -366,8 +388,14 @@ def setup_manage_installments_page(
         values = item["values"]
         customer_name = values[0]
 
+        if customer_name == "—":
+            messagebox.showerror("Error", "Select a valid customer to delete.")
+            return
+
         if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete customer {customer_name}\nThis action cannot be undone."):
             if customer_service.delete_customer(customer_name):
+                if activity_service:
+                    activity_service.log("Customer deleted", detail=customer_name)
                 messagebox.showinfo("Success", f"Deleted customer {customer_name} successfully.")
                 refresh_treeview(tree)
             else:

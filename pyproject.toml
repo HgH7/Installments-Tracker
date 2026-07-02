@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "installments-tracker"
+version = "2.0.0"
+description = "Desktop application for tracking customer installment payments"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Otman", email = "otman-22-git@users.noreply.github.com"},
+]
+keywords = ["installments", "tracker", "customers", "payments", "desktop"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: X11 Applications",
+    "Intended Audience :: Customer Service",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial",
+]
+dependencies = [
+    "customtkinter>=5.2.0",
+    "Pillow>=10.0.0",
+    "pandas>=2.0.0",
+    "arabic-reshaper>=3.0.0",
+    "python-bidi>=0.4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/otman-22-git/Installments-Tracker"
+Repository = "https://github.com/otman-22-git/Installments-Tracker"
+Issues = "https://github.com/otman-22-git/Installments-Tracker/issues"
+Changelog = "https://github.com/otman-22-git/Installments-Tracker/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.isort]
+profile = "black"
+line_length = 120
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["*/tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]

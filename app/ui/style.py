@@ -1,6 +1,7 @@
-import customtkinter
 import logging
 from tkinter import ttk
+
+import customtkinter
 
 
 class StyleManager:

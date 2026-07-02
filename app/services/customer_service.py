@@ -1,8 +1,8 @@
 import logging
+import sqlite3
 from tkinter import messagebox
 from typing import Dict, List
 
-from app.repositories.csv_repository import CSVRepository
 from app.utils.installments import (
     generate_calendar_month_installment_dates,
     generate_thirty_day_installment_dates,
@@ -11,8 +11,8 @@ from app.utils.serialization import dump_json, load_json_dict, load_json_list
 
 
 class CustomerService:
-    """Handles customer-related business logic using a CSV repository."""
-    def __init__(self, repository: CSVRepository):
+    """Handles customer-related business logic using a data repository."""
+    def __init__(self, repository: object):
         self.repository = repository
 
     def append_customer(self, customer_data: Dict) -> bool:
@@ -23,12 +23,9 @@ class CustomerService:
             return False
 
         try:
-            if not self.repository.create_backup():
-                logging.error("Failed to create backup before appending customer")
-                messagebox.showerror("Error", "Failed to create backup.")
-                return False
-
             if self.repository.append_record(customer_data):
+                name = customer_data.get("Name", "")
+                logging.info(f"Customer created: {name}")
                 return True
             logging.error("Failed to append customer record")
             messagebox.showerror("Error", "An error occurred while saving data")
@@ -63,7 +60,7 @@ class CustomerService:
 
             success = self.repository.save_data(data)
             if success:
-                logging.info(f"Successfully updated customer: {name}")
+                logging.info(f"Customer updated: {name}")
             return success
         except Exception as e:
             logging.error(f"Error updating customer: {str(e)}")
@@ -77,27 +74,18 @@ class CustomerService:
             if len(data) == original_length:
                 logging.error(f"Customer not found: {name}")
                 return False
-            return self.repository.save_data(data)
+            success = self.repository.save_data(data)
+            if success:
+                logging.info(f"Customer deleted: {name}")
+            return success
         except Exception as e:
             logging.error(f"Error deleting customer: {str(e)}")
             return False
 
-    def search_customers(self, query: str) -> List[Dict]:
-        try:
-            data = self.repository.read_data()
-            query = query.lower()
-            return [
-                row for row in data
-                if any(str(value).lower().find(query) != -1 for value in row.values())
-            ]
-        except Exception as e:
-            logging.error(f"Error searching customers: {str(e)}")
-            return []
-
     def get_all_customers(self) -> List[Dict]:
         try:
             return self.repository.read_data()
-        except Exception as e:
+        except (OSError, sqlite3.Error, ValueError, TypeError) as e:
             logging.error(f"Error reading customers: {str(e)}")
             return []
 
@@ -107,7 +95,7 @@ class CustomerService:
                 (customer for customer in self.repository.read_data() if customer["Name"] == customer_name),
                 {},
             )
-        except Exception as e:
+        except (OSError, sqlite3.Error, ValueError, TypeError) as e:
             logging.error(f"Error reading customer {customer_name}: {str(e)}")
             return {}
 
@@ -160,7 +148,10 @@ class CustomerService:
                     if installment_date not in paid_installments:
                         paid_installments.append(installment_date)
                         data[i]["Paid_Installments"] = dump_json(paid_installments)
-                        return self.repository.save_data(data)
+                        success = self.repository.save_data(data)
+                        if success:
+                            logging.info(f"Installment marked paid: {customer_name} / {installment_date}")
+                        return success
                     logging.info(f"Installment already paid: {installment_date}")
                     return True
 
@@ -168,18 +159,6 @@ class CustomerService:
             return False
         except Exception as e:
             logging.error(f"Error marking installment as paid: {str(e)}")
-            return False
-
-    def get_payment_status(self, customer_name: str, installment_date: str) -> bool:
-        try:
-            data = self.repository.read_data()
-            for customer in data:
-                if customer["Name"] == customer_name:
-                    paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
-                    return installment_date in paid_installments
-            return False
-        except Exception as e:
-            logging.error(f"Error checking payment status: {str(e)}")
             return False
 
     def update_installment(
@@ -210,19 +189,22 @@ class CustomerService:
 
                     installment_values = load_json_dict(customer.get("Installment_Values", "{}"))
                     if old_date in installment_values:
-                        installment_values[new_date] = new_value
-                        del installment_values[old_date]
+                        if old_date == new_date:
+                            installment_values[old_date] = new_value
+                        else:
+                            installment_values[new_date] = new_value
+                            del installment_values[old_date]
                     else:
                         installment_values[new_date] = new_value
                     data[i]["Installment_Values"] = dump_json(installment_values)
 
                     try:
                         paid_installments = load_json_list(customer.get("Paid_Installments", "[]"))
-                        if old_date in paid_installments:
+                        if old_date in paid_installments and old_date != new_date:
                             paid_installments.remove(old_date)
                             paid_installments.append(new_date)
                             data[i]["Paid_Installments"] = dump_json(paid_installments)
-                    except Exception as e:
+                    except (ValueError, TypeError) as e:
                         logging.error(f"Error updating paid status: {str(e)}")
 
                     return self.repository.save_data(data)
@@ -247,7 +229,10 @@ class CustomerService:
                     if installment_date in paid_installments:
                         paid_installments.remove(installment_date)
                         data[i]["Paid_Installments"] = dump_json(paid_installments)
-                        return self.repository.save_data(data)
+                        success = self.repository.save_data(data)
+                        if success:
+                            logging.info(f"Installment unmarked paid: {customer_name} / {installment_date}")
+                        return success
                     logging.info(f"Installment wasn't marked as paid: {installment_date}")
                     return True
 

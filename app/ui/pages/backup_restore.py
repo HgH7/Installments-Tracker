@@ -1,10 +1,12 @@
 import logging
+import os
 from datetime import datetime
-from tkinter import messagebox, StringVar
-from customtkinter import CTkToplevel, CTkRadioButton
+from tkinter import StringVar, messagebox
+
+from customtkinter import CTkRadioButton, CTkToplevel
 
 
-def setup_backup_restore_page(frames, StyleManager, csv_repository, show_frame, app):
+def setup_backup_restore_page(frames, StyleManager, csv_repository, show_frame, app, activity_service=None):
     frame = frames["backup_restore"]
     frame.configure(fg_color=StyleManager.COLORS["background"])
     frame.grid_columnconfigure(0, weight=1)
@@ -31,6 +33,8 @@ def setup_backup_restore_page(frames, StyleManager, csv_repository, show_frame, 
         try:
             backup_file = csv_repository.create_backup()
             if backup_file:
+                if activity_service:
+                    activity_service.log("Backup created", detail=os.path.basename(backup_file))
                 messagebox.showinfo("Success", f"Backup created at: {backup_file}")
             else:
                 messagebox.showerror("Error", "Failed to create backup.")
@@ -117,6 +121,8 @@ def setup_backup_restore_page(frames, StyleManager, csv_repository, show_frame, 
 
                     if messagebox.askyesno("Confirm", "Are you sure you want to restore this backup? Current data will be replaced."):
                         if csv_repository.restore_backup(selected):
+                            if activity_service:
+                                activity_service.log("Backup restored", detail=selected)
                             messagebox.showinfo("Success", "Backup restored successfully.")
                             restore_window.destroy()
                         else:
