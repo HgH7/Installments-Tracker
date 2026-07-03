@@ -1,5 +1,7 @@
 import logging
 import re
+
+logger = logging.getLogger(__name__)
 import tkinter as tk
 from datetime import datetime
 from tkinter import messagebox, ttk
@@ -123,7 +125,7 @@ def setup_manage_installments_page(
             tree.tag_configure("unpaid", foreground=StyleManager.COLORS["danger"])
             tree.tag_configure("partial", foreground=StyleManager.COLORS["warning"])
         except Exception as e:
-            logging.error(f"Error loading installments data: {str(e)}")
+            logger.exception("Error loading installments data")
             messagebox.showerror("Error", "An error occurred while loading data.")
 
     load_data()
@@ -191,7 +193,7 @@ def setup_manage_installments_page(
             if "view" in frames:
                 refresh_treeview(frames["view"].tree)
         except Exception as e:
-            logging.error(f"Error marking installments as paid: {str(e)}")
+            logger.exception("Error marking installments as paid")
             messagebox.showerror("Error", "An error occurred while marking installments as paid.")
 
     StyleManager.create_button(
@@ -350,8 +352,8 @@ def setup_manage_installments_page(
                     else:
                         messagebox.showerror("Error", "Failed to update installment.")
                 except Exception as e:
-                    logging.error(f"Error saving installment changes: {str(e)}")
-                    messagebox.showerror("Error", f"An error occurred while saving changes: {str(e)}")
+                    logger.exception("Error saving installment changes")
+                    messagebox.showerror("Error", "An error occurred while saving changes.")
 
             StyleManager.create_button(
                 left_side,
@@ -368,8 +370,8 @@ def setup_manage_installments_page(
                 command=edit_window.destroy
             ).pack(side="right", pady=10)
         except Exception as e:
-            logging.error(f"Error opening edit installment window: {str(e)}")
-            messagebox.showerror("Error", f"An error occurred while opening the edit window: {str(e)}")
+            logger.exception("Error opening edit installment window")
+            messagebox.showerror("Error", "An error occurred while opening the edit window.")
 
     StyleManager.create_button(
         left_buttons,

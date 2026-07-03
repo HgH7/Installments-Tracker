@@ -1,7 +1,8 @@
+import atexit
+import logging as stdlogging
 import os
 import sys
 import traceback
-import logging as stdlogging
 from tkinter import messagebox
 
 from customtkinter import CTk
@@ -13,6 +14,7 @@ from app.services.activity_service import ActivityService
 from app.services.reminder_service import ReminderService
 from app.services.analytics_service import AnalyticsService
 from app.services.finance_service import FinanceService
+from app.services.global_search_service import GlobalSearchService
 from app.services.contract_service import ContractService
 from app.services.customer_notes_service import CustomerNotesService, CustomerTagsService
 from app.services.task_service import TaskService
@@ -23,30 +25,18 @@ from app.core.file_manager import FileManager
 from app.ui.widgets.date_picker import DatePicker
 from app.ui.helpers.treeview_helpers import refresh_treeview
 from app.ui.helpers.window_helpers import show_frame, setup_keyboard_shortcuts, nav_buttons
-from app.ui.pages.home import setup_home_page
-from app.ui.pages.add import setup_add_page
-from app.ui.pages.view import setup_view_page
-from app.ui.pages.manage import setup_manage_installments_page
-from app.ui.pages.backup_restore import setup_backup_restore_page
-from app.ui.pages.send_notification import setup_send_notification_page
-from app.ui.pages.activity import setup_activity_page
-from app.ui.pages.import_export import setup_import_export_page
-from app.ui.pages.backup_manager import setup_backup_manager_page
-from app.ui.pages.financial_dashboard import setup_financial_dashboard_page
-from app.ui.pages.expenses import setup_expenses_page
-from app.ui.pages.contracts import setup_contracts_page
-from app.ui.pages.tasks_page import setup_tasks_page
-from app.ui.pages.documents_page import setup_documents_page
 from app.core.crash_recovery import install_global_exception_handler, load_session, clear_session
 from app.core.recovery import run_startup_checks
+from app.utils.paths import CUSTOMER_FILES_DIR, DATA_DIR, LOGS_DIR
 
 install_global_exception_handler()
 
 logging = stdlogging
-os.makedirs("logs", exist_ok=True)
-os.makedirs("data", exist_ok=True)
+os.makedirs(LOGS_DIR, exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)
+log_path = os.path.join(LOGS_DIR, "app.log")
 logging.basicConfig(
-    filename="logs/app.log",
+    filename=log_path,
     level=logging.DEBUG,
     format="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s",
 )
@@ -55,7 +45,60 @@ console.setLevel(logging.DEBUG)
 logging.getLogger().addHandler(console)
 
 frames = {}
-file_manager = FileManager(os.path.join(os.path.dirname(os.path.abspath(__file__)), "customer_files"))
+file_manager = FileManager(CUSTOMER_FILES_DIR)
+
+# Will be assigned once services are initialized
+_db_manager = None
+_telemetry_instance = None
+_api_server_instance = None
+
+
+def _cleanup_temp_files():
+    """Remove stale .tmp files from data directory on startup."""
+    import glob as _glob
+    for tmp_file in _glob.glob(os.path.join(DATA_DIR, "*.tmp")):
+        try:
+            os.unlink(tmp_file)
+        except OSError:
+            pass
+    tmp_dir = os.path.join(DATA_DIR, "temp")
+    if os.path.isdir(tmp_dir):
+        import shutil as _shutil
+        try:
+            _shutil.rmtree(tmp_dir)
+        except OSError:
+            pass
+
+
+def shutdown():
+    """Graceful application shutdown sequence."""
+    global _db_manager, _telemetry_instance, _api_server_instance
+    logging.info("Shutting down application...")
+    if _api_server_instance:
+        try:
+            _api_server_instance.stop()
+        except Exception:
+            pass
+    from app.extensions.events import dispatcher
+    try:
+        dispatcher.emit("app.shutdown", {})
+    except Exception:
+        pass
+    if _telemetry_instance:
+        try:
+            _telemetry_instance._save()
+        except Exception:
+            pass
+    if _db_manager:
+        try:
+            _db_manager.close()
+        except Exception:
+            pass
+    _cleanup_temp_files()
+    logging.info("Shutdown complete.")
+
+
+atexit.register(shutdown)
 
 
 def initialize_app():
@@ -70,6 +113,7 @@ def initialize_app():
             app_window.geometry(f"1280x800+{(sw-1280)//2}+{(sh-800)//2}")
         except Exception:
             pass
+        app_window.protocol("WM_DELETE_WINDOW", lambda: (shutdown(), app_window.destroy()))
         return app_window
     except Exception as e:
         logging.critical(f"Failed to initialize: {e}\n{traceback.format_exc()}")
@@ -107,6 +151,9 @@ def create_app_shell(app):
         ("financial_dashboard", "Financial"),
         ("expenses", "Expenses"),
         ("notifications", "Notifications"),
+        ("reminders", "Reminders"),
+        ("notes_tags", "Notes"),
+        ("global_search", "Search"),
         ("tasks", "Tasks"),
         ("contracts", "Contracts"),
         ("documents", "Documents"),
@@ -135,6 +182,7 @@ def create_app_shell(app):
 
 db = DatabaseManager(DEFAULT_DB_PATH)
 db.initialize()
+_db_manager = db
 run_startup_checks(DEFAULT_DB_PATH, csv_path="customers.csv")
 csv_repository = SQLiteRepository("customers.csv", "backups")
 customer_service = CustomerService(csv_repository)
@@ -147,6 +195,15 @@ notes_service = CustomerNotesService(db)
 tags_service = CustomerTagsService(db)
 task_service = TaskService(db)
 document_service = DocumentService(db)
+global_search_service = GlobalSearchService(
+    customer_service=customer_service,
+    contract_service=contract_service,
+    document_service=document_service,
+    task_service=task_service,
+    finance_service=finance_service,
+    reminder_service=reminder_service,
+    notes_service=notes_service,
+)
 
 # ── Phase 8: Extensibility & Enterprise Platform ──────────────────────
 from app.extensions.plugins.plugin_manager import PluginManager
@@ -182,6 +239,7 @@ for name, fn in workflow_engine.builtin_step_handlers().items():
 integration_manager.register(ExcelIntegration)
 
 # Start telemetry
+_telemetry_instance = telemetry
 telemetry.record_startup()
 
 # Apply performance optimizations
@@ -193,7 +251,7 @@ _services = {
     "contract_service": contract_service, "task_service": task_service,
     "document_service": document_service, "activity_service": activity_service,
     "reminder_service": reminder_service, "analytics_service": analytics_service,
-    "notes_service": notes_service, "tags_service": tags_service,
+    "notes_service": notes_service, "tags_service": tags_service, "global_search_service": global_search_service,
     "plugin_manager": plugin_manager, "rule_engine": rule_engine,
     "workflow_engine": workflow_engine, "theme_engine": theme_engine,
     "app_name": APP_NAME, "version": VERSION_STRING,
@@ -256,7 +314,7 @@ if __name__ == "__main__":
             "home", "add", "view", "manage", "backup_restore", "notifications",
             "activity", "import_export", "backup_manager",
             "financial_dashboard", "expenses", "contracts",
-            "tasks", "documents",
+            "tasks", "documents", "reminders", "notes_tags", "global_search",
         ]
         for name in page_names:
             frame = StyleManager.create_frame(container)
@@ -280,6 +338,9 @@ if __name__ == "__main__":
         from app.ui.pages.contracts import setup_contracts_page as _contracts
         from app.ui.pages.tasks_page import setup_tasks_page as _tasks
         from app.ui.pages.documents_page import setup_documents_page as _docs
+        from app.ui.pages.reminders_page import setup_reminders_page as _reminders
+        from app.ui.pages.notes_tags_page import setup_notes_tags_page as _notes_tags
+        from app.ui.pages.global_search_page import setup_global_search_page as _global_search
         from app.utils.export import export_to_excel
         from app.ui.widgets.payment_history import show_payment_history, refresh_payment_history_views
 
@@ -289,7 +350,7 @@ if __name__ == "__main__":
               lambda: refresh_payment_history_views(app),
               lambda: export_to_excel(csv_repository),
               lambda: show_payment_history(app, frames, csv_repository, customer_service),
-              csv_repository=csv_repository, activity_service=activity_service)
+              csv_repository=csv_repository, activity_service=activity_service, finance_service=finance_service)
         _manage(frames, StyleManager, customer_service, refresh_treeview, show_frame, app, DatePicker,
                 lambda: refresh_payment_history_views(app),
                 activity_service=activity_service, csv_repository=csv_repository)
@@ -298,19 +359,22 @@ if __name__ == "__main__":
         _activity(frames, StyleManager, activity_service, show_frame)
         _import_export(frames, StyleManager, csv_repository, customer_service, activity_service, show_frame, app)
         _backup_mgr(frames, StyleManager, csv_repository, show_frame, app, activity_service)
-        _fin(frames, StyleManager, finance_service, show_frame)
-        _expenses(frames, StyleManager, finance_service, show_frame)
-        _contracts(frames, StyleManager, contract_service, show_frame)
-        _tasks(frames, StyleManager, task_service, show_frame)
-        _docs(frames, StyleManager, document_service, customer_service, show_frame)
+        _fin(frames, StyleManager, finance_service, show_frame, activity_service=activity_service, analytics_service=analytics_service)
+        _expenses(frames, StyleManager, finance_service, show_frame, activity_service=activity_service)
+        _contracts(frames, StyleManager, contract_service, show_frame, customer_service=customer_service, document_service=document_service, activity_service=activity_service)
+        _tasks(frames, StyleManager, task_service, show_frame, customer_service=customer_service, activity_service=activity_service)
+        _docs(frames, StyleManager, document_service, customer_service, show_frame, activity_service=activity_service)
+        _reminders(frames, StyleManager, reminder_service, show_frame, activity_service=activity_service)
+        _notes_tags(frames, StyleManager, notes_service, tags_service, show_frame, activity_service=activity_service)
+        _global_search(frames, StyleManager, global_search_service, show_frame)
 
         # ── Phase 8: Start optional API server ──────────────────────
         try:
             from app.extensions.api import start_api_server
-            api_server = start_api_server(db, _services)
+            _api_server_instance = start_api_server(db, _services)
         except Exception as e:
             logging.warning("API server not started: %s", e)
-            api_server = None
+            _api_server_instance = None
 
         # ── Phase 8: Wire events to activity service and telemetry ──
         dispatcher.on("*", lambda e: telemetry.record_event(e.name))

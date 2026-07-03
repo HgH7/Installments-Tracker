@@ -1,5 +1,7 @@
 import logging
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 from tkinter import messagebox, ttk
 
 from customtkinter import CTkToplevel
@@ -181,8 +183,8 @@ def setup_send_notification_page(frames, StyleManager, csv_repository, show_fram
                 else:
                     messagebox.showerror("Error", "Failed to open WhatsApp Web.")
             except Exception as e:
-                messagebox.showerror("Error", f"An unexpected error occurred: {str(e)}")
-                logging.error(f"Error in send_message: {str(e)}")
+                logger.exception("Error sending WhatsApp notification")
+                messagebox.showerror("Error", "An unexpected error occurred while sending the notification.")
 
         StyleManager.create_button(left, text="Open WhatsApp", width=160, command=send_message).pack(side="left", pady=10)
         StyleManager.create_button(right, text="Cancel", style="secondary", width=120,

@@ -1,5 +1,7 @@
 import logging
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 from tkinter import messagebox, ttk
 
 from customtkinter import CTkToplevel
@@ -118,8 +120,8 @@ def show_payment_history(app, frames, csv_repository, customer_service):
                         table.item(item, values=(date, values[1], "Paid", ""), tags=("paid",))
                         messagebox.showinfo("Success", "Installment marked as paid.")
             except Exception as e:
-                logging.error(f"Error marking as paid: {e}")
-                messagebox.showerror("Error", str(e))
+                logger.exception("Failed to mark installment as paid")
+                messagebox.showerror("Error", "An unexpected error occurred while marking the installment as paid.")
 
         def edit_installment(event):
             try:
@@ -147,8 +149,8 @@ def show_payment_history(app, frames, csv_repository, customer_service):
                 )
                 dialog.show()
             except Exception as e:
-                logging.error(f"Error editing installment: {e}")
-                messagebox.showerror("Error", str(e))
+                logger.exception("Failed to edit installment")
+                messagebox.showerror("Error", "An unexpected error occurred while editing the installment.")
 
         table.bind("<Double-1>", mark_as_paid)
         table.bind("<Button-3>", edit_installment)
@@ -161,8 +163,8 @@ def show_payment_history(app, frames, csv_repository, customer_service):
         StyleManager.create_button(left_side, text="Close", style="secondary", width=120,
                                    command=history_window.destroy).pack(side="left", pady=10)
     except Exception as e:
-        logging.error(f"Error showing payment history: {e}")
-        messagebox.showerror("Error", f"An error occurred: {e}")
+        logger.exception("Failed to show payment history")
+        messagebox.showerror("Error", "An unexpected error occurred while loading the payment history.")
 
 
 def refresh_payment_history_views(app):

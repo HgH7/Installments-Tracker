@@ -1,4 +1,4 @@
-"""Financial Dashboard — monthly income, expenses, P&L trends."""
+"""Financial Dashboard — monthly income, expenses, P&L trends, analytics."""
 
 from datetime import datetime
 
@@ -6,7 +6,8 @@ import customtkinter
 from app.services.finance_service import FinanceService
 
 
-def setup_financial_dashboard_page(frames, style_mgr, finance_service: FinanceService, show_frame):
+def setup_financial_dashboard_page(frames, style_mgr, finance_service: FinanceService, show_frame,
+                                   activity_service=None, analytics_service=None):
     frame = frames.get("financial_dashboard")
     if not frame:
         return
@@ -28,6 +29,8 @@ def setup_financial_dashboard_page(frames, style_mgr, finance_service: FinanceSe
     data = finance_service.compute_dashboard()
     income_trend = finance_service.get_income_trend(6)
     collection_trend = finance_service.get_collection_rate_trend(6)
+
+    analytics = analytics_service.compute() if analytics_service else {}
 
     def kpi_card(parent, col, label, value, color):
         card = style_mgr.create_frame(parent, fg_color=style_mgr.COLORS["surface"], corner_radius=8)
@@ -89,7 +92,7 @@ def setup_financial_dashboard_page(frames, style_mgr, finance_service: FinanceSe
 
     # Collection rate
     cr_section = style_mgr.create_frame(scroll, fg_color=style_mgr.COLORS["surface"], corner_radius=8)
-    cr_section.pack(fill="x", pady=(0, 16))
+    cr_section.pack(fill="x", pady=(0, 12))
     style_mgr.create_label(cr_section, text="Collection Rate Trend", font_style="subheading",
                            anchor="w").pack(anchor="w", padx=16, pady=(12, 8))
     for t in collection_trend:
@@ -104,9 +107,50 @@ def setup_financial_dashboard_page(frames, style_mgr, finance_service: FinanceSe
         style_mgr.create_label(row, text=f"{t['rate']}%", font_style="small",
                                text_color=style_mgr.COLORS.get("text_secondary", "#64748b"), width=50, anchor="e").pack(side="right")
 
+    # Analytics section
+    if analytics:
+        an_section = style_mgr.create_frame(scroll, fg_color=style_mgr.COLORS["surface"], corner_radius=8)
+        an_section.pack(fill="x", pady=(0, 12))
+        style_mgr.create_label(an_section, text="Business Analytics", font_style="subheading",
+                               anchor="w").pack(anchor="w", padx=16, pady=(12, 8))
+
+        an_metrics = [
+            ("Total Customers", str(analytics.get("total_customers", 0))),
+            ("Collection Rate", f"{analytics.get('collection_rate', 0)}%"),
+            ("Avg Payment Delay", f"{analytics.get('avg_payment_delay_days', 0)} days"),
+            ("Avg Contract Value", f"${analytics.get('avg_contract_value', 0):.2f}"),
+            ("New Customers (30d)", str(analytics.get("new_customers_30d", 0))),
+            ("Collected (30d)", f"${analytics.get('collected_30d', 0):.2f}"),
+            ("Upcoming Cash Flow (90d)", f"${analytics.get('upcoming_cash_flow_90d', 0):.2f}"),
+            ("Total Outstanding", f"${analytics.get('total_outstanding', 0):.2f}"),
+        ]
+        for i, (lbl, val) in enumerate(an_metrics):
+            row = style_mgr.create_frame(an_section, fg_color="transparent")
+            row.pack(fill="x", padx=16, pady=2)
+            style_mgr.create_label(row, text=lbl, font_style="body", anchor="w").pack(side="left")
+            style_mgr.create_label(row, text=val, font_style="body_bold",
+                                   text_color=style_mgr.COLORS.get("primary", "#2563eb"), anchor="e").pack(side="right")
+
+        top_customers = analytics.get("top_customers", [])
+        if top_customers:
+            style_mgr.create_label(an_section, text="Top Customers", font_style="body_bold",
+                                   anchor="w").pack(anchor="w", padx=16, pady=(8, 4))
+            for c in top_customers:
+                row = style_mgr.create_frame(an_section, fg_color="transparent")
+                row.pack(fill="x", padx=16, pady=1)
+                style_mgr.create_label(row, text=c.get("customer_name", ""), font_style="small",
+                                       anchor="w").pack(side="left")
+                style_mgr.create_label(row, text=f"${c.get('total_amount', 0):.2f}", font_style="small",
+                                       text_color=style_mgr.COLORS.get("text_secondary", "#64748b"),
+                                       anchor="e").pack(side="right")
+
     btn_frame = style_mgr.create_frame(frame, fg_color="transparent")
     btn_frame.grid(row=2, column=0, sticky="ew", padx=20, pady=(0, 16))
     style_mgr.create_button(btn_frame, text="Refresh", command=lambda: setup_financial_dashboard_page(
-        frames, style_mgr, finance_service, show_frame)).pack(side="left")
+        frames, style_mgr, finance_service, show_frame, activity_service=activity_service,
+        analytics_service=analytics_service)).pack(side="left")
+    if activity_service:
+        style_mgr.create_button(btn_frame, text="Expenses", command=lambda: show_frame(frames["expenses"])
+                                ).pack(side="left", padx=(8, 0))
     style_mgr.create_button(btn_frame, text="Back", style="secondary", width=100,
                             command=lambda: show_frame(frames["home"])).pack(side="right")

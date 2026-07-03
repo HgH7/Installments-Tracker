@@ -1,6 +1,5 @@
 import logging
 import sqlite3
-from tkinter import messagebox
 from typing import Dict, List
 
 from app.utils.installments import (
@@ -19,7 +18,6 @@ class CustomerService:
         missing_fields = [field for field in self.repository.columns if field not in customer_data]
         if missing_fields:
             logging.error(f"Missing required fields: {missing_fields}")
-            messagebox.showerror("Error", f"The following fields are required: {', '.join(missing_fields)}")
             return False
 
         try:
@@ -28,14 +26,11 @@ class CustomerService:
                 logging.info(f"Customer created: {name}")
                 return True
             logging.error("Failed to append customer record")
-            messagebox.showerror("Error", "An error occurred while saving data")
             return False
         except PermissionError:
-            messagebox.showerror("Error", "Permission denied while accessing the data file.")
             return False
         except Exception as e:
             logging.error(f"Error appending customer: {str(e)}")
-            messagebox.showerror("Error", f"An error occurred while saving data: {str(e)}")
             return False
 
     def update_customer(self, name: str, updated_data: Dict) -> bool:

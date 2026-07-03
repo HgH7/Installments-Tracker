@@ -1,5 +1,6 @@
 """Application settings — persistent config via JSON, with a UI editor."""
 
+import copy
 import json
 import logging
 import os
@@ -8,13 +9,11 @@ from tkinter import messagebox
 from typing import Any, Callable, Dict, List
 
 from app.core.branding import APP_NAME
+from app.utils.paths import SETTINGS_DIR, SETTINGS_FILE, SETTINGS_SCHEMA_FILE, SETTINGS_DB_PATH
 
 logger = logging.getLogger(__name__)
 
-_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SETTINGS_DIR = os.path.join(_PROJECT_ROOT, "data")
-SETTINGS_FILE = os.path.join(SETTINGS_DIR, "settings.json")
-SCHEMA_FILE = os.path.join(SETTINGS_DIR, "settings_schema.json")
+SCHEMA_FILE = SETTINGS_SCHEMA_FILE
 
 
 # ---------------------------------------------------------------------------
@@ -43,7 +42,7 @@ class Settings:
 
     def __init__(self, db_path: str = None):
         if db_path is None:
-            db_path = os.path.join(SETTINGS_DIR, "settings.db")
+            db_path = SETTINGS_DB_PATH
         self.db_path = db_path
         os.makedirs(os.path.dirname(self.db_path) or ".", exist_ok=True)
         self._init_db()
@@ -87,39 +86,49 @@ class Settings:
             return default if default is not None else self.DEFAULTS.get(key)
 
     def set(self, key: str, value):
-        conn = sqlite3.connect(self.db_path)
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-            (key, str(value)),
-        )
-        conn.commit()
-        conn.close()
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+                (key, str(value)),
+            )
+            conn.commit()
+            conn.close()
+        except sqlite3.Error as e:
+            logger.error("Failed to set setting '%s': %s", key, e)
 
     def set_many(self, pairs: dict):
-        conn = sqlite3.connect(self.db_path)
-        conn.executemany(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-            [(k, str(v)) for k, v in pairs.items()],
-        )
-        conn.commit()
-        conn.close()
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.executemany(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+                [(k, str(v)) for k, v in pairs.items()],
+            )
+            conn.commit()
+            conn.close()
+        except sqlite3.Error as e:
+            logger.error("Failed to set multiple settings: %s", e)
 
     def get_all(self) -> dict:
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.execute("SELECT key, value FROM settings")
-        result = {}
-        for k, v in cursor.fetchall():
-            orig_default = self.DEFAULTS.get(k)
-            if isinstance(orig_default, bool):
-                result[k] = v.lower() == "true"
-            elif isinstance(orig_default, int):
-                result[k] = int(v)
-            else:
-                result[k] = v
-        conn.close()
-        for k, v in self.DEFAULTS.items():
-            result.setdefault(k, v)
-        return result
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.execute("SELECT key, value FROM settings")
+            result = {}
+            for k, v in cursor.fetchall():
+                orig_default = self.DEFAULTS.get(k)
+                if isinstance(orig_default, bool):
+                    result[k] = v.lower() == "true"
+                elif isinstance(orig_default, int):
+                    result[k] = int(v)
+                else:
+                    result[k] = v
+            conn.close()
+            for k, v in self.DEFAULTS.items():
+                result.setdefault(k, v)
+            return result
+        except sqlite3.Error as e:
+            logger.error("Failed to get all settings: %s", e)
+            return dict(self.DEFAULTS)
 
 
 settings = Settings()
@@ -215,7 +224,7 @@ class SettingsManager:
 
     def _load(self):
         _ensure_settings_dir()
-        self._data = DEFAULT_SETTINGS.copy()
+        self._data = copy.deepcopy(DEFAULT_SETTINGS)
         try:
             if os.path.exists(SETTINGS_FILE):
                 with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
@@ -262,7 +271,7 @@ class SettingsManager:
         self.save()
 
     def reset_to_defaults(self):
-        self._data = DEFAULT_SETTINGS.copy()
+        self._data = copy.deepcopy(DEFAULT_SETTINGS)
         self.save()
 
     def to_dict(self) -> Dict:

@@ -16,6 +16,7 @@ A desktop application for tracking customer installment payments, built with Pyt
 - **Auto-Update** — Checks GitHub for new releases, downloads and installs
 - **Crash Recovery** — Global exception handling with session save/restore
 - **Settings** — Persistent configuration via UI editor
+- **REST API** — Lightweight HTTP API (localhost:8765) for programmatic access to customers, installments, reports, events, settings, and system info
 
 ## Installation
 

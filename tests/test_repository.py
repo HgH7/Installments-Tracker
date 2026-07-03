@@ -191,3 +191,14 @@ class TestSQLiteRepository:
         repo.save_data([SAMPLE_CUSTOMER])
         data = repo.read_data()
         assert data[0]["Notification Sent"] == False
+
+    def test_get_customer_by_id_found(self, repo):
+        repo.save_data([SAMPLE_CUSTOMER])
+        cid = repo.get_customer_id_by_name(SAMPLE_CUSTOMER["Name"])
+        customer = repo.get_customer_by_id(cid)
+        assert customer is not None
+        assert customer["customer_name"] == SAMPLE_CUSTOMER["Name"]
+
+    def test_get_customer_by_id_not_found(self, repo):
+        customer = repo.get_customer_by_id(99999)
+        assert customer is None

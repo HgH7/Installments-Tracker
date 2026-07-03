@@ -9,10 +9,13 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Optional
 
+from app.utils.paths import DATA_DIR
+
 logger = logging.getLogger(__name__)
 
-TELEMETRY_FILE = "data/telemetry.json"
+TELEMETRY_FILE = os.path.join(DATA_DIR, "telemetry.json")
 MAX_RECORDS = 1000
+_SAVE_DEBOUNCE_SECONDS = 5
 
 
 class Telemetry:
@@ -22,6 +25,7 @@ class Telemetry:
         self._enabled = True
         self._metrics: Dict[str, list] = defaultdict(list)
         self._startup_time: Optional[float] = None
+        self._last_save_time: float = 0
         self._load()
 
     def enable(self):
@@ -104,7 +108,10 @@ class Telemetry:
         self._metrics[category].append(data)
         if len(self._metrics[category]) > MAX_RECORDS:
             self._metrics[category] = self._metrics[category][-MAX_RECORDS:]
-        self._save()
+        now = time.time()
+        if now - self._last_save_time >= _SAVE_DEBOUNCE_SECONDS:
+            self._save()
+            self._last_save_time = now
 
     def get_metrics(self, category: Optional[str] = None) -> dict:
         if category:
@@ -131,7 +138,9 @@ class Telemetry:
     def _save(self):
         try:
             os.makedirs(os.path.dirname(TELEMETRY_FILE), exist_ok=True)
-            with open(TELEMETRY_FILE, "w") as f:
+            tmp_path = TELEMETRY_FILE + ".tmp"
+            with open(tmp_path, "w") as f:
                 json.dump(dict(self._metrics), f, indent=2)
-        except IOError as e:
+            os.replace(tmp_path, TELEMETRY_FILE)
+        except OSError as e:
             logger.warning("Failed to save telemetry: %s", e)

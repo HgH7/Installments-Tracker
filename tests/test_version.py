@@ -6,6 +6,7 @@ from app.core.version import (
     VERSION_PARTS,
     VERSION_STRING,
     __author__,
+    __build__,
     __license__,
     __version__,
 )
@@ -44,6 +45,15 @@ class TestVersion:
 
     def test_all_exports(self):
         assert __version__ in VERSION_STRING
+
+    def test_version_string_includes_build(self):
+        if __build__:
+            assert __build__ in VERSION_STRING
+        else:
+            assert VERSION_STRING == f"v{__version__}"
+
+    def test_version_parts_is_tuple_of_ints(self):
+        assert all(isinstance(p, int) for p in VERSION_PARTS)
 
 
 class TestVersionComparison:

@@ -30,7 +30,7 @@ class ExportService:
                             out[col] = val
                         writer.writerow(out)
                 os.replace(tmp_path, filepath)
-            except BaseException:
+            except Exception:
                 try:
                     os.unlink(tmp_path)
                 except OSError:
@@ -76,7 +76,7 @@ class ExportService:
                     with os.fdopen(fd, "w", encoding="utf-8") as f:
                         json.dump(report_data, f, indent=2)
                     os.replace(tmp_path, filename)
-                except BaseException:
+                except Exception:
                     try:
                         os.unlink(tmp_path)
                     except OSError:
@@ -104,7 +104,7 @@ class ExportService:
                         writer.writeheader()
                         writer.writerow(data)
                     os.replace(tmp_path, filename)
-                except BaseException:
+                except Exception:
                     try:
                         os.unlink(tmp_path)
                     except OSError:

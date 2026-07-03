@@ -7,10 +7,19 @@ from datetime import datetime
 from typing import List, Optional
 
 from app.database.database import DatabaseManager
+from app.utils.paths import DATA_DIR
 
 logger = logging.getLogger(__name__)
 
-CONTRACT_STATUSES = ["draft", "active", "completed", "cancelled", "overdue", "suspended"]
+CONTRACT_STATUSES = ["draft", "pending", "sent", "signed", "completed", "cancelled"]
+CONTRACT_STATUS_TRANSITIONS = {
+    "draft": {"pending", "cancelled"},
+    "pending": {"sent", "cancelled"},
+    "sent": {"signed", "cancelled"},
+    "signed": {"completed", "cancelled"},
+    "completed": set(),
+    "cancelled": set(),
+}
 
 
 def generate_contract_number(year: Optional[int] = None) -> str:
@@ -22,11 +31,7 @@ def generate_contract_number(year: Optional[int] = None) -> str:
 
 def _next_sequence(year: int) -> int:
     """Return the next sequence number for the given year (in-memory counter)."""
-    seq_file = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "data",
-        f"contract_seq_{year}.txt",
-    )
+    seq_file = os.path.join(DATA_DIR, f"contract_seq_{year}.txt")
     try:
         os.makedirs(os.path.dirname(seq_file), exist_ok=True)
         if os.path.exists(seq_file):
@@ -100,12 +105,22 @@ class ContractService:
             cur.execute("DELETE FROM contract_templates WHERE id = ?", (template_id,))
             return cur.rowcount > 0
 
+    def duplicate_template(self, template_id: int, name: str) -> Optional[dict]:
+        template = self.get_template(template_id)
+        if not template:
+            return None
+        new_id = self.create_template(name, template.get("content", ""), fields=json.loads(template.get("fields_json", "[]")))
+        return self.get_template(new_id)
+
     # ── Contracts ─────────────────────────────────────────────────────────
 
     def create_contract(self, customer_id: int, template_id: int = None,
                         content: dict = None) -> dict:
         number = generate_contract_number()
         with self.db.transaction() as cur:
+            cur.execute("SELECT id FROM customers WHERE id = ?", (customer_id,))
+            if cur.fetchone() is None:
+                raise ValueError(f"Customer not found: {customer_id}")
             cur.execute(
                 "INSERT INTO contracts (customer_id, contract_number, template_id, "
                 "content_json, status, created_at, updated_at) "
@@ -128,18 +143,20 @@ class ContractService:
     def get_customer_contracts(self, customer_id: int) -> List[dict]:
         with self.db.transaction() as cur:
             cur.execute(
-                "SELECT * FROM contracts WHERE customer_id = ? ORDER BY created_at DESC",
+                "SELECT c.*, cust.customer_name FROM contracts c "
+                "LEFT JOIN customers cust ON c.customer_id = cust.id "
+                "WHERE c.customer_id = ? ORDER BY c.created_at DESC",
                 (customer_id,),
             )
             return [dict(r) for r in cur.fetchall()]
 
     def get_all_contracts(self, status: str = "") -> List[dict]:
-        query = "SELECT * FROM contracts"
+        query = "SELECT c.*, cust.customer_name FROM contracts c LEFT JOIN customers cust ON c.customer_id = cust.id"
         params = []
         if status:
-            query += " WHERE status = ?"
+            query += " WHERE c.status = ?"
             params.append(status)
-        query += " ORDER BY created_at DESC"
+        query += " ORDER BY c.created_at DESC"
         with self.db.transaction() as cur:
             cur.execute(query, params)
             return [dict(r) for r in cur.fetchall()]
@@ -148,6 +165,13 @@ class ContractService:
         if status not in CONTRACT_STATUSES:
             raise ValueError(f"Invalid contract status: {status}")
         with self.db.transaction() as cur:
+            cur.execute("SELECT status FROM contracts WHERE id = ?", (contract_id,))
+            row = cur.fetchone()
+            if row is None:
+                raise ValueError(f"Contract not found: {contract_id}")
+            current = row[0]
+            if status not in CONTRACT_STATUS_TRANSITIONS.get(current, set()):
+                raise ValueError(f"Invalid status transition: {current} -> {status}")
             cur.execute(
                 "UPDATE contracts SET status = ?, updated_at = datetime('now') WHERE id = ?",
                 (status, contract_id),
@@ -155,7 +179,8 @@ class ContractService:
             return cur.rowcount > 0
 
     def update_contract(self, contract_id: int, content: dict = None,
-                        notes: str = None, pdf_path: str = None) -> bool:
+                        notes: str = None, pdf_path: str = None,
+                        signed_date: str = None, template_id: int = None) -> bool:
         updates = []
         params = []
         if content is not None:
@@ -167,6 +192,12 @@ class ContractService:
         if pdf_path is not None:
             updates.append("pdf_path = ?")
             params.append(pdf_path)
+        if signed_date is not None:
+            updates.append("signed_date = ?")
+            params.append(signed_date)
+        if template_id is not None:
+            updates.append("template_id = ?")
+            params.append(template_id)
         if not updates:
             return False
         updates.append("updated_at = datetime('now')")
@@ -178,18 +209,52 @@ class ContractService:
             )
             return cur.rowcount > 0
 
+    def get_customer_summary(self, customer_id: int) -> Optional[dict]:
+        with self.db.transaction() as cur:
+            cur.execute(
+                "SELECT id, customer_name, phone_number, total_amount, installment_count, start_date "
+                "FROM customers WHERE id = ?",
+                (customer_id,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def get_customer_id_by_name(self, name: str) -> Optional[int]:
+        with self.db.transaction() as cur:
+            cur.execute("SELECT id FROM customers WHERE customer_name = ?", (name,))
+            row = cur.fetchone()
+            return row[0] if row else None
+
     def delete_contract(self, contract_id: int) -> bool:
         with self.db.transaction() as cur:
             cur.execute("DELETE FROM contracts WHERE id = ?", (contract_id,))
             return cur.rowcount > 0
 
-    def find_contract(self, query: str) -> List[dict]:
+    def find_contract(self, query: str, status: str = "", template_id: int = None,
+                      customer_id: int = None, created_on: str = "") -> List[dict]:
+        clauses = []
+        params = []
+        if query:
+            clauses.append("(c.contract_number LIKE ? OR c.status LIKE ? OR cust.customer_name LIKE ?)")
+            params.extend([f"%{query}%", f"%{query}%", f"%{query}%"])
+        if status:
+            clauses.append("c.status = ?")
+            params.append(status)
+        if template_id is not None:
+            clauses.append("c.template_id = ?")
+            params.append(template_id)
+        if customer_id is not None:
+            clauses.append("c.customer_id = ?")
+            params.append(customer_id)
+        if created_on:
+            clauses.append("date(c.created_at) = ?")
+            params.append(created_on)
+        where_clause = f" WHERE {' AND '.join(clauses)}" if clauses else ""
         with self.db.transaction() as cur:
             cur.execute(
-                "SELECT c.*, cust.customer_name FROM contracts c "
-                "LEFT JOIN customers cust ON c.customer_id = cust.id "
-                "WHERE c.contract_number LIKE ? OR c.status LIKE ? OR cust.customer_name LIKE ? "
-                "ORDER BY c.created_at DESC",
-                (f"%{query}%", f"%{query}%", f"%{query}%"),
+                f"SELECT c.*, cust.customer_name FROM contracts c "
+                f"LEFT JOIN customers cust ON c.customer_id = cust.id {where_clause} "
+                f"ORDER BY c.created_at DESC",
+                params,
             )
             return [dict(r) for r in cur.fetchall()]

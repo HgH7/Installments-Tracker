@@ -1,21 +1,17 @@
 """Lightweight REST API server (no external dependencies)."""
-
-import io
 import json
 import logging
-import mimetypes
-import os
 import re
 import sqlite3
 import sys
-import traceback
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import urlparse
 
 from app.database.database import DatabaseManager
 from app.extensions.events import dispatcher
 from app.core.settings import settings
+from app.utils.serialization import dict_factory
 
 logger = logging.getLogger(__name__)
 
@@ -48,12 +44,17 @@ class RESTAPI:
                 try:
                     params = m.groupdict()
                     data = json.loads(body) if body else {}
+                except json.JSONDecodeError:
+                    return (400, {"success": False, "error": "Invalid JSON body"})
+                try:
                     result = handler(data, params)
+                    if isinstance(result, tuple) and len(result) == 2:
+                        return result
                     return (200, result)
-                except Exception as e:
-                    logger.error("API error: %s\n%s", e, traceback.format_exc())
-                    return (500, {"error": str(e)})
-        return (404, {"error": "Not found"})
+                except Exception:
+                    logger.exception("API handler error")
+                    return (500, {"success": False, "error": "Internal server error"})
+        return (404, {"success": False, "error": "Not found"})
 
     def start(self):
         from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -107,8 +108,12 @@ class RESTAPI:
 
     def _query(self, sql: str, params=()) -> List[dict]:
         conn = self.db.connect()
-        conn.row_factory = lambda c, r: {col[0]: r[idx] for idx, col in enumerate(c.description)}
-        return conn.execute(sql, params).fetchall()
+        old_factory = conn.row_factory
+        conn.row_factory = dict_factory
+        try:
+            return conn.execute(sql, params).fetchall()
+        finally:
+            conn.row_factory = old_factory
 
     def _query_one(self, sql: str, params=()) -> Optional[dict]:
         rows = self._query(sql, params)
@@ -116,13 +121,18 @@ class RESTAPI:
 
     def _execute(self, sql: str, params=()) -> int:
         conn = self.db.connect()
-        cur = conn.execute(sql, params)
-        conn.commit()
-        return cur.lastrowid
+        try:
+            cur = conn.execute(sql, params)
+            conn.commit()
+            return cur.lastrowid
+        except Exception:
+            conn.rollback()
+            raise
 
 
 def register_default_endpoints(api: RESTAPI, services: dict):
     svc_map = {k.lower(): v for k, v in services.items()}
+    activity = svc_map.get("activity_service")
 
     @api.route("GET", "/api/health")
     def health(data, params):
@@ -140,21 +150,37 @@ def register_default_endpoints(api: RESTAPI, services: dict):
 
     @api.route("GET", "/api/customers/<customer_id>")
     def get_customer(data, params):
-        row = api._query_one("SELECT * FROM customers WHERE id = ?", (params["customer_id"],))
+        try:
+            cid = int(params["customer_id"])
+        except (ValueError, TypeError):
+            return (400, {"success": False, "error": "Invalid customer ID"})
+        row = api._query_one("SELECT * FROM customers WHERE id = ?", (cid,))
         if not row:
-            return {"error": "Not found"}
-        inst = api._query("SELECT * FROM installments WHERE customer_id = ?", (params["customer_id"],))
+            return (404, {"success": False, "error": "Customer not found"})
+        inst = api._query("SELECT * FROM installments WHERE customer_id = ?", (cid,))
         return {"customer": row, "installments": inst}
 
     @api.route("POST", "/api/customers")
     def create_customer(data, params):
+        from app.core.validation import ValidationService
+        name = data.get("name", "")
+        phone = data.get("phone", "")
+        amount = str(data.get("total_amount", ""))
+        installments = str(data.get("installment_count", ""))
+        start_date = data.get("start_date", "")
+
+        validation = ValidationService.validate_customer(name, phone, amount, installments, start_date)
+        if not validation:
+            return (400, {"success": False, "error": "; ".join(validation.errors)})
+
         now = datetime.now().isoformat()
         cid = api._execute(
             "INSERT INTO customers (customer_name, phone_number, total_amount, installment_count, start_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (data.get("name", ""), data.get("phone", ""), float(data.get("total_amount", 0)),
-             int(data.get("installment_count", 0)), data.get("start_date", ""), now, now)
+            (name, phone, float(amount), int(installments), start_date, now, now)
         )
         dispatcher.emit("customer.created", {"customer_id": cid})
+        if activity:
+            activity.log("CUSTOMER_CREATED", customer_id=cid, detail=f"API — {name}")
         return {"id": cid}
 
     @api.route("GET", "/api/installments")
@@ -164,25 +190,69 @@ def register_default_endpoints(api: RESTAPI, services: dict):
 
     @api.route("GET", "/api/installments/<installment_id>")
     def get_installment(data, params):
-        row = api._query_one("SELECT i.*, c.customer_name FROM installments i JOIN customers c ON i.customer_id = c.id WHERE i.id = ?", (params["installment_id"],))
-        return {"installment": row} if row else {"error": "Not found"}
+        try:
+            iid = int(params["installment_id"])
+        except (ValueError, TypeError):
+            return (400, {"success": False, "error": "Invalid installment ID"})
+        row = api._query_one("SELECT i.*, c.customer_name FROM installments i JOIN customers c ON i.customer_id = c.id WHERE i.id = ?", (iid,))
+        if not row:
+            return (404, {"success": False, "error": "Installment not found"})
+        return {"installment": row}
 
     @api.route("POST", "/api/installments")
     def create_installment(data, params):
+        try:
+            customer_id = int(data.get("customer_id", 0))
+        except (ValueError, TypeError):
+            return (400, {"success": False, "error": "customer_id must be an integer"})
+        if customer_id <= 0:
+            return (400, {"success": False, "error": "customer_id must be a positive integer"})
+        customer = api._query_one("SELECT id FROM customers WHERE id = ?", (customer_id,))
+        if not customer:
+            return (404, {"success": False, "error": "Customer not found"})
+        try:
+            amount = float(data.get("amount", 0))
+        except (ValueError, TypeError):
+            return (400, {"success": False, "error": "amount must be a number"})
+        if amount < 0:
+            return (400, {"success": False, "error": "amount must be non-negative"})
+        try:
+            number = int(data.get("number", 1))
+        except (ValueError, TypeError):
+            return (400, {"success": False, "error": "number must be an integer"})
+        due_date = data.get("due_date", "")
+        if not due_date:
+            return (400, {"success": False, "error": "due_date is required"})
+        status = data.get("status", "pending")
+        if status not in ("pending", "paid", "overdue", "cancelled"):
+            return (400, {"success": False, "error": f"Invalid status '{status}'"})
+
         iid = api._execute(
-            "INSERT INTO installments (customer_id, installment_number, due_date, amount, status, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (int(data.get("customer_id", 0)), int(data.get("number", 1)),
-             data.get("due_date", ""), float(data.get("amount", 0)),
-             data.get("status", "pending"), datetime.now().isoformat())
+            "INSERT INTO installments (customer_id, installment_number, due_date, amount, status) VALUES (?, ?, ?, ?, ?)",
+            (customer_id, number, due_date, amount, status)
         )
         dispatcher.emit("installment.created", {"installment_id": iid})
+        if activity:
+            activity.log("INSTALLMENT_CREATED", customer_id=customer_id, detail=f"API — installment {iid}")
         return {"id": iid}
 
     @api.route("POST", "/api/installments/<installment_id>/pay")
     def pay_installment(data, params):
+        try:
+            iid = int(params["installment_id"])
+        except (ValueError, TypeError):
+            return (400, {"success": False, "error": "Invalid installment ID"})
+        installment = api._query_one("SELECT * FROM installments WHERE id = ?", (iid,))
+        if not installment:
+            return (404, {"success": False, "error": "Installment not found"})
+        if installment["status"] == "paid":
+            return (409, {"success": False, "error": "Installment already paid"})
         now = datetime.now().strftime("%Y-%m-%d")
-        api._execute("UPDATE installments SET status='paid', paid_date=? WHERE id=?", (now, params["installment_id"]))
-        dispatcher.emit("installment.paid", {"installment_id": int(params["installment_id"])})
+        api._execute("UPDATE installments SET status='paid', paid_date=? WHERE id=?", (now, iid))
+        cid = installment.get("customer_id")
+        dispatcher.emit("installment.paid", {"installment_id": iid})
+        if activity:
+            activity.log("INSTALLMENT_PAID", customer_id=cid, detail=f"API — installment {iid}")
         return {"status": "paid"}
 
     @api.route("GET", "/api/reports/overview")
@@ -203,8 +273,16 @@ def register_default_endpoints(api: RESTAPI, services: dict):
 
     @api.route("POST", "/api/events/emit")
     def emit_event(data, params):
-        dispatcher.emit(data.get("event", ""), data.get("data", {}))
-        return {"emitted": data.get("event")}
+        from app.extensions.events.event import EVENTS
+        event_name = data.get("event", "")
+        if not event_name:
+            return (400, {"success": False, "error": "event name is required"})
+        if event_name not in EVENTS:
+            return (400, {"success": False, "error": f"Unknown event '{event_name}'"})
+        dispatcher.emit(event_name, data.get("data", {}))
+        if activity:
+            activity.log("EVENT_EMITTED", detail=f"API — {event_name}")
+        return {"emitted": event_name}
 
     @api.route("GET", "/api/settings")
     def get_settings(data, params):
@@ -212,7 +290,6 @@ def register_default_endpoints(api: RESTAPI, services: dict):
 
     @api.route("GET", "/api/system/info")
     def system_info(data, params):
-        import sys, sqlite3
         return {
             "python_version": sys.version,
             "sqlite_version": sqlite3.sqlite_version,

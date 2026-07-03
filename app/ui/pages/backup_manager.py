@@ -1,7 +1,10 @@
 import json
+import logging
 import os
 from datetime import datetime
 from tkinter import messagebox, ttk
+
+logger = logging.getLogger(__name__)
 
 import customtkinter
 
@@ -119,7 +122,8 @@ def setup_backup_manager_page(frames, StyleManager, csv_repository, show_frame, 
                 if os.path.exists(meta):
                     os.unlink(meta)
             except OSError as e:
-                messagebox.showerror("Error", f"Failed to delete {fname}: {e}")
+                logger.exception("Failed to delete backup file")
+                messagebox.showerror("Error", f"Failed to delete {fname}. Please try again or check file permissions.")
         load_backups()
 
     def do_restore():

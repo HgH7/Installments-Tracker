@@ -30,6 +30,28 @@ class FinanceService:
 
     # ── Expenses ──────────────────────────────────────────────────────────
 
+    def get_expense(self, expense_id: int) -> Optional[dict]:
+        with self.db.transaction() as cur:
+            cur.execute("SELECT * FROM expenses WHERE id = ?", (expense_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def update_expense(self, expense_id: int, amount: float = None, category: str = None,
+                       description: str = None, expense_date: str = None) -> bool:
+        updates = []
+        params = []
+        for field, value in [("amount", amount), ("category", category),
+                              ("description", description), ("expense_date", expense_date)]:
+            if value is not None:
+                updates.append(f"{field} = ?")
+                params.append(value)
+        if not updates:
+            return False
+        params.append(expense_id)
+        with self.db.transaction() as cur:
+            cur.execute(f"UPDATE expenses SET {', '.join(updates)} WHERE id = ?", params)
+            return cur.rowcount > 0
+
     def add_expense(self, amount: float, category: str, description: str, expense_date: str) -> int:
         with self.db.transaction() as cur:
             cur.execute(
@@ -71,6 +93,17 @@ class FinanceService:
         for e in expenses:
             by_category[e["category"]] = by_category.get(e["category"], 0) + e["amount"]
         return {"total": total, "count": len(expenses), "by_category": by_category}
+
+    def get_customer_financial_summary(self, customer_id: int) -> dict:
+        with self.db.transaction() as cur:
+            cur.execute(
+                "SELECT COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) as total_paid, "
+                "COALESCE(SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END), 0) as total_pending, "
+                "COALESCE(SUM(CASE WHEN status = 'pending' AND due_date < date('now') THEN amount ELSE 0 END), 0) as overdue "
+                "FROM installments WHERE customer_id = ?",
+                (customer_id,),
+            )
+            return dict(cur.fetchone())
 
     def delete_expense(self, expense_id: int) -> bool:
         with self.db.transaction() as cur:

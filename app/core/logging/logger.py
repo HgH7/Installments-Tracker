@@ -4,7 +4,7 @@ import sys
 from logging.handlers import RotatingFileHandler
 from typing import Optional
 
-LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "logs")
+from app.utils.paths import LOGS_DIR as LOG_DIR
 
 
 def _ensure_log_dir():

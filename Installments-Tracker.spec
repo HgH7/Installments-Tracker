@@ -11,7 +11,7 @@ datadir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app")
 datas = []
 for root, dirs, files in os.walk(datadir):
     for fn in files:
-        if fn.endswith((".py", ".png", ".ico", ".json")):
+        if fn.endswith((".png", ".ico", ".json", ".txt", ".md")):
             src = os.path.join(root, fn)
             rel = os.path.relpath(root, os.path.dirname(datadir))
             datas.append((src, rel))
@@ -37,11 +37,11 @@ a = Analysis(
         "tkinter.filedialog",
         "tkinter.messagebox",
         "tkinter.ttk",
-        "app.version",
-        "app.branding",
-        "app.settings",
-        "app.crash_recovery",
-        "app.updater",
+        "app.core.version",
+        "app.core.branding",
+        "app.core.settings",
+        "app.core.crash_recovery",
+        "app.core.updater",
     ],
     hookspath=[],
     hooksconfig={},
@@ -52,7 +52,7 @@ a = Analysis(
         "pytest",
         "email",
         "http",
-        "urllib",
+        # "urllib",  # required by updater
         "pydoc",
     ],
     win_no_prefer_redirects=False,

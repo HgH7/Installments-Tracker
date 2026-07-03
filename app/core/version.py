@@ -11,8 +11,10 @@ APP_DESCRIPTION = "Desktop management application for tracking customer installm
 COMPANY_NAME = "Installments Tracker"
 COMPANY_URL = "https://github.com/otman-22-git/Installments-Tracker"
 COPYRIGHT = f"Copyright © 2020-2026 {COMPANY_NAME}. All rights reserved."
-VERSION_STRING = f"v{__version__}"
-VERSION_PARTS = tuple(int(p) for p in __version__.split("."))
+VERSION_PARTS = tuple(
+    int(p) for p in __version__.split(".") if p.isdigit()
+)
+VERSION_STRING = f"v{__version__}-{__build__}" if __build__ else f"v{__version__}"
 
 
 def get_version_info() -> dict:

@@ -116,6 +116,7 @@ def download_update(info: UpdateInfo, progress_callback: Optional[Callable[[int]
     """Download the update zip file to a temp location. Returns the path."""
     if not info.download_url:
         return None
+    tmp_path = None
     try:
         tmp = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
         tmp_path = tmp.name
@@ -139,15 +140,25 @@ def download_update(info: UpdateInfo, progress_callback: Optional[Callable[[int]
         return tmp_path
     except Exception as e:
         logger.error(f"Download failed: {e}")
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
         return None
 
 
 def apply_update(zip_path: str, target_dir: str = None) -> bool:
     """Extract the zip into the application directory and restart."""
     if target_dir is None:
-        target_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        if getattr(sys, "frozen", False):
+            target_dir = os.path.dirname(os.path.abspath(sys.executable))
+        else:
+            from app.utils.paths import PROJECT_ROOT
+            target_dir = PROJECT_ROOT
+    backup_dir = target_dir + ".bak"
+    extract_dir = None
     try:
-        backup_dir = target_dir + ".bak"
         if os.path.exists(backup_dir):
             shutil.rmtree(backup_dir)
         shutil.copytree(target_dir, backup_dir)
@@ -167,21 +178,31 @@ def apply_update(zip_path: str, target_dir: str = None) -> bool:
                     os.unlink(dst)
             shutil.move(src, dst)
 
-        shutil.rmtree(extract_dir)
-        os.unlink(zip_path)
         logger.info(f"Update applied successfully. Backup at {backup_dir}")
         return True
     except Exception as e:
         logger.error(f"Update application failed: {e}", exc_info=True)
         if os.path.exists(backup_dir):
             try:
-                shutil.rmtree(target_dir)
+                if os.path.exists(target_dir):
+                    shutil.rmtree(target_dir)
                 shutil.copytree(backup_dir, target_dir)
                 shutil.rmtree(backup_dir)
                 logger.info("Rolled back to previous version.")
             except OSError:
                 logger.critical("Rollback failed!")
         return False
+    finally:
+        if extract_dir and os.path.exists(extract_dir):
+            try:
+                shutil.rmtree(extract_dir)
+            except OSError:
+                pass
+        if zip_path and os.path.exists(zip_path):
+            try:
+                os.unlink(zip_path)
+            except OSError:
+                pass
 
 
 def restart_application():

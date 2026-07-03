@@ -6,10 +6,11 @@ from typing import Dict, List, Optional
 
 from app.extensions.plugins.plugin_api import PluginBase, PluginManifest
 from app.extensions.plugins.plugin_loader import PluginLoader
+from app.utils.paths import DATA_DIR
 
 logger = logging.getLogger(__name__)
 
-PLUGIN_DB_PATH = "data/plugin_registry.json"
+PLUGIN_DB_PATH = os.path.join(DATA_DIR, "plugin_registry.json")
 
 
 class PluginManager:
@@ -33,8 +34,17 @@ class PluginManager:
 
     def _save_registry(self):
         os.makedirs(os.path.dirname(PLUGIN_DB_PATH), exist_ok=True)
-        with open(PLUGIN_DB_PATH, "w") as f:
-            json.dump(self._registry, f, indent=2)
+        tmp_path = PLUGIN_DB_PATH + ".tmp"
+        try:
+            with open(tmp_path, "w") as f:
+                json.dump(self._registry, f, indent=2)
+            os.replace(tmp_path, PLUGIN_DB_PATH)
+        except OSError:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
 
     def _plugin_path(self, plugin_id: str) -> str:
         return os.path.join(self.plugin_dir, plugin_id)

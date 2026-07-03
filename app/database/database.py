@@ -5,12 +5,7 @@ from contextlib import contextmanager
 from typing import Generator
 
 from app.database.migrations import run_migrations
-
-DEFAULT_DB_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "data",
-    "installment_tracker.db",
-)
+from app.utils.paths import DB_PATH as DEFAULT_DB_PATH
 
 
 class DatabaseManager:

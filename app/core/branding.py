@@ -12,13 +12,11 @@ from app.core.version import (
     VERSION_STRING,
     __release_date__,
 )
-
-
-_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from app.utils.paths import PROJECT_ROOT
 
 
 def get_logo_path() -> str:
-    return os.path.join(_PROJECT_ROOT, "assets", "icon.png")
+    return os.path.join(PROJECT_ROOT, "assets", "icon.png")
 
 
 from typing import Optional

@@ -14,11 +14,11 @@ from tkinter import messagebox
 from typing import Optional
 
 from app.core.version import APP_NAME, __version__
+from app.utils.paths import LOGS_DIR, DATA_DIR
 
-_BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-CRASH_LOG_DIR = os.path.join(_BASE_DIR, "logs")
-CRASH_LOG_FILE = os.path.join(CRASH_LOG_DIR, "crash.log")
-SESSION_FILE = os.path.join(_BASE_DIR, "data", "session.json")
+CRASH_LOG_DIR = LOGS_DIR
+CRASH_LOG_FILE = os.path.join(LOGS_DIR, "crash.log")
+SESSION_FILE = os.path.join(DATA_DIR, "session.json")
 
 
 def _ensure_crash_dir():
@@ -74,7 +74,7 @@ def global_exception_handler(
         )
         messagebox.showerror(f"{APP_NAME} — Critical Error", msg)
     except Exception:
-        pass
+        logging.error("Failed to show crash dialog: %s", traceback.format_exc())
 
 
 def install_global_exception_handler() -> None:

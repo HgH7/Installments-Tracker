@@ -109,3 +109,15 @@ class TaskService:
                 (today,),
             )
             return [dict(r) for r in cur.fetchall()]
+
+    def get_customer_id_by_name(self, name: str) -> Optional[int]:
+        with self.db.transaction() as cur:
+            cur.execute("SELECT id FROM customers WHERE customer_name = ?", (name,))
+            row = cur.fetchone()
+            return row[0] if row else None
+
+    def get_customer_name_for_doc(self, customer_id: int) -> str:
+        with self.db.transaction() as cur:
+            cur.execute("SELECT customer_name FROM customers WHERE id = ?", (customer_id,))
+            row = cur.fetchone()
+            return row[0] if row else f"ID:{customer_id}"

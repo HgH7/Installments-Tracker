@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from app.database.database import DatabaseManager
+from app.utils.paths import DOCUMENTS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +18,6 @@ DOCUMENT_TYPES = [
     "reminder_letter",
     "certificate",
 ]
-
-DOCUMENTS_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data",
-    "documents",
-)
 
 
 def _ensure_docs_dir():
@@ -238,3 +233,20 @@ class DocumentService:
             cur.execute("SELECT * FROM generated_documents WHERE id = ?", (doc_id,))
             row = cur.fetchone()
             return dict(row) if row else None
+
+    def delete_document(self, doc_id: int) -> bool:
+        with self.db.transaction() as cur:
+            cur.execute("DELETE FROM generated_documents WHERE id = ?", (doc_id,))
+            return cur.rowcount > 0
+
+    def get_customer_name_for_doc(self, customer_id: int) -> str:
+        with self.db.transaction() as cur:
+            cur.execute("SELECT customer_name FROM customers WHERE id = ?", (customer_id,))
+            row = cur.fetchone()
+            return row[0] if row else f"ID:{customer_id}"
+
+    def get_customer_id_by_name(self, name: str) -> Optional[int]:
+        with self.db.transaction() as cur:
+            cur.execute("SELECT id FROM customers WHERE customer_name = ?", (name,))
+            row = cur.fetchone()
+            return row[0] if row else None

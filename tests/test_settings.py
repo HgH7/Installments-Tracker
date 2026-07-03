@@ -1,9 +1,10 @@
+import copy
 import os
 import tempfile
 
 import pytest
 
-from app.core.settings import Settings
+from app.core.settings import DEFAULT_SETTINGS, Settings, SettingsManager
 
 
 class TestSettings:
@@ -45,3 +46,31 @@ class TestSettings:
 
     def test_get_with_default(self, settings):
         assert settings.get("nonexistent", "fallback") == "fallback"
+
+
+class TestSettingsManager:
+    def test_defaults_not_mutated_after_set(self):
+        """Verify shallow copy bug is fixed: modifying settings via
+        SettingsManager must not mutate DEFAULT_SETTINGS."""
+        expected = copy.deepcopy(DEFAULT_SETTINGS)
+        mgr = SettingsManager()
+        mgr.set("general", "language", "fr")
+        # DEFAULT_SETTINGS must be unchanged
+        assert DEFAULT_SETTINGS == expected
+        mgr.set_section("display", {"theme": "light"})
+        # DEFAULT_SETTINGS must still be unchanged after section update
+        assert DEFAULT_SETTINGS == expected
+
+    def test_reset_to_defaults(self):
+        mgr = SettingsManager()
+        mgr.set("general", "language", "fr")
+        mgr.reset_to_defaults()
+        assert mgr.get("general", "language") == "en"
+        assert DEFAULT_SETTINGS["general"]["language"] == "en"
+
+    def test_set_section_updates_only_target_section(self):
+        mgr = SettingsManager()
+        backup_display = dict(mgr.get_section("display"))
+        mgr.set_section("general", {"language": "ar"})
+        assert mgr.get("general", "language") == "ar"
+        assert mgr.get_section("display") == backup_display

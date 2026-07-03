@@ -23,6 +23,7 @@ def setup_view_page(
     show_payment_history,
     csv_repository=None,
     activity_service=None,
+    finance_service=None,
 ):
     frame = frames["view"]
     frame.configure(fg_color=StyleManager.COLORS["background"])
@@ -444,6 +445,155 @@ def setup_view_page(
         width=110,
         command=show_payment_history
     ).pack(side="left", pady=10)
+
+    def show_customer_documents():
+        tree = view_tree
+        selected = tree.selection()
+        if not selected:
+            messagebox.showinfo("Info", "Select a customer first.")
+            return
+        values = tree.item(selected[0], "values")
+        customer_name = values[0]
+        if customer_name == "—":
+            messagebox.showerror("Error", "Select a valid customer.")
+            return
+        doc_frame = frames.get("documents")
+        if doc_frame and hasattr(doc_frame, "navigate_to_customer_docs"):
+            doc_frame.navigate_to_customer_docs(customer_name=customer_name)
+        else:
+            show_frame(doc_frame)
+
+    def show_customer_tasks():
+        tree = view_tree
+        selected = tree.selection()
+        if not selected:
+            messagebox.showinfo("Info", "Select a customer first.")
+            return
+        values = tree.item(selected[0], "values")
+        customer_name = values[0]
+        if customer_name == "—":
+            messagebox.showerror("Error", "Select a valid customer.")
+            return
+        task_frame = frames.get("tasks")
+        if task_frame and hasattr(task_frame, "navigate_to_customer_tasks"):
+            task_frame.navigate_to_customer_tasks(customer_name=customer_name)
+        else:
+            show_frame(task_frame)
+
+    StyleManager.create_button(
+        center,
+        text="Documents",
+        width=90,
+        command=show_customer_documents
+    ).pack(side="left", padx=(8, 0), pady=10)
+
+    def show_customer_finance():
+        tree = view_tree
+        selected = tree.selection()
+        if not selected:
+            messagebox.showinfo("Info", "Select a customer first.")
+            return
+        values = tree.item(selected[0], "values")
+        customer_name = values[0]
+        if customer_name == "—":
+            messagebox.showerror("Error", "Select a valid customer.")
+            return
+        if not finance_service:
+            show_frame(frames.get("financial_dashboard"))
+            return
+        cid = csv_repository.get_customer_id_by_name(customer_name) if csv_repository else None
+        if cid is None:
+            messagebox.showerror("Error", "Could not resolve customer ID.")
+            return
+        summary = finance_service.get_customer_financial_summary(cid)
+        d = customtkinter.CTkToplevel(frame)
+        d.geometry("360x200")
+        d.title(f"Finance — {customer_name}")
+        d.transient(frame)
+        d.grab_set()
+        body = StyleManager.create_frame(d, fg_color="transparent")
+        body.pack(fill="both", expand=True, padx=20, pady=20)
+        body.grid_columnconfigure(0, weight=1)
+        StyleManager.create_label(body, text=f"Financial Summary — {customer_name}",
+                                  font_style="subheading").grid(row=0, column=0, sticky="w", pady=(0, 12))
+        info = StyleManager.create_frame(body, fg_color=StyleManager.COLORS["surface"], corner_radius=8)
+        info.grid(row=1, column=0, sticky="ew")
+        info.grid_columnconfigure(1, weight=1)
+        rows_fin = [
+            ("Total Paid:", f"${summary.get('total_paid', 0):.2f}"),
+            ("Total Pending:", f"${summary.get('total_pending', 0):.2f}"),
+            ("Overdue:", f"${summary.get('overdue', 0):.2f}"),
+        ]
+        for i, (lbl, val) in enumerate(rows_fin):
+            StyleManager.create_label(info, text=lbl, font_style="body_bold").grid(
+                row=i, column=0, sticky="w", padx=12, pady=(8, 0))
+            StyleManager.create_label(info, text=val, font_style="small").grid(
+                row=i, column=1, sticky="w", padx=(8, 12), pady=(8, 0))
+        btn_fin = StyleManager.create_frame(body, fg_color="transparent")
+        btn_fin.grid(row=2, column=0, sticky="ew", pady=(16, 0))
+        StyleManager.create_button(btn_fin, text="Close", style="secondary", command=d.destroy).pack(side="left")
+
+    StyleManager.create_button(
+        center,
+        text="Tasks",
+        width=90,
+        command=show_customer_tasks
+    ).pack(side="left", padx=(8, 0), pady=10)
+
+    StyleManager.create_button(
+        center,
+        text="Finance",
+        width=90,
+        command=show_customer_finance
+    ).pack(side="left", padx=(8, 0), pady=10)
+
+    def show_customer_reminders():
+        tree = view_tree
+        selected = tree.selection()
+        if not selected:
+            messagebox.showinfo("Info", "Select a customer first.")
+            return
+        values = tree.item(selected[0], "values")
+        customer_name = values[0]
+        if customer_name == "—":
+            messagebox.showerror("Error", "Select a valid customer.")
+            return
+        rem_frame = frames.get("reminders")
+        if rem_frame and hasattr(rem_frame, "navigate_to_customer_reminders"):
+            rem_frame.navigate_to_customer_reminders(customer_name=customer_name)
+        else:
+            show_frame(rem_frame)
+
+    StyleManager.create_button(
+        center,
+        text="Reminders",
+        width=90,
+        command=show_customer_reminders
+    ).pack(side="left", padx=(8, 0), pady=10)
+
+    def show_customer_notes():
+        tree = view_tree
+        selected = tree.selection()
+        if not selected:
+            messagebox.showinfo("Info", "Select a customer first.")
+            return
+        values = tree.item(selected[0], "values")
+        customer_name = values[0]
+        if customer_name == "—":
+            messagebox.showerror("Error", "Select a valid customer.")
+            return
+        notes_frame = frames.get("notes_tags")
+        if notes_frame and hasattr(notes_frame, "navigate_to_customer_notes"):
+            notes_frame.navigate_to_customer_notes(customer_name=customer_name)
+        else:
+            show_frame(notes_frame)
+
+    StyleManager.create_button(
+        center,
+        text="Notes",
+        width=90,
+        command=show_customer_notes
+    ).pack(side="left", padx=(8, 0), pady=10)
 
     StyleManager.create_button(
         center,

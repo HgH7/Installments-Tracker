@@ -101,3 +101,43 @@ class TestExportCustomer:
         data = {"Name": "Alice"}
         path = ExportService.export_customer(data, format="pdf")
         assert path is None
+
+
+class TestExportEdgeCases:
+    def test_export_csv_with_none_values(self):
+        data = [{"Name": "Alice", "Amount": None, "Active": True}]
+        tmp = tempfile.NamedTemporaryFile(suffix=".csv", delete=False)
+        tmp.close()
+        try:
+            result = ExportService.export_csv(data, tmp.name, columns=["Name", "Amount", "Active"])
+            assert result is True
+            with open(tmp.name, "r") as f:
+                content = f.read()
+            assert "Alice" in content
+            assert "True" in content
+            assert "None" not in content  # None becomes empty string
+        finally:
+            if os.path.exists(tmp.name):
+                os.unlink(tmp.name)
+
+    def test_export_report_no_rows(self):
+        path = ExportService.export_report({"rows": [], "columns": ["Name"]}, format="csv")
+        assert path is not None
+        assert path.endswith(".csv")
+        if os.path.exists(path):
+            os.unlink(path)
+
+    def test_export_report_empty_dict(self):
+        path = ExportService.export_report({}, format="json")
+        assert path is not None
+        assert path.endswith(".json")
+        if os.path.exists(path):
+            os.unlink(path)
+
+    def test_export_customer_empty_name(self):
+        data = {"Name": "", "Amount": 1000.0}
+        path = ExportService.export_customer(data, format="csv")
+        assert path is not None
+        assert path.endswith(".csv")
+        if os.path.exists(path):
+            os.unlink(path)
